@@ -42,3 +42,18 @@ export type PlayerGameStats = {
   steals: number;
   blocks: number;
 };
+
+export type PlayerSeasonStats = {
+  playerId: string;
+  season: string;
+  gamesPlayed: number;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  fieldGoalPct: number;
+  threePointPct: number;
+  freeThrowPct: number;
+};

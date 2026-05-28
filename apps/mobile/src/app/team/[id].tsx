@@ -2,13 +2,14 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
-import { useTeam, useTeamRoster } from '@/hooks/useTeamRoster';
+import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: team } = useTeam(id);
   const { data: roster, isLoading, error } = useTeamRoster(id);
+  const { data: seasonStats } = useTeamSeasonStats(id);
 
   if (isLoading) {
     return (
@@ -66,6 +67,19 @@ export default function TeamDetailScreen() {
               {item.firstName} {item.lastName}
             </Text>
             <Text style={styles.playerMeta}>{item.position ?? 'N/A'}</Text>
+            {(() => {
+              const s = seasonStats?.get(item.id);
+              if (!s || s.gamesPlayed === 0) return null;
+              return (
+                <View style={styles.statsRow}>
+                  <Text style={styles.statText}>{s.points} PTS</Text>
+                  <Text style={styles.statDivider}>·</Text>
+                  <Text style={styles.statText}>{s.rebounds} REB</Text>
+                  <Text style={styles.statDivider}>·</Text>
+                  <Text style={styles.statText}>{s.assists} AST</Text>
+                </View>
+              );
+            })()}
           </View>
           {item.jerseyNumber && <Text style={styles.jersey}>#{item.jerseyNumber}</Text>}
         </Pressable>
@@ -149,5 +163,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+    gap: spacing.xs,
+  },
+  statText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  statDivider: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
 });
