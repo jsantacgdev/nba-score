@@ -232,6 +232,62 @@ export type Database = {
           },
         ]
       }
+      player_season_stats: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          field_goal_pct: number | null
+          free_throw_pct: number | null
+          games_played: number | null
+          minutes: number | null
+          player_id: string
+          points: number | null
+          rebounds: number | null
+          season: string
+          steals: number | null
+          three_point_pct: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          minutes?: number | null
+          player_id: string
+          points?: number | null
+          rebounds?: number | null
+          season: string
+          steals?: number | null
+          three_point_pct?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          minutes?: number | null
+          player_id?: string
+          points?: number | null
+          rebounds?: number | null
+          season?: string
+          steals?: number | null
+          three_point_pct?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           created_at: string | null

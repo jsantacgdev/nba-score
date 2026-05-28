@@ -23,6 +23,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="game/[id]" options={{ title: 'Partido', presentation: 'card' }} />
             <Stack.Screen name="player/[id]" options={{ title: 'Jugador', presentation: 'card' }} />
+            <Stack.Screen name="team/[id]" options={{ title: 'Equipo', presentation: 'card' }} />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>
