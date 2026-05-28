@@ -3,7 +3,7 @@ from nba_api.stats.static import teams as nba_teams_static
 from nba_api.stats.endpoints import commonteamroster
 from nba_api.stats.endpoints import leaguedashplayerstats
 from nba_api.stats.endpoints import playergamelog
-
+from nba_api.stats.endpoints import leaguegamefinder
 
 # Temporada actual. Ajusta si cambia.
 CURRENT_SEASON = "2025-26"
@@ -220,3 +220,48 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
         )
 
     return games
+
+def get_league_games(season: str = CURRENT_SEASON) -> list[dict]:
+    """Obtiene todos los partidos de la temporada con su marcador."""
+    finder = leaguegamefinder.LeagueGameFinder(
+        season_nullable=season,
+        league_id_nullable="00",  # 00 = NBA
+        timeout=60,
+    )
+    df = finder.get_data_frames()[0]
+
+    # Cada partido aparece una fila por equipo. Agrupamos por GAME_ID.
+    games_by_id: dict[str, dict] = {}
+
+    for _, row in df.iterrows():
+        game_id = str(row["GAME_ID"])
+        matchup = str(row["MATCHUP"])
+        is_home = "vs." in matchup
+        team_id = str(row["TEAM_ID"])
+        pts = int(row["PTS"]) if row.get("PTS") is not None else 0
+
+        if game_id not in games_by_id:
+            games_by_id[game_id] = {
+                "id": game_id,
+                "game_date": str(row["GAME_DATE"]),
+                "season": season,
+                "home_team_id": None,
+                "away_team_id": None,
+                "score_home": 0,
+                "score_away": 0,
+                "status": "final",
+            }
+
+        entry = games_by_id[game_id]
+        if is_home:
+            entry["home_team_id"] = team_id
+            entry["score_home"] = pts
+        else:
+            entry["away_team_id"] = team_id
+            entry["score_away"] = pts
+
+    # Solo partidos con ambos equipos identificados
+    return [
+        g for g in games_by_id.values()
+        if g["home_team_id"] and g["away_team_id"]
+    ]
