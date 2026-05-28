@@ -57,3 +57,28 @@ export type PlayerSeasonStats = {
   threePointPct: number;
   freeThrowPct: number;
 };
+
+export type PlayerGameLogEntry = {
+  playerId: string;
+  gameId: string;
+  gameDate: Date;
+  season: string;
+  matchup: string;
+  isHome: boolean;
+  opponentAbbreviation?: string;
+  winLoss?: 'W' | 'L';
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  plusMinus: number;
+};
