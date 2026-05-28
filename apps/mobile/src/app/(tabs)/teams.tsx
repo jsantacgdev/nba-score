@@ -1,21 +1,35 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { mockTeams } from '@/lib/mockData';
+import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
-import { useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function TeamsScreen() {
-  const eastTeams = mockTeams.filter((t) => t.conference === 'East');
-  const westTeams = mockTeams.filter((t) => t.conference === 'West');
+  const { data: teams, isLoading, error } = useTeams();
 
-  useEffect(() => {
-    async function test() {
-      const { data, error } = await supabase.from('teams').select('*');
-      console.log('Test Supabase:', { data, error });
-    }
-    test();
-  }, []);
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Cargando equipos...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>Error al cargar equipos</Text>
+          <Text style={styles.errorDetail}>{error.message}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const eastTeams = teams?.filter((t) => t.conference === 'East') ?? [];
+  const westTeams = teams?.filter((t) => t.conference === 'West') ?? [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -72,6 +86,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  loadingText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+  },
+  errorDetail: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
   },
   content: {
     padding: spacing.md,
