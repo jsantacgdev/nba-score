@@ -243,7 +243,7 @@ def get_league_games(season: str = CURRENT_SEASON) -> list[dict]:
         if game_id not in games_by_id:
             games_by_id[game_id] = {
                 "id": game_id,
-                "game_date": str(row["GAME_DATE"]),
+                "starts_at": str(row["GAME_DATE"]),
                 "season": season,
                 "home_team_id": None,
                 "away_team_id": None,

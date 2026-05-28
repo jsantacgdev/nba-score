@@ -81,4 +81,14 @@ export type PlayerGameLogEntry = {
   ftMade: number;
   ftAttempted: number;
   plusMinus: number;
+  game?: {
+    homeTeamId: string;
+    awayTeamId: string;
+    homeTeamAbbr: string;
+    awayTeamAbbr: string;
+    homeTeamLogo?: string;
+    awayTeamLogo?: string;
+    scoreHome: number;
+    scoreAway: number;
+  };
 };
