@@ -1,7 +1,7 @@
-from nba_api.stats.static import teams as nba_teams_static
 import time
+from nba_api.stats.static import teams as nba_teams_static
 from nba_api.stats.endpoints import commonteamroster
-
+from nba_api.stats.endpoints import leaguedashplayerstats
 # Temporada actual. Ajusta si cambia.
 CURRENT_SEASON = "2025-26"
 
@@ -137,3 +137,33 @@ def get_all_teams() -> list[dict]:
         )
 
     return enriched
+
+def get_season_stats(season: str = CURRENT_SEASON) -> list[dict]:
+    """Obtiene las medias de temporada de todos los jugadores en una sola llamada."""
+    stats = leaguedashplayerstats.LeagueDashPlayerStats(
+        season=season,
+        per_mode_detailed="PerGame",
+        timeout=30,
+    )
+    df = stats.get_data_frames()[0]
+
+    results = []
+    for _, row in df.iterrows():
+        results.append(
+            {
+                "player_id": str(row["PLAYER_ID"]),
+                "season": season,
+                "games_played": int(row["GP"]),
+                "minutes": round(float(row["MIN"]), 1),
+                "points": round(float(row["PTS"]), 1),
+                "rebounds": round(float(row["REB"]), 1),
+                "assists": round(float(row["AST"]), 1),
+                "steals": round(float(row["STL"]), 1),
+                "blocks": round(float(row["BLK"]), 1),
+                "field_goal_pct": round(float(row["FG_PCT"]), 3),
+                "three_point_pct": round(float(row["FG3_PCT"]), 3),
+                "free_throw_pct": round(float(row["FT_PCT"]), 3),
+            }
+        )
+
+    return results
