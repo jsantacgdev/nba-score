@@ -126,12 +126,54 @@ export async function fetchPlayerSeasonStats(playerId: string): Promise<PlayerSe
 }
 
 export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLogEntry[]> {
-  const { data, error } = await supabase
+  // 1. Traemos el game log del jugador
+  const { data: logData, error: logError } = await supabase
     .from('player_game_log')
     .select('*')
     .eq('player_id', playerId)
     .order('game_date', { ascending: false });
 
-  if (error) throw error;
-  return data.map(mapGameLog);
+  if (logError) throw logError;
+  if (!logData || logData.length === 0) return [];
+
+  // 2. Traemos los partidos correspondientes con datos de ambos equipos
+  const gameIds = logData.map((l) => l.game_id);
+  const { data: gamesData, error: gamesError } = await supabase
+    .from('games')
+    .select(
+      `id, score_home, score_away,
+       home_team:teams!home_team_id(id, abbreviation, logo_url),
+       away_team:teams!away_team_id(id, abbreviation, logo_url)`,
+    )
+    .in('id', gameIds);
+
+  if (gamesError) throw gamesError;
+
+  // 3. Indexamos los partidos por id para cruzarlos rápido
+  const gamesMap = new Map((gamesData ?? []).map((g) => [g.id, g]));
+
+  // 4. Combinamos
+  return logData.map((row) => {
+    const game = gamesMap.get(row.game_id);
+    const entry = mapGameLog(row);
+
+    if (game) {
+      // Supabase devuelve las relaciones; pueden venir como objeto
+      const home = Array.isArray(game.home_team) ? game.home_team[0] : game.home_team;
+      const away = Array.isArray(game.away_team) ? game.away_team[0] : game.away_team;
+
+      entry.game = {
+        homeTeamId: home?.id ?? '',
+        awayTeamId: away?.id ?? '',
+        homeTeamAbbr: home?.abbreviation ?? '',
+        awayTeamAbbr: away?.abbreviation ?? '',
+        homeTeamLogo: home?.logo_url ?? undefined,
+        awayTeamLogo: away?.logo_url ?? undefined,
+        scoreHome: game.score_home ?? 0,
+        scoreAway: game.score_away ?? 0,
+      };
+    }
+
+    return entry;
+  });
 }

@@ -5,6 +5,8 @@ import { usePlayer, usePlayerGameLog, usePlayerSeasonStats } from '@/hooks/usePl
 import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
+import { Image } from 'expo-image';
+import { formatDateDMY } from '@/lib/format';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -98,30 +100,89 @@ function SeasonStat({ label, value }: { label: string; value: number }) {
 }
 
 function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
-  const dateStr = entry.gameDate.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-  });
+  const game = entry.game;
 
   return (
-    <View style={styles.gameRow}>
-      <View style={styles.gameRowLeft}>
-        <Text style={styles.gameDate}>{dateStr}</Text>
-        <Text style={styles.gameMatchup}>
-          {entry.isHome ? 'vs' : '@'} {entry.opponentAbbreviation ?? '???'}
-        </Text>
+    <View style={styles.gameCard}>
+      {/* Fila superior: fecha y resultado */}
+      <View style={styles.gameCardHeader}>
+        <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>
         {entry.winLoss && (
-          <Text style={[styles.gameResult, entry.winLoss === 'W' ? styles.win : styles.loss]}>
-            {entry.winLoss === 'W' ? 'V' : 'D'}
-          </Text>
+          <View
+            style={[styles.resultBadge, entry.winLoss === 'W' ? styles.winBadge : styles.lossBadge]}
+          >
+            <Text style={styles.resultBadgeText}>
+              {entry.winLoss === 'W' ? 'VICTORIA' : 'DERROTA'}
+            </Text>
+          </View>
         )}
       </View>
-      <View style={styles.gameStats}>
-        <Text style={styles.gameStatMain}>{entry.points} pts</Text>
-        <Text style={styles.gameStatSub}>
-          {entry.rebounds} reb · {entry.assists} ast · {entry.minutes.toFixed(0)}'
+
+      {/* Fila del marcador con logos */}
+      {game ? (
+        <View style={styles.scoreboardRow}>
+          <View style={[styles.scoreTeam, styles.scoreTeamHome]}>
+            {game.homeTeamLogo && (
+              <Image
+                source={{ uri: game.homeTeamLogo }}
+                style={styles.scoreLogo}
+                contentFit="contain"
+                transition={150}
+              />
+            )}
+            <Text style={styles.scoreAbbr}>{game.homeTeamAbbr}</Text>
+          </View>
+
+          <View style={styles.scoreCenter}>
+            <Text style={styles.scoreText}>
+              {game.scoreHome} - {game.scoreAway}
+            </Text>
+          </View>
+
+          <View style={[styles.scoreTeam, styles.scoreTeamAway]}>
+            <Text style={styles.scoreAbbr}>{game.awayTeamAbbr}</Text>
+            {game.awayTeamLogo && (
+              <Image
+                source={{ uri: game.awayTeamLogo }}
+                style={styles.scoreLogo}
+                contentFit="contain"
+                transition={150}
+              />
+            )}
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.gameMatchupFallback}>
+          {entry.isHome ? 'vs' : '@'} {entry.opponentAbbreviation ?? '???'}
         </Text>
+      )}
+
+      {/* Fila inferior: stats del jugador */}
+      <View style={styles.playerStatsRow}>
+        <StatPill label="MIN" value={entry.minutes.toFixed(0)} />
+        <StatPill label="PTS" value={String(entry.points)} highlight />
+        <StatPill label="REB" value={String(entry.rebounds)} />
+        <StatPill label="AST" value={String(entry.assists)} />
+        <StatPill label="ROB" value={String(entry.steals)} />
+        <StatPill label="TAP" value={String(entry.blocks)} />
       </View>
+    </View>
+  );
+}
+
+function StatPill({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={styles.statPill}>
+      <Text style={[styles.statPillValue, highlight && styles.statPillHighlight]}>{value}</Text>
+      <Text style={styles.statPillLabel}>{label}</Text>
     </View>
   );
 }
@@ -223,7 +284,7 @@ const styles = StyleSheet.create({
   gameDate: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    width: 50,
+    fontWeight: fontWeight.semibold,
   },
   gameMatchup: {
     color: colors.text,
@@ -246,5 +307,104 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
     marginTop: 2,
+  },
+  gameCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  gameCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  resultBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+  },
+  winBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  lossBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  resultBadgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.5,
+    color: colors.text,
+  },
+  scoreboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  scoreTeam: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  scoreLogo: {
+    width: 32,
+    height: 32,
+  },
+  scoreAbbr: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+  },
+  scoreCenter: {
+    paddingHorizontal: spacing.md,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  scoreText: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.heavy,
+  },
+  gameMatchupFallback: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    paddingVertical: spacing.sm,
+  },
+  playerStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  statPill: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statPillValue: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+  },
+  statPillHighlight: {
+    color: colors.primary,
+  },
+  statPillLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  scoreTeamHome: {
+    justifyContent: 'flex-start',
+  },
+  scoreTeamAway: {
+    justifyContent: 'flex-end',
   },
 });
