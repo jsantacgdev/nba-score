@@ -138,6 +138,92 @@ export type Database = {
           },
         ]
       }
+      player_game_log: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          fg_attempted: number | null
+          fg_made: number | null
+          fg3_attempted: number | null
+          fg3_made: number | null
+          ft_attempted: number | null
+          ft_made: number | null
+          game_date: string
+          game_id: string
+          is_home: boolean
+          matchup: string
+          minutes: number | null
+          opponent_abbreviation: string | null
+          player_id: string
+          plus_minus: number | null
+          points: number | null
+          rebounds: number | null
+          season: string
+          steals: number | null
+          turnovers: number | null
+          updated_at: string | null
+          win_loss: string | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          fg_attempted?: number | null
+          fg_made?: number | null
+          fg3_attempted?: number | null
+          fg3_made?: number | null
+          ft_attempted?: number | null
+          ft_made?: number | null
+          game_date: string
+          game_id: string
+          is_home: boolean
+          matchup: string
+          minutes?: number | null
+          opponent_abbreviation?: string | null
+          player_id: string
+          plus_minus?: number | null
+          points?: number | null
+          rebounds?: number | null
+          season: string
+          steals?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          win_loss?: string | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          fg_attempted?: number | null
+          fg_made?: number | null
+          fg3_attempted?: number | null
+          fg3_made?: number | null
+          ft_attempted?: number | null
+          ft_made?: number | null
+          game_date?: string
+          game_id?: string
+          is_home?: boolean
+          matchup?: string
+          minutes?: number | null
+          opponent_abbreviation?: string | null
+          player_id?: string
+          plus_minus?: number | null
+          points?: number | null
+          rebounds?: number | null
+          season?: string
+          steals?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          win_loss?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_game_log_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_game_stats: {
         Row: {
           assists: number | null

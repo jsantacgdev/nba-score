@@ -64,11 +64,10 @@ export default function TeamsScreen() {
               {westTeams.map((team) => (
                 <Pressable
                   key={team.id}
+                  onPress={() => router.push(`/team/${team.id}`)}
                   style={({ pressed }) => [styles.teamCard, pressed && styles.teamCardPressed]}
                 >
-                  <View style={styles.teamLogoPlaceholder}>
-                    <TeamLogo logoUrl={team.logoUrl} abbreviation={team.abbreviation} size={48} />
-                  </View>
+                  <TeamLogo logoUrl={team.logoUrl} abbreviation={team.abbreviation} size={48} />
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamCity}>{team.city}</Text>
                     <Text style={styles.teamName}>{team.name}</Text>

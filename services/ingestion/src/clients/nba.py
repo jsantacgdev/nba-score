@@ -2,6 +2,9 @@ import time
 from nba_api.stats.static import teams as nba_teams_static
 from nba_api.stats.endpoints import commonteamroster
 from nba_api.stats.endpoints import leaguedashplayerstats
+from nba_api.stats.endpoints import playergamelog
+
+
 # Temporada actual. Ajusta si cambia.
 CURRENT_SEASON = "2025-26"
 
@@ -167,3 +170,53 @@ def get_season_stats(season: str = CURRENT_SEASON) -> list[dict]:
         )
 
     return results
+
+def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[dict]:
+    """Obtiene el historial de partidos de un jugador en una temporada."""
+    log = playergamelog.PlayerGameLog(
+        player_id=int(player_id),
+        season=season,
+        timeout=30,
+    )
+    df = log.get_data_frames()[0]
+
+    games = []
+    for _, row in df.iterrows():
+        matchup = str(row["MATCHUP"])  # ej. "LAL vs. BOS" o "LAL @ BOS"
+        is_home = "vs." in matchup
+
+        # Extraer abreviatura del rival
+        opponent = None
+        if "vs." in matchup:
+            opponent = matchup.split("vs.")[-1].strip()
+        elif "@" in matchup:
+            opponent = matchup.split("@")[-1].strip()
+
+        games.append(
+            {
+                "player_id": str(player_id),
+                "game_id": str(row["Game_ID"]),
+                "game_date": str(row["GAME_DATE"]),
+                "season": season,
+                "matchup": matchup,
+                "is_home": is_home,
+                "opponent_abbreviation": opponent,
+                "win_loss": str(row["WL"]) if row.get("WL") else None,
+                "minutes": float(row["MIN"]) if row.get("MIN") else 0,
+                "points": int(row["PTS"]),
+                "rebounds": int(row["REB"]),
+                "assists": int(row["AST"]),
+                "steals": int(row["STL"]),
+                "blocks": int(row["BLK"]),
+                "turnovers": int(row["TOV"]),
+                "fg_made": int(row["FGM"]),
+                "fg_attempted": int(row["FGA"]),
+                "fg3_made": int(row["FG3M"]),
+                "fg3_attempted": int(row["FG3A"]),
+                "ft_made": int(row["FTM"]),
+                "ft_attempted": int(row["FTA"]),
+                "plus_minus": int(row["PLUS_MINUS"]) if row.get("PLUS_MINUS") else 0,
+            }
+        )
+
+    return games
