@@ -1,10 +1,11 @@
-import time
 from nba_api.stats.static import teams as nba_teams_static
 from nba_api.stats.endpoints import commonteamroster
 from nba_api.stats.endpoints import leaguedashplayerstats
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import leaguegamefinder
-
+from nba_api.stats.endpoints import scoreboardv2
+from datetime import datetime
+import time
 # Temporada actual. Ajusta si cambia.
 CURRENT_SEASON = "2025-26"
 
@@ -265,3 +266,44 @@ def get_league_games(season: str = CURRENT_SEASON) -> list[dict]:
         g for g in games_by_id.values()
         if g["home_team_id"] and g["away_team_id"]
     ]
+
+def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> list[dict]:
+    """Obtiene los partidos programados para una fecha concreta."""
+    date_str = date.strftime("%m/%d/%Y")
+    board = scoreboardv2.ScoreboardV2(game_date=date_str, timeout=30)
+    game_header = board.game_header.get_data_frame()
+    line_score = board.line_score.get_data_frame()
+
+    # Indexamos las puntuaciones por game_id
+    scores_by_game: dict[str, dict] = {}
+    for _, row in line_score.iterrows():
+        gid = str(row["GAME_ID"])
+        if gid not in scores_by_game:
+            scores_by_game[gid] = {}
+        team_id = str(row["TEAM_ID"])
+        scores_by_game[gid][team_id] = int(row["PTS"]) if row.get("PTS") else 0
+
+    games = []
+    for _, row in game_header.iterrows():
+        game_id = str(row["GAME_ID"])
+        home_id = str(row["HOME_TEAM_ID"])
+        away_id = str(row["VISITOR_TEAM_ID"])
+
+        # Estado: GAME_STATUS_ID 1=scheduled, 2=live, 3=final
+        status_id = int(row["GAME_STATUS_ID"])
+        status = {1: "scheduled", 2: "live", 3: "final"}.get(status_id, "scheduled")
+
+        scores = scores_by_game.get(game_id, {})
+
+        games.append({
+            "id": game_id,
+            "home_team_id": home_id,
+            "away_team_id": away_id,
+            "starts_at": str(row["GAME_DATE_EST"]),
+            "season": season,
+            "status": status,
+            "score_home": scores.get(home_id, 0),
+            "score_away": scores.get(away_id, 0),
+        })
+
+    return games
