@@ -31,17 +31,10 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Hoy',
-          tabBarIcon: ({ color, size }) => <Ionicons name="basketball" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="games"
         options={{
           title: 'Partidos',
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="basketball" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -56,6 +49,12 @@ export default function TabsLayout() {
         options={{
           title: 'Favoritos',
           tabBarIcon: ({ color, size }) => <Ionicons name="star" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null, // oculta la pestaña pero deja la ruta accesible
         }}
       />
     </Tabs>

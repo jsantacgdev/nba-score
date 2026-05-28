@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 
@@ -11,21 +12,18 @@ export function GameCard({ game }: Props) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
   const isScheduled = game.status === 'scheduled';
-  
+
   const homeWinning = game.scoreHome > game.scoreAway;
   const awayWinning = game.scoreAway > game.scoreHome;
 
   const handlePress = () => {
-    router.push(`/game/${game.id}`);
+    router.push({ pathname: '/game/[id]', params: { id: game.id } });
   };
 
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.header}>
         {isLive && (
@@ -51,51 +49,56 @@ export function GameCard({ game }: Props) {
       </View>
 
       <View style={styles.teamsContainer}>
-        <View style={styles.teamRow}>
-          <View style={styles.teamInfo}>
-            <View style={styles.teamLogoPlaceholder}>
-              <Text style={styles.teamLogoText}>{game.awayTeam.abbreviation}</Text>
-            </View>
-            <View>
-              <Text style={styles.teamCity}>{game.awayTeam.city}</Text>
-              <Text style={styles.teamName}>{game.awayTeam.name}</Text>
-            </View>
-          </View>
-          {!isScheduled && (
-            <Text
-              style={[
-                styles.score,
-                awayWinning && styles.scoreWinning,
-              ]}
-            >
-              {game.scoreAway}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.teamRow}>
-          <View style={styles.teamInfo}>
-            <View style={styles.teamLogoPlaceholder}>
-              <Text style={styles.teamLogoText}>{game.homeTeam.abbreviation}</Text>
-            </View>
-            <View>
-              <Text style={styles.teamCity}>{game.homeTeam.city}</Text>
-              <Text style={styles.teamName}>{game.homeTeam.name}</Text>
-            </View>
-          </View>
-          {!isScheduled && (
-            <Text
-              style={[
-                styles.score,
-                homeWinning && styles.scoreWinning,
-              ]}
-            >
-              {game.scoreHome}
-            </Text>
-          )}
-        </View>
+        <TeamRow
+          team={game.awayTeam}
+          score={game.scoreAway}
+          isWinning={awayWinning}
+          showScore={!isScheduled}
+        />
+        <TeamRow
+          team={game.homeTeam}
+          score={game.scoreHome}
+          isWinning={homeWinning}
+          showScore={!isScheduled}
+        />
       </View>
     </Pressable>
+  );
+}
+
+function TeamRow({
+  team,
+  score,
+  isWinning,
+  showScore,
+}: {
+  team: Game['homeTeam'];
+  score: number;
+  isWinning: boolean;
+  showScore: boolean;
+}) {
+  return (
+    <View style={styles.teamRow}>
+      <View style={styles.teamInfo}>
+        {team.logoUrl ? (
+          <Image
+            source={{ uri: team.logoUrl }}
+            style={styles.teamLogo}
+            contentFit="contain"
+            transition={150}
+          />
+        ) : (
+          <View style={styles.teamLogoPlaceholder}>
+            <Text style={styles.teamLogoText}>{team.abbreviation}</Text>
+          </View>
+        )}
+        <View>
+          <Text style={styles.teamCity}>{team.city}</Text>
+          <Text style={styles.teamName}>{team.name}</Text>
+        </View>
+      </View>
+      {showScore && <Text style={[styles.score, isWinning && styles.scoreWinning]}>{score}</Text>}
+    </View>
   );
 }
 
@@ -163,6 +166,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     flex: 1,
+  },
+  teamLogo: {
+    width: 40,
+    height: 40,
   },
   teamLogoPlaceholder: {
     width: 40,
