@@ -1,0 +1,153 @@
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
+import { useTeam, useTeamRoster } from '@/hooks/useTeamRoster';
+import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+
+export default function TeamDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: team } = useTeam(id);
+  const { data: roster, isLoading, error } = useTeamRoster(id);
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error al cargar la plantilla</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      style={styles.container}
+      data={roster}
+      keyExtractor={(p) => p.id}
+      contentContainerStyle={styles.listContent}
+      ListHeaderComponent={
+        team ? (
+          <View style={styles.teamHeader}>
+            {team.logoUrl && (
+              <Image
+                source={{ uri: team.logoUrl }}
+                style={styles.teamHeaderLogo}
+                contentFit="contain"
+                transition={200}
+              />
+            )}
+            <Text style={styles.teamHeaderName}>{team.fullName}</Text>
+            <Text style={styles.teamHeaderConf}>
+              Conferencia {team.conference === 'East' ? 'Este' : 'Oeste'}
+            </Text>
+            <Text style={styles.rosterCount}>{roster?.length ?? 0} jugadores</Text>
+          </View>
+        ) : null
+      }
+      renderItem={({ item }) => (
+        <Pressable
+          onPress={() => router.push(`/player/${item.id}`)}
+          style={({ pressed }) => [styles.playerCard, pressed && styles.playerCardPressed]}
+        >
+          <PlayerAvatar
+            photoUrl={item.photoUrl}
+            initials={`${item.firstName[0] ?? ''}${item.lastName[0] ?? ''}`}
+            size={52}
+          />
+          <View style={styles.playerInfo}>
+            <Text style={styles.playerName}>
+              {item.firstName} {item.lastName}
+            </Text>
+            <Text style={styles.playerMeta}>{item.position ?? 'N/A'}</Text>
+          </View>
+          {item.jerseyNumber && <Text style={styles.jersey}>#{item.jerseyNumber}</Text>}
+        </Pressable>
+      )}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: fontSize.md,
+  },
+  listContent: {
+    padding: spacing.md,
+  },
+  teamHeader: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  teamHeaderLogo: {
+    width: 96,
+    height: 96,
+    marginBottom: spacing.md,
+  },
+  teamHeaderName: {
+    color: colors.text,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.heavy,
+    textAlign: 'center',
+  },
+  teamHeaderConf: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    marginTop: spacing.xs,
+  },
+  rosterCount: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    marginTop: spacing.sm,
+  },
+  playerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
+  },
+  playerCardPressed: {
+    opacity: 0.7,
+  },
+  playerInfo: {
+    flex: 1,
+  },
+  playerName: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+  playerMeta: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    marginTop: 2,
+  },
+  jersey: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+  },
+});

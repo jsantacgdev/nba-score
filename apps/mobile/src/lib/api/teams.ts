@@ -22,3 +22,13 @@ export async function fetchTeams(): Promise<Team[]> {
   if (error) throw error;
   return data.map(mapTeam);
 }
+
+export async function fetchTeamById(teamId: string): Promise<Team | null> {
+  const { data, error } = await supabase.from('teams').select('*').eq('id', teamId).single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null; // no encontrado
+    throw error;
+  }
+  return mapTeam(data);
+}

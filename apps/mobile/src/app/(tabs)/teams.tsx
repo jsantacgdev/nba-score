@@ -2,8 +2,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
-import { Image } from 'expo-image';
 import { TeamLogo } from '@/components/ui/TeamLogo';
+import { router } from 'expo-router';
 
 export default function TeamsScreen() {
   const { data: teams, isLoading, error } = useTeams();
@@ -47,11 +47,10 @@ export default function TeamsScreen() {
               {eastTeams.map((team) => (
                 <Pressable
                   key={team.id}
+                  onPress={() => router.push(`/team/${team.id}`)}
                   style={({ pressed }) => [styles.teamCard, pressed && styles.teamCardPressed]}
                 >
-                  <View style={styles.teamLogoPlaceholder}>
-                    <TeamLogo logoUrl={team.logoUrl} abbreviation={team.abbreviation} size={48} />
-                  </View>
+                  <TeamLogo logoUrl={team.logoUrl} abbreviation={team.abbreviation} size={48} />
                   <View style={styles.teamInfo}>
                     <Text style={styles.teamCity}>{team.city}</Text>
                     <Text style={styles.teamName}>{team.name}</Text>
