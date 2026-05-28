@@ -62,7 +62,7 @@ export default function PlayerDetailScreen() {
           {seasonStats && seasonStats.gamesPlayed > 0 && (
             <View style={styles.seasonCard}>
               <Text style={styles.seasonTitle}>
-                Medias temporada ({seasonStats.gamesPlayed} partidos)
+                Resumen de la temporada ({seasonStats.gamesPlayed} partidos)
               </Text>
               <View style={styles.seasonStatsRow}>
                 <SeasonStat label="PTS" value={seasonStats.points} />
