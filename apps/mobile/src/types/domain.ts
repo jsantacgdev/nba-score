@@ -92,3 +92,33 @@ export type PlayerGameLogEntry = {
     scoreAway: number;
   };
 };
+
+export type GameBoxScoreEntry = {
+  playerId: string;
+  firstName: string;
+  lastName: string;
+  photoUrl?: string;
+  teamId: string;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  plusMinus: number;
+  gameScore: number;
+};
+
+export type GameDetail = {
+  game: Game;
+  homeRoster: GameBoxScoreEntry[];
+  awayRoster: GameBoxScoreEntry[];
+  mvp: GameBoxScoreEntry | null;
+};
