@@ -24,6 +24,21 @@ export default function RootLayout() {
             <Stack.Screen name="game/[id]" options={{ title: 'Partido', presentation: 'card' }} />
             <Stack.Screen name="player/[id]" options={{ title: 'Jugador', presentation: 'card' }} />
             <Stack.Screen name="team/[id]" options={{ title: 'Equipo', presentation: 'card' }} />
+            <Stack.Screen
+              name="compare/[ids]"
+              options={{
+                title: 'Comparativa',
+                presentation: 'card',
+              }}
+            />
+            <Stack.Screen
+              name="compare/select-opponent"
+              options={{
+                headerShown: false,
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>
