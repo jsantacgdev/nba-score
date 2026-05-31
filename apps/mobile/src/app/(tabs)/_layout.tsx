@@ -9,15 +9,14 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          // Altura base + el espacio de la barra del sistema
           height: 60 + insets.bottom,
-          // Padding inferior para que los iconos no toquen la barra del sistema
           paddingBottom: insets.bottom + 4,
           paddingTop: 8,
         },
@@ -25,9 +24,6 @@ export default function TabsLayout() {
           fontSize: 11,
           fontWeight: '600',
         },
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: '700', fontSize: 20 },
       }}
     >
       <Tabs.Screen

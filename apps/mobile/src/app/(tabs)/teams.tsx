@@ -4,6 +4,7 @@ import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
+import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 
 export default function TeamsScreen() {
   const { data: teams, isLoading, error } = useTeams();
@@ -40,7 +41,7 @@ export default function TeamsScreen() {
         renderItem={null}
         ListHeaderComponent={
           <View style={styles.content}>
-            <Text style={styles.title}>Equipos</Text>
+            {/* <Text style={styles.title}>Equipos</Text> */}
 
             <View style={styles.section}>
               <Text style={styles.conferenceTitle}>Conferencia Este</Text>
@@ -55,6 +56,7 @@ export default function TeamsScreen() {
                     <Text style={styles.teamCity}>{team.city}</Text>
                     <Text style={styles.teamName}>{team.name}</Text>
                   </View>
+                  <FavoriteTeamButton teamId={team.id} size={22} />
                 </Pressable>
               ))}
             </View>
@@ -72,6 +74,7 @@ export default function TeamsScreen() {
                     <Text style={styles.teamCity}>{team.city}</Text>
                     <Text style={styles.teamName}>{team.name}</Text>
                   </View>
+                  <FavoriteTeamButton teamId={team.id} size={22} />
                 </Pressable>
               ))}
             </View>
