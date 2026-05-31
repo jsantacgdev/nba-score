@@ -9,6 +9,7 @@ import { formatLongDate, isSameDay, startOfDay, formatShortDate } from '@/lib/fo
 import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
 import { useRecentDays } from '@/hooks/useRecentDays';
 import { SearchButton } from '@/components/ui/SearchButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -85,10 +86,12 @@ export default function GamesScreen() {
             )}
 
             {!isLoading && !error && safeGames.length === 0 && (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Sin partidos</Text>
-                <Text style={styles.emptySubtitle}>No hay partidos programados para este día.</Text>
-              </View>
+              <EmptyState
+                icon="basketball-outline"
+                title="Sin partidos"
+                message="No hay partidos programados para este día."
+                compact
+              />
             )}
 
             {liveGames.length > 0 && (

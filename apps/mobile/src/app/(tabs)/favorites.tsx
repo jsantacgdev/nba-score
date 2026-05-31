@@ -7,6 +7,8 @@ import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { useFavoriteTeamIds } from '@/hooks/useFavorites';
 import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SearchButton } from '@/components/ui/SearchButton';
 
 export default function FavoritesScreen() {
   const { data: favoriteIds, isLoading: loadingIds } = useFavoriteTeamIds();
@@ -28,15 +30,27 @@ export default function FavoritesScreen() {
   if (favoriteTeams.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        {/* <View style={styles.content}>
+        <View style={styles.titleRow}>
           <Text style={styles.title}>Favoritos</Text>
-        </View> */}
-        <View style={styles.empty}>
-          <Ionicons name="star-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Aún no tienes favoritos</Text>
-          <Text style={styles.emptySubtitle}>
-            Marca tus equipos preferidos con la estrella para verlos aquí.
-          </Text>
+          <SearchButton />
+        </View>
+        <View style={styles.emptyWrapper}>
+          <EmptyState
+            icon="star-outline"
+            title="Aún no tienes favoritos"
+            message="Marca tus equipos preferidos con la estrella para verlos aquí."
+            action={
+              <Pressable
+                onPress={() => router.push('/(tabs)/teams')}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.actionButtonPressed,
+                ]}
+              >
+                <Text style={styles.actionButtonText}>Explorar equipos</Text>
+              </Pressable>
+            }
+          />
         </View>
       </SafeAreaView>
     );
@@ -138,5 +152,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: fontSize.xs,
     marginTop: 2,
+  },
+  emptyWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  actionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+  },
+  actionButtonPressed: {
+    opacity: 0.85,
+  },
+  actionButtonText: {
+    color: colors.background,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
   },
 });

@@ -5,6 +5,7 @@ import { usePlayer, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { Player, PlayerSeasonStats } from '@/types/domain';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function CompareScreen() {
   const { ids } = useLocalSearchParams<{ ids: string }>();
@@ -120,9 +121,12 @@ export default function CompareScreen() {
         </View>
       ) : (
         <View style={styles.noStatsState}>
-          <Text style={styles.noStatsText}>
-            No hay stats de temporada para uno o ambos jugadores.
-          </Text>
+          <EmptyState
+            icon="stats-chart-outline"
+            title="Sin datos para comparar"
+            message="Uno o ambos jugadores no tienen stats de temporada cargadas todavía."
+            compact
+          />
         </View>
       )}
     </ScrollView>
