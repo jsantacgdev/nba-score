@@ -126,8 +126,22 @@ export type Database = {
             foreignKeyName: "games_away_team_id_fkey"
             columns: ["away_team_id"]
             isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "games_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
           },
           {
             foreignKeyName: "games_home_team_id_fkey"
@@ -313,6 +327,13 @@ export type Database = {
             foreignKeyName: "player_game_stats_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_game_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
@@ -416,6 +437,13 @@ export type Database = {
             foreignKeyName: "players_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
@@ -459,7 +487,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      league_standings: {
+        Row: {
+          abbreviation: string | null
+          city: string | null
+          conference: string | null
+          division: string | null
+          full_name: string | null
+          games_played: number | null
+          logo_url: string | null
+          losses: number | null
+          name: string | null
+          point_differential: number | null
+          team_id: string | null
+          total_points_against: number | null
+          total_points_for: number | null
+          win_percentage: number | null
+          wins: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
