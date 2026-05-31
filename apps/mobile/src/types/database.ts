@@ -509,7 +509,34 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      search_players: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          first_name: string
+          full_name: string
+          id: string
+          is_active: boolean
+          last_name: string
+          photo_url: string
+          player_position: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+          team_name: string
+        }[]
+      }
+      search_teams: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          abbreviation: string
+          city: string
+          conference: string
+          full_name: string
+          id: string
+          logo_url: string
+          name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
