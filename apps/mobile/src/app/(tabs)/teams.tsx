@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
@@ -6,6 +6,7 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { SearchButton } from '@/components/ui/SearchButton';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function TeamsScreen() {
   const { data: teams, isLoading, error } = useTeams();
@@ -13,10 +14,7 @@ export default function TeamsScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando equipos...</Text>
-        </View>
+        <LoadingState message="Cargando equipos..." />
       </SafeAreaView>
     );
   }
@@ -99,10 +97,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
-  },
-  loadingText: {
-    color: colors.textSecondary,
-    fontSize: fontSize.md,
   },
   errorText: {
     color: colors.danger,

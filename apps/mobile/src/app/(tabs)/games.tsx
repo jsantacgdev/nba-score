@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameCard } from '@/components/game/GameCard';
 import { DateSelector } from '@/components/game/DateSelector';
@@ -10,6 +10,7 @@ import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
 import { useRecentDays } from '@/hooks/useRecentDays';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -72,11 +73,7 @@ export default function GamesScreen() {
         }
         ListHeaderComponent={
           <View>
-            {isLoading && (
-              <View style={styles.centered}>
-                <ActivityIndicator size="large" color={colors.primary} />
-              </View>
-            )}
+            {isLoading && <LoadingState message="Cargando partidos..." compact />}
 
             {error && (
               <View style={styles.centered}>

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,17 +7,14 @@ import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error } = useGameDetail(id);
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingState message="Cargando partido..." />;
   }
 
   if (error || !data) {

@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { usePlayer, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
@@ -6,6 +6,7 @@ import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { Player, PlayerSeasonStats } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function CompareScreen() {
   const { ids } = useLocalSearchParams<{ ids: string }>();
@@ -29,11 +30,7 @@ export default function CompareScreen() {
   }
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingState message="Cargando comparativa..." />;
   }
 
   if (!p1 || !p2) {

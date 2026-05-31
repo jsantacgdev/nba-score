@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +10,7 @@ import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { SearchResultPlayer } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function SelectOpponentScreen() {
   const { playerId } = useLocalSearchParams<{ playerId: string }>();
@@ -74,11 +67,7 @@ export default function SelectOpponentScreen() {
         />
       )}
 
-      {hasQuery && isLoading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+      {hasQuery && isLoading && <LoadingState message="Buscando..." />}
 
       {hasQuery && !isLoading && players.length === 0 && (
         <EmptyState
@@ -182,11 +171,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginTop: spacing.xs,
   },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   emptyState: {
     flex: 1,
     alignItems: 'center',

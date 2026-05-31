@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useTeams } from '@/hooks/useTeams';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchButton } from '@/components/ui/SearchButton';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function FavoritesScreen() {
   const { data: favoriteIds, isLoading: loadingIds } = useFavoriteTeamIds();
@@ -20,9 +21,7 @@ export default function FavoritesScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <LoadingState message="Cargando favoritos..." />
       </SafeAreaView>
     );
   }
@@ -64,7 +63,7 @@ export default function FavoritesScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.headerSection}>
-            {/* <Text style={styles.title}>Favoritos</Text> */}
+            <Text style={styles.title}>Favoritos</Text>
             <Text style={styles.subtitle}>
               {favoriteTeams.length}{' '}
               {favoriteTeams.length === 1 ? 'equipo seguido' : 'equipos seguidos'}
@@ -94,7 +93,6 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.md },
   listContent: { padding: spacing.md },
   headerSection: { marginBottom: spacing.lg },

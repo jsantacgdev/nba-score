@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { useStandings } from '@/hooks/useStandings';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 type ConferenceFilter = 'East' | 'West';
 
@@ -34,11 +35,7 @@ export default function StandingsScreen() {
         />
       </View>
 
-      {isLoading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+      {isLoading && <LoadingState message="Cargando clasificación..." />}
 
       {error && (
         <View style={styles.centered}>

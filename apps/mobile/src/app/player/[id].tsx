@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -19,11 +20,7 @@ export default function PlayerDetailScreen() {
   const { data: gameLog } = usePlayerGameLog(playerId);
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingState message="Cargando jugador..." />;
   }
 
   if (!player) {
