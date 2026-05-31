@@ -4,6 +4,7 @@ from nba_api.stats.endpoints import leaguedashplayerstats
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import scoreboardv2
+from nba_api.stats.endpoints import boxscoretraditionalv2
 from datetime import datetime
 import time
 # Temporada actual. Ajusta si cambia.
@@ -71,7 +72,7 @@ def get_all_rosters(team_ids: list[str], season: str = CURRENT_SEASON) -> list[d
             all_players.extend(players)
             print(f"        → {len(players)} jugadores")
         except Exception as e:
-            print(f"        ⚠️  Error con el equipo {team_id}: {e}")
+            print(f"        Error con el equipo {team_id}: {e}")
 
         # Pausa entre peticiones (excepto en la última)
         if i < len(team_ids):
@@ -307,3 +308,55 @@ def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> lis
         })
 
     return games
+
+
+def get_box_score(game_id: str) -> list[dict]:
+    """
+    Obtiene el box score de un partido: stats por jugador de ambos equipos.
+    Una sola llamada trae los ~25-30 jugadores que participaron.
+    """
+    box = boxscoretraditionalv2.BoxScoreTraditionalV2(
+        game_id=game_id,
+        timeout=30,
+    )
+    df = box.player_stats.get_data_frame()
+
+    entries = []
+    for _, row in df.iterrows():
+        # Si el jugador no jugó (DNP), MIN viene como None
+        min_str = row.get("MIN")
+        if not min_str or str(min_str).strip() in ("", "nan", "None"):
+            minutes = 0.0
+        else:
+            # MIN viene como "MM:SS" o "MM"; convertimos a float decimal
+            min_str = str(min_str)
+            if ":" in min_str:
+                parts = min_str.split(":")
+                minutes = float(parts[0]) + float(parts[1]) / 60
+            else:
+                minutes = float(min_str)
+
+        def _int(field: str) -> int:
+            val = row.get(field)
+            return int(val) if val is not None and str(val) != "nan" else 0
+
+        entries.append({
+            "player_id": str(row["PLAYER_ID"]),
+            "game_id": str(game_id),
+            "minutes": round(minutes, 1),
+            "points": _int("PTS"),
+            "rebounds": _int("REB"),
+            "assists": _int("AST"),
+            "steals": _int("STL"),
+            "blocks": _int("BLK"),
+            "turnovers": _int("TO"),
+            "fg_made": _int("FGM"),
+            "fg_attempted": _int("FGA"),
+            "fg3_made": _int("FG3M"),
+            "fg3_attempted": _int("FG3A"),
+            "ft_made": _int("FTM"),
+            "ft_attempted": _int("FTA"),
+            "plus_minus": _int("PLUS_MINUS"),
+        })
+
+    return entries

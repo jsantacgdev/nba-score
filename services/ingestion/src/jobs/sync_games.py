@@ -3,13 +3,13 @@ from src.clients.supabase import get_supabase_client
 
 
 def sync_games() -> None:
-    print("🏀 Sincronizando partidos de la temporada...")
+    print("Sincronizando partidos de la temporada...")
 
     games = get_league_games(CURRENT_SEASON)
     print(f"   {len(games)} partidos obtenidos")
 
     if not games:
-        print("⚠️  No se obtuvieron partidos.")
+        print("No se obtuvieron partidos.")
         return
 
     client = get_supabase_client()

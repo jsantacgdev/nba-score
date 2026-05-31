@@ -7,7 +7,7 @@ from src.clients.supabase import get_supabase_client
 def sync_upcoming_games(days_ahead: int = 7, days_back: int = 2) -> None:
     """Carga partidos de los últimos N días y los próximos M días."""
     total_days = days_back + days_ahead + 1
-    print(f"🏀 Sincronizando {total_days} días de partidos "
+    print(f"Sincronizando {total_days} días de partidos "
           f"(-{days_back} a +{days_ahead})...")
 
     client = get_supabase_client()
@@ -34,7 +34,7 @@ def sync_upcoming_games(days_ahead: int = 7, days_back: int = 2) -> None:
             else:
                 print("        → sin partidos")
         except Exception as e:
-            print(f"        ⚠️  Error: {e}")
+            print(f"        Error: {e}")
 
     print(f"\n✅ {total} partidos sincronizados")
 

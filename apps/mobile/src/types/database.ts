@@ -148,17 +148,17 @@ export type Database = {
           fg3_made: number | null
           ft_attempted: number | null
           ft_made: number | null
-          game_date: string
+          game_date: string | null
           game_id: string
-          is_home: boolean
-          matchup: string
+          is_home: boolean | null
+          matchup: string | null
           minutes: number | null
           opponent_abbreviation: string | null
           player_id: string
           plus_minus: number | null
           points: number | null
           rebounds: number | null
-          season: string
+          season: string | null
           steals: number | null
           turnovers: number | null
           updated_at: string | null
@@ -173,17 +173,17 @@ export type Database = {
           fg3_made?: number | null
           ft_attempted?: number | null
           ft_made?: number | null
-          game_date: string
+          game_date?: string | null
           game_id: string
-          is_home: boolean
-          matchup: string
+          is_home?: boolean | null
+          matchup?: string | null
           minutes?: number | null
           opponent_abbreviation?: string | null
           player_id: string
           plus_minus?: number | null
           points?: number | null
           rebounds?: number | null
-          season: string
+          season?: string | null
           steals?: number | null
           turnovers?: number | null
           updated_at?: string | null
@@ -198,17 +198,17 @@ export type Database = {
           fg3_made?: number | null
           ft_attempted?: number | null
           ft_made?: number | null
-          game_date?: string
+          game_date?: string | null
           game_id?: string
-          is_home?: boolean
-          matchup?: string
+          is_home?: boolean | null
+          matchup?: string | null
           minutes?: number | null
           opponent_abbreviation?: string | null
           player_id?: string
           plus_minus?: number | null
           points?: number | null
           rebounds?: number | null
-          season?: string
+          season?: string | null
           steals?: number | null
           turnovers?: number | null
           updated_at?: string | null

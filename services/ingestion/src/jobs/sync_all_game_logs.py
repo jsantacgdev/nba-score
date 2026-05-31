@@ -7,8 +7,8 @@ from src.jobs.sync_game_log import sync_player_log
 
 def sync_all_game_logs(skip_existing: bool = True) -> None:
     """Sincroniza el game log de TODOS los jugadores de la liga."""
-    print("🏀 Sincronizando game logs de toda la liga...")
-    print("   ⏳ Esto puede tardar 15-25 minutos. Puedes dejarlo corriendo.\n")
+    print("Sincronizando game logs de toda la liga...")
+    print("Esto puede tardar 15-25 minutos. Puedes dejarlo corriendo.\n")
 
     client = get_supabase_client()
 
@@ -21,7 +21,7 @@ def sync_all_game_logs(skip_existing: bool = True) -> None:
     )
 
     if not players.data:
-        print("⚠️  No hay jugadores en la base de datos.")
+        print("No hay jugadores en la base de datos.")
         return
 
     # Si skip_existing, saltamos jugadores que ya tienen partidos cargados
@@ -30,7 +30,7 @@ def sync_all_game_logs(skip_existing: bool = True) -> None:
         existing = client.table("player_game_log").select("player_id").execute()
         already_loaded = {row["player_id"] for row in existing.data}
         if already_loaded:
-            print(f"   ↪️  {len(already_loaded)} jugadores ya tienen datos, se omiten.\n")
+            print(f"{len(already_loaded)} jugadores ya tienen datos, se omiten.\n")
 
     total = len(players.data)
     total_games = 0
@@ -52,7 +52,7 @@ def sync_all_game_logs(skip_existing: bool = True) -> None:
             print(f"        → {count} partidos")
         except Exception as e:
             errors += 1
-            print(f"        ⚠️  Error: {e}")
+            print(f"        Error: {e}")
 
         time.sleep(REQUEST_DELAY)
 
@@ -60,7 +60,7 @@ def sync_all_game_logs(skip_existing: bool = True) -> None:
     print(f"   Jugadores procesados: {processed}")
     print(f"   Partidos sincronizados: {total_games}")
     if errors:
-        print(f"   ⚠️  Errores: {errors} (puedes reejecutar para reintentar)")
+        print(f"   Errores: {errors} (puedes reejecutar para reintentar)")
 
 
 if __name__ == "__main__":

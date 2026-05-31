@@ -226,30 +226,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.md,
-    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    width: '100%',
+    gap: spacing.xs,
   },
   teamScore: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  scoreLogo: { width: 48, height: 48 },
+  teamColumn: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+    maxWidth: 120,
+  },
+  scoreLogo: {
+    width: 64,
+    height: 64,
+  },
   teamAbbr: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
   },
   bigScore: {
     color: colors.textSecondary,
-    fontSize: 44,
+    fontSize: 29,
     fontWeight: fontWeight.heavy,
-    minWidth: 60,
     textAlign: 'center',
   },
-  bigScoreWinning: { color: colors.text },
+  bigScoreWinning: {
+    color: colors.text,
+  },
   scoreSeparator: {
     color: colors.textMuted,
-    fontSize: fontSize.xl,
+    fontSize: 24,
+    fontWeight: fontWeight.bold,
   },
 
   // MVP card
