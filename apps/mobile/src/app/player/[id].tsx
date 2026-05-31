@@ -8,6 +8,7 @@ import { getPositionName } from '@/constants/positions';
 import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,7 +74,7 @@ export default function PlayerDetailScreen() {
             }
             style={({ pressed }) => [styles.compareButton, pressed && styles.compareButtonPressed]}
           >
-            <Ionicons name="git-compare" size={18} color={colors.text} />
+            <Ionicons name="swap-horizontal" size={20} color={colors.text} />
             <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
           </Pressable>
 
@@ -96,9 +97,12 @@ export default function PlayerDetailScreen() {
           {/* Título historial */}
           <Text style={styles.sectionTitle}>Historial de partidos</Text>
           {(!gameLog || gameLog.length === 0) && (
-            <Text style={styles.emptyText}>
-              No hay partidos cargados para este jugador todavía.
-            </Text>
+            <EmptyState
+              icon="calendar-outline"
+              title="Sin partidos cargados"
+              message="Este jugador aún no tiene partidos registrados en la base de datos."
+              compact
+            />
           )}
         </View>
       }

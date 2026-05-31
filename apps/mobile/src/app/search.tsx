@@ -18,6 +18,7 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import type { SearchResultPlayer, SearchResultTeam } from '@/types/domain';
 import { getPositionName } from '@/constants/positions';
 import { Image } from 'expo-image';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -57,11 +58,11 @@ export default function SearchScreen() {
       </View>
 
       {!hasQuery && (
-        <View style={styles.emptyState}>
-          <Ionicons name="search" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Busca jugadores o equipos</Text>
-          <Text style={styles.emptySubtitle}>Escribe al menos 2 caracteres para empezar.</Text>
-        </View>
+        <EmptyState
+          icon="search"
+          title="Busca jugadores o equipos"
+          message="Escribe al menos 2 caracteres para empezar."
+        />
       )}
 
       {hasQuery && isLoading && (
@@ -71,11 +72,11 @@ export default function SearchScreen() {
       )}
 
       {hasQuery && !isLoading && !hasResults && (
-        <View style={styles.emptyState}>
-          <Ionicons name="alert-circle" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Sin resultados</Text>
-          <Text style={styles.emptySubtitle}>No encontramos nada para "{query}".</Text>
-        </View>
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Sin resultados"
+          message={`No encontramos nada para "${query}". Prueba con otro término.`}
+        />
       )}
 
       {hasQuery && hasResults && (

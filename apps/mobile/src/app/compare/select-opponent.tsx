@@ -17,6 +17,7 @@ import { useSearch } from '@/hooks/useSearch';
 import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { SearchResultPlayer } from '@/types/domain';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function SelectOpponentScreen() {
   const { playerId } = useLocalSearchParams<{ playerId: string }>();
@@ -66,10 +67,11 @@ export default function SelectOpponentScreen() {
       </View>
 
       {!hasQuery && (
-        <View style={styles.emptyState}>
-          <Ionicons name="people" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyText}>Escribe al menos 2 caracteres</Text>
-        </View>
+        <EmptyState
+          icon="people-outline"
+          title="Elige un rival"
+          message="Escribe al menos 2 caracteres para buscar."
+        />
       )}
 
       {hasQuery && isLoading && (
@@ -79,10 +81,11 @@ export default function SelectOpponentScreen() {
       )}
 
       {hasQuery && !isLoading && players.length === 0 && (
-        <View style={styles.emptyState}>
-          <Ionicons name="alert-circle" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyText}>Sin resultados</Text>
-        </View>
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Sin resultados"
+          message={`No encontramos jugadores con "${query}".`}
+        />
       )}
 
       {hasQuery && players.length > 0 && (
