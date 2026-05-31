@@ -19,6 +19,7 @@ import type { SearchResultPlayer, SearchResultTeam } from '@/types/domain';
 import { getPositionName } from '@/constants/positions';
 import { Image } from 'expo-image';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -65,11 +66,7 @@ export default function SearchScreen() {
         />
       )}
 
-      {hasQuery && isLoading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+      {hasQuery && isLoading && <LoadingState message="Buscando..." />}
 
       {hasQuery && !isLoading && !hasResults && (
         <EmptyState
@@ -222,11 +219,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.md,
     textAlign: 'center',
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   listContent: {
     paddingHorizontal: spacing.md,

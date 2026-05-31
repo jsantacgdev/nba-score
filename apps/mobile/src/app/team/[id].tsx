@@ -1,10 +1,11 @@
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,11 +14,7 @@ export default function TeamDetailScreen() {
   const { data: seasonStats } = useTeamSeasonStats(id);
 
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingState message="Cargando plantilla..." />;
   }
 
   if (error) {
