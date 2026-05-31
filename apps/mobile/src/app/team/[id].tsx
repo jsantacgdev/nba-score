@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,7 +45,10 @@ export default function TeamDetailScreen() {
                 transition={200}
               />
             )}
-            <Text style={styles.teamHeaderName}>{team.fullName}</Text>
+            <View style={styles.teamNameRow}>
+              <Text style={styles.teamHeaderName}>{team.fullName}</Text>
+              <FavoriteTeamButton teamId={team.id} size={28} />
+            </View>
             <Text style={styles.teamHeaderConf}>
               Conferencia {team.conference === 'East' ? 'Este' : 'Oeste'}
             </Text>
@@ -178,5 +182,10 @@ const styles = StyleSheet.create({
   statDivider: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
+  },
+  teamNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });
