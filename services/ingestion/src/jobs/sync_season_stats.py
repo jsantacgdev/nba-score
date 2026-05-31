@@ -3,7 +3,7 @@ from src.clients.supabase import get_supabase_client
 
 
 def sync_season_stats() -> None:
-    print("🏀 Iniciando sincronización de stats de temporada...")
+    print("Iniciando sincronización de stats de temporada...")
 
     stats = get_season_stats(CURRENT_SEASON)
     print(f"   Obtenidas stats de {len(stats)} jugadores")

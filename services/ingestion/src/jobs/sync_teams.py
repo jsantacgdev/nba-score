@@ -3,7 +3,7 @@ from src.clients.supabase import get_supabase_client
 
 
 def sync_teams() -> None:
-    print("🏀 Iniciando sincronización de equipos...")
+    print("Iniciando sincronización de equipos...")
 
     teams = get_all_teams()
     print(f"   Obtenidos {len(teams)} equipos de nba_api")

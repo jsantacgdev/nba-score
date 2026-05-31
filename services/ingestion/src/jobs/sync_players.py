@@ -3,7 +3,7 @@ from src.clients.supabase import get_supabase_client
 
 
 def sync_players() -> None:
-    print("🏀 Iniciando sincronización de jugadores...")
+    print("Iniciando sincronización de jugadores...")
 
     client = get_supabase_client()
 
@@ -12,7 +12,7 @@ def sync_players() -> None:
     team_ids = [row["id"] for row in teams_result.data]
 
     if not team_ids:
-        print("⚠️  No hay equipos en la base de datos. Ejecuta primero sync_teams.")
+        print("No hay equipos en la base de datos. Ejecuta primero sync_teams.")
         return
 
     print(f"   {len(team_ids)} equipos encontrados. Obteniendo plantillas...")
@@ -21,7 +21,7 @@ def sync_players() -> None:
     print(f"\n   Total: {len(players)} jugadores obtenidos")
 
     if not players:
-        print("⚠️  No se obtuvo ningún jugador.")
+        print("No se obtuvo ningún jugador.")
         return
 
     # Upsert por lotes (Supabase maneja bien hasta ~500 por lote)

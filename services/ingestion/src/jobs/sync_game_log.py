@@ -14,7 +14,7 @@ def sync_player_log(client, player_id: str) -> int:
 
 def sync_game_log_for_team(team_id: str) -> None:
     """Sincroniza el game log de todos los jugadores de un equipo."""
-    print(f"🏀 Sincronizando game log del equipo {team_id}...")
+    print(f"Sincronizando game log del equipo {team_id}...")
 
     client = get_supabase_client()
     players = (
@@ -25,7 +25,7 @@ def sync_game_log_for_team(team_id: str) -> None:
     )
 
     if not players.data:
-        print("⚠️  No hay jugadores para ese equipo.")
+        print("No hay jugadores para ese equipo.")
         return
 
     total_games = 0
@@ -37,7 +37,7 @@ def sync_game_log_for_team(team_id: str) -> None:
             total_games += count
             print(f"        → {count} partidos")
         except Exception as e:
-            print(f"        ⚠️  Error: {e}")
+            print(f"        Error: {e}")
 
         if i < len(players.data):
             time.sleep(REQUEST_DELAY)
