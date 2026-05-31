@@ -8,6 +8,7 @@ import { fetchMostRecentGameDate } from '@/lib/api/games';
 import { formatLongDate, isSameDay, startOfDay, formatShortDate } from '@/lib/format';
 import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
 import { useRecentDays } from '@/hooks/useRecentDays';
+import { SearchButton } from '@/components/ui/SearchButton';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -50,8 +51,9 @@ export default function GamesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.dateHeader}>
+      <View style={styles.topBar}>
         <Text style={styles.dateLabel}>{formatLongDate(selectedDate)}</Text>
+        <SearchButton />
       </View>
 
       <DateSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
@@ -254,5 +256,13 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
 });

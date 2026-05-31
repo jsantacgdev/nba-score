@@ -5,6 +5,7 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
+import { SearchButton } from '@/components/ui/SearchButton';
 
 export default function TeamsScreen() {
   const { data: teams, isLoading, error } = useTeams();
@@ -41,7 +42,10 @@ export default function TeamsScreen() {
         renderItem={null}
         ListHeaderComponent={
           <View style={styles.content}>
-            {/* <Text style={styles.title}>Equipos</Text> */}
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Equipos</Text>
+              <SearchButton />
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.conferenceTitle}>Conferencia Este</Text>
@@ -169,5 +173,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
 });

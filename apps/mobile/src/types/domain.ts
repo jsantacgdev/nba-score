@@ -138,3 +138,31 @@ export type LeagueStanding = {
   winPercentage: number;
   pointDifferential: number;
 };
+
+export type SearchResultPlayer = {
+  type: 'player';
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  teamId?: string;
+  teamName?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+  position?: string;
+  photoUrl?: string;
+  isActive: boolean;
+};
+
+export type SearchResultTeam = {
+  type: 'team';
+  id: string;
+  name: string;
+  fullName: string;
+  abbreviation: string;
+  city: string;
+  conference: 'East' | 'West';
+  logoUrl?: string;
+};
+
+export type SearchResult = SearchResultPlayer | SearchResultTeam;
