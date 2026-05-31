@@ -122,3 +122,19 @@ export type GameDetail = {
   awayRoster: GameBoxScoreEntry[];
   mvp: GameBoxScoreEntry | null;
 };
+
+export type LeagueStanding = {
+  teamId: string;
+  name: string;
+  fullName: string;
+  abbreviation: string;
+  city: string;
+  conference: 'East' | 'West';
+  division?: string;
+  logoUrl?: string;
+  wins: number;
+  losses: number;
+  gamesPlayed: number;
+  winPercentage: number;
+  pointDifferential: number;
+};
