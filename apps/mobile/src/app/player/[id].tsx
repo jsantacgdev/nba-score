@@ -1,18 +1,21 @@
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { usePlayer, usePlayerGameLog, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
+import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
-import { Image } from 'expo-image';
-import { formatDateDMY } from '@/lib/format';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: player, isLoading } = usePlayer(id);
-  const { data: seasonStats } = usePlayerSeasonStats(id);
-  const { data: gameLog } = usePlayerGameLog(id);
+  const playerId = id ?? '';
+
+  const { data: player, isLoading } = usePlayer(playerId);
+  const { data: seasonStats } = usePlayerSeasonStats(playerId);
+  const { data: gameLog } = usePlayerGameLog(playerId);
 
   if (isLoading) {
     return (
@@ -60,11 +63,25 @@ export default function PlayerDetailScreen() {
             </View>
           </View>
 
+          {/* Botón Comparar */}
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: '/compare/select-opponent',
+                params: { playerId: player.id },
+              })
+            }
+            style={({ pressed }) => [styles.compareButton, pressed && styles.compareButtonPressed]}
+          >
+            <Ionicons name="git-compare" size={18} color={colors.text} />
+            <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
+          </Pressable>
+
           {/* Medias de temporada */}
           {seasonStats && seasonStats.gamesPlayed > 0 && (
             <View style={styles.seasonCard}>
               <Text style={styles.seasonTitle}>
-                Resumen de la temporada ({seasonStats.gamesPlayed} partidos)
+                Medias temporada ({seasonStats.gamesPlayed} partidos)
               </Text>
               <View style={styles.seasonStatsRow}>
                 <SeasonStat label="PTS" value={seasonStats.points} />
@@ -197,6 +214,8 @@ const styles = StyleSheet.create({
   },
   errorText: { color: colors.danger, fontSize: fontSize.md },
   listContent: { padding: spacing.md },
+
+  // Cabecera del jugador
   header: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
@@ -224,11 +243,35 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
+
+  // Botón Comparar
+  compareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  compareButtonPressed: {
+    opacity: 0.7,
+  },
+  compareButtonText: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+
+  // Medias de temporada
   seasonCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
-    marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -253,6 +296,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     marginTop: 2,
   },
+
+  // Historial
   sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
@@ -265,49 +310,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontStyle: 'italic',
   },
-  gameRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  gameRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  gameDate: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-  gameMatchup: {
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-  gameResult: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-  win: { color: colors.success },
-  loss: { color: colors.danger },
-  gameStats: { alignItems: 'flex-end' },
-  gameStatMain: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-  },
-  gameStatSub: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    marginTop: 2,
-  },
+
+  // Tarjeta de partido en el historial
   gameCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -321,6 +325,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  gameDate: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
   resultBadge: {
     paddingHorizontal: spacing.sm,
@@ -350,6 +359,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     flex: 1,
+  },
+  scoreTeamHome: {
+    justifyContent: 'flex-start',
+  },
+  scoreTeamAway: {
+    justifyContent: 'flex-end',
   },
   scoreLogo: {
     width: 32,
@@ -400,11 +415,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
     marginTop: 2,
-  },
-  scoreTeamHome: {
-    justifyContent: 'flex-start',
-  },
-  scoreTeamAway: {
-    justifyContent: 'flex-end',
   },
 });
