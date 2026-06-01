@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GameCard } from '@/components/game/GameCard';
 import { formatShortDate } from '@/lib/format';
 import type { Game } from '@/types/domain';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
   date: Date;
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     textTransform: 'capitalize',
   },
   gameCount: {

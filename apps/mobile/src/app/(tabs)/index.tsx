@@ -2,7 +2,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameCard } from '@/components/game/GameCard';
 import { useTodayGames } from '@/hooks/useTodayGames';
-import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, spacing } from '@/constants/theme';
 
 export default function TodayScreen() {
   const { data, isLoading, isRefetching, refetch, error } = useTodayGames();
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.danger,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   errorDetail: {
     color: colors.textMuted,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
   },
   subtitle: {
     color: colors.textSecondary,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   emptySubtitle: {
     color: colors.textMuted,
@@ -201,12 +201,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     flex: 1,
   },
   sectionCount: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
 });

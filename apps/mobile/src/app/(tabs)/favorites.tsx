@@ -6,7 +6,7 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { useFavoriteTeamIds } from '@/hooks/useFavorites';
 import { useTeams } from '@/hooks/useTeams';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
   },
   subtitle: {
     color: colors.textSecondary,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   emptySubtitle: {
     color: colors.textMuted,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   teamName: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   teamConference: {
     color: colors.textSecondary,
@@ -199,6 +199,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: colors.background,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
 });

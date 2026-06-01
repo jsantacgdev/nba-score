@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { usePlayer, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { Player, PlayerSeasonStats } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   playerName: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
   playerPosition: {
@@ -262,12 +262,12 @@ const styles = StyleSheet.create({
   playerNumber: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   vsText: {
     color: colors.primary,
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
     paddingHorizontal: spacing.sm,
   },
 
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     marginBottom: spacing.sm,
   },
   statRow: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   statValue: {
     color: colors.textSecondary,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     width: 70,
   },
   statValueLeft: {
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   statLabel: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     flex: 1,

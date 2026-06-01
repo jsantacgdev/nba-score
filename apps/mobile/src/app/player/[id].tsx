@@ -1,17 +1,16 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { usePlayer, usePlayerGameLog, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { formatDateDMY } from '@/lib/format';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { LoadingState } from '@/components/ui/LoadingState';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { RefreshControl } from 'react-native-gesture-handler';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,87 +58,99 @@ export default function PlayerDetailScreen() {
   }
 
   return (
-    <FlatList
-      style={styles.container}
-      data={gameLog ?? []}
-      keyExtractor={(item) => item.gameId}
-      contentContainerStyle={styles.listContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-      ListHeaderComponent={
-        <View>
-          {/* Cabecera */}
-          <View style={styles.header}>
-            <PlayerAvatar
-              photoUrl={player.photoUrl}
-              initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
-              size={120}
-            />
-            <Text style={styles.playerName}>
-              {player.firstName} {player.lastName}
-            </Text>
-            <View style={styles.headerMeta}>
-              {player.jerseyNumber && (
-                <View style={styles.metaBadge}>
-                  <Text style={styles.metaBadgeText}>#{player.jerseyNumber}</Text>
-                </View>
-              )}
-              <View style={styles.metaBadge}>
-                <Text style={styles.metaBadgeText}>{getPositionName(player.position)}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Botón Comparar */}
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/compare/select-opponent',
-                params: { playerId: player.id },
-              })
-            }
-            style={({ pressed }) => [styles.compareButton, pressed && styles.compareButtonPressed]}
-          >
-            <Ionicons name="swap-horizontal" size={20} color={colors.text} />
-            <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
-          </Pressable>
-
-          {/* Medias de temporada */}
-          {seasonStats && seasonStats.gamesPlayed > 0 && (
-            <View style={styles.seasonCard}>
-              <Text style={styles.seasonTitle}>
-                Medias temporada ({seasonStats.gamesPlayed} partidos)
+    <>
+      <Stack.Screen
+        options={{
+          title: `${player.firstName} ${player.lastName}`,
+        }}
+      />
+      <FlatList
+        style={styles.container}
+        data={gameLog ?? []}
+        keyExtractor={(item) => item.gameId}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListHeaderComponent={
+          <View>
+            {/* Cabecera */}
+            <View style={styles.header}>
+              <PlayerAvatar
+                photoUrl={player.photoUrl}
+                initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
+                size={120}
+              />
+              <Text style={styles.playerName}>
+                {player.firstName} {player.lastName}
               </Text>
-              <View style={styles.seasonStatsRow}>
-                <SeasonStat label="PTS" value={seasonStats.points} />
-                <SeasonStat label="REB" value={seasonStats.rebounds} />
-                <SeasonStat label="AST" value={seasonStats.assists} />
-                <SeasonStat label="ROB" value={seasonStats.steals} />
-                <SeasonStat label="TAP" value={seasonStats.blocks} />
+              <View style={styles.headerMeta}>
+                {player.jerseyNumber && (
+                  <View style={styles.metaBadge}>
+                    <Text style={styles.metaBadgeText}>#{player.jerseyNumber}</Text>
+                  </View>
+                )}
+                <View style={styles.metaBadge}>
+                  <Text style={styles.metaBadgeText}>{getPositionName(player.position)}</Text>
+                </View>
               </View>
             </View>
-          )}
 
-          {/* Título historial */}
-          <Text style={styles.sectionTitle}>Historial de partidos</Text>
-          {(!gameLog || gameLog.length === 0) && (
-            <EmptyState
-              icon="calendar-outline"
-              title="Sin partidos cargados"
-              message="Este jugador aún no tiene partidos registrados en la base de datos."
-              compact
-            />
-          )}
-        </View>
-      }
-      renderItem={({ item }) => <GameLogRow entry={item} />}
-    />
+            {/* Botón Comparar */}
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/compare/select-opponent',
+                  params: { playerId: player.id },
+                })
+              }
+              style={({ pressed }) => [
+                styles.compareButton,
+                pressed && styles.compareButtonPressed,
+              ]}
+            >
+              <View style={styles.vsIcon}>
+                <Text style={styles.vsIconText}>VS</Text>
+              </View>
+              <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
+            </Pressable>
+
+            {/* Medias de temporada */}
+            {seasonStats && seasonStats.gamesPlayed > 0 && (
+              <View style={styles.seasonCard}>
+                <Text style={styles.seasonTitle}>
+                  Medias temporada ({seasonStats.gamesPlayed} partidos)
+                </Text>
+                <View style={styles.seasonStatsRow}>
+                  <SeasonStat label="PTS" value={seasonStats.points} />
+                  <SeasonStat label="REB" value={seasonStats.rebounds} />
+                  <SeasonStat label="AST" value={seasonStats.assists} />
+                  <SeasonStat label="ROB" value={seasonStats.steals} />
+                  <SeasonStat label="TAP" value={seasonStats.blocks} />
+                </View>
+              </View>
+            )}
+
+            {/* Título historial */}
+            <Text style={styles.sectionTitle}>Historial de partidos</Text>
+            {(!gameLog || gameLog.length === 0) && (
+              <EmptyState
+                icon="calendar-outline"
+                title="Sin partidos cargados"
+                message="Este jugador aún no tiene partidos registrados en la base de datos."
+                compact
+              />
+            )}
+          </View>
+        }
+        renderItem={({ item }) => <GameLogRow entry={item} />}
+      />
+    </>
   );
 }
 
@@ -157,7 +168,6 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
 
   return (
     <View style={styles.gameCard}>
-      {/* Fila superior: fecha y resultado */}
       <View style={styles.gameCardHeader}>
         <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>
         {entry.winLoss && (
@@ -171,7 +181,6 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
         )}
       </View>
 
-      {/* Fila del marcador con logos */}
       {game ? (
         <View style={styles.scoreboardRow}>
           <View style={[styles.scoreTeam, styles.scoreTeamHome]}>
@@ -210,7 +219,6 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
         </Text>
       )}
 
-      {/* Fila inferior: stats del jugador */}
       <View style={styles.playerStatsRow}>
         <StatPill label="MIN" value={entry.minutes.toFixed(0)} />
         <StatPill label="PTS" value={String(entry.points)} highlight />
@@ -252,7 +260,7 @@ const styles = StyleSheet.create({
   playerName: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
     marginTop: spacing.md,
     textAlign: 'center',
   },
@@ -270,7 +278,7 @@ const styles = StyleSheet.create({
   metaBadgeText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
   },
 
   // Botón Comparar
@@ -293,7 +301,21 @@ const styles = StyleSheet.create({
   compareButtonText: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
+  },
+  vsIcon: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vsIconText: {
+    color: colors.background,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
   },
 
   // Medias de temporada
@@ -307,7 +329,7 @@ const styles = StyleSheet.create({
   seasonTitle: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     marginBottom: spacing.md,
   },
   seasonStatsRow: {
@@ -318,11 +340,12 @@ const styles = StyleSheet.create({
   seasonStatValue: {
     color: colors.primary,
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
   },
   seasonStatLabel: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
+    fontFamily: fontFamily.medium,
     marginTop: 2,
   },
 
@@ -330,14 +353,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.bold,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    fontStyle: 'italic',
   },
 
   // Tarjeta de partido en el historial
@@ -358,7 +376,7 @@ const styles = StyleSheet.create({
   gameDate: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
   },
   resultBadge: {
     paddingHorizontal: spacing.sm,
@@ -366,14 +384,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
   },
   winBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: 'rgba(93, 171, 133, 0.15)',
   },
   lossBadge: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: 'rgba(209, 100, 100, 0.15)',
   },
   resultBadgeText: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.bold,
     letterSpacing: 0.5,
     color: colors.text,
   },
@@ -402,7 +420,7 @@ const styles = StyleSheet.create({
   scoreAbbr: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.bold,
   },
   scoreCenter: {
     paddingHorizontal: spacing.md,
@@ -412,12 +430,12 @@ const styles = StyleSheet.create({
   scoreText: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
   },
   gameMatchupFallback: {
     color: colors.textSecondary,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     paddingVertical: spacing.sm,
   },
   playerStatsRow: {
@@ -435,7 +453,7 @@ const styles = StyleSheet.create({
   statPillValue: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.bold,
   },
   statPillHighlight: {
     color: colors.primary,
@@ -443,6 +461,7 @@ const styles = StyleSheet.create({
   statPillLabel: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
+    fontFamily: fontFamily.medium,
     marginTop: 2,
   },
 });

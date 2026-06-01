@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { useStandings } from '@/hooks/useStandings';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
   },
   tabsRow: {
     flexDirection: 'row',
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   confTabText: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   confTabTextActive: {
     color: colors.text,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   headerText: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     letterSpacing: 0.5,
   },
   colPosition: {
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   positionText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   positionDotPlayoff: {
     width: 4,
@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
   teamName: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     flex: 1,
   },
   statText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   diffPositive: {
     color: colors.success,

@@ -75,8 +75,8 @@ export const fontFamily = {
   bold: 'Inter_700Bold',
   heavy: 'Inter_800ExtraBold',
 
-  // Titles
-  displayMedium: 'SpaceGrotesk_500Medium',
-  displaySemibold: 'SpaceGrotesk_600SemiBold',
-  displayBold: 'SpaceGrotesk_700Bold',
+  // Texts
+  displayMedium: 'Sora_500Medium',
+  displaySemibold: 'Sora_600SemiBold',
+  displayBold: 'Sora_700Bold',
 };

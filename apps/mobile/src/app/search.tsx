@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useSearch } from '@/hooks/useSearch';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { SearchResultPlayer, SearchResultTeam } from '@/types/domain';
 import { getPositionName } from '@/constants/positions';
 import { Image } from 'expo-image';
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   emptySubtitle: {
     color: colors.textMuted,
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   resultPrimary: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   resultSecondary: {
     color: colors.textMuted,
