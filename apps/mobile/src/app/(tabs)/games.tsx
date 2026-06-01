@@ -17,29 +17,6 @@ export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
-    if (initialized) return;
-
-    async function pickInitialDate() {
-      try {
-        const today = startOfDay(new Date());
-        const mostRecent = await fetchMostRecentGameDate();
-        if (mostRecent) {
-          const recentDay = startOfDay(mostRecent);
-          if (recentDay < today) {
-            setSelectedDate(recentDay);
-          }
-        }
-      } catch {
-        // si falla, dejamos la fecha en hoy
-      } finally {
-        setInitialized(true);
-      }
-    }
-
-    pickInitialDate();
-  }, [initialized]);
-
   const { data: games, isLoading, isRefetching, refetch, error } = useGamesByDate(selectedDate);
 
   const safeGames = games ?? [];
