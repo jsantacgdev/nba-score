@@ -7,12 +7,13 @@ import { useStandings } from '@/hooks/useStandings';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 type ConferenceFilter = 'East' | 'West';
 
 export default function StandingsScreen() {
   const [conference, setConference] = useState<ConferenceFilter>('East');
-  const { data: standings, isLoading, error } = useStandings();
+  const { data: standings, isLoading, error, refetch } = useStandings();
 
   const filtered = (standings ?? []).filter((s) => s.conference === conference);
 
@@ -37,11 +38,7 @@ export default function StandingsScreen() {
 
       {isLoading && <LoadingState message="Cargando clasificación..." />}
 
-      {error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>Error al cargar la clasificación</Text>
-        </View>
-      )}
+      {error && <ErrorState title="No se puede cargar la clasificación" onRetry={refetch} />}
 
       {!isLoading && !error && (
         <FlatList
@@ -167,15 +164,6 @@ const styles = StyleSheet.create({
   },
   confTabTextActive: {
     color: colors.text,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: fontSize.md,
   },
   listContent: {
     paddingHorizontal: spacing.md,

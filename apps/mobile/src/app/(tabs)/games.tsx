@@ -11,6 +11,7 @@ import { useRecentDays } from '@/hooks/useRecentDays';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -76,10 +77,12 @@ export default function GamesScreen() {
             {isLoading && <LoadingState message="Cargando partidos..." compact />}
 
             {error && (
-              <View style={styles.centered}>
-                <Text style={styles.errorText}>Error al cargar partidos</Text>
-                <Text style={styles.errorDetail}>{error.message}</Text>
-              </View>
+              <ErrorState
+                title="No se pueden cargar los partidos"
+                message="Comprueba tu conexión a internet o inténtalo de nuevo en unos segundos."
+                onRetry={refetch}
+                compact
+              />
             )}
 
             {!isLoading && !error && safeGames.length === 0 && (
@@ -175,23 +178,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   listContent: { padding: spacing.md },
-  centered: {
-    paddingVertical: spacing.xxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-  },
-  errorDetail: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-  },
   emptyState: {
     paddingVertical: spacing.xxl,
     alignItems: 'center',

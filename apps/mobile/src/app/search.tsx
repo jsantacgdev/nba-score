@@ -20,10 +20,11 @@ import { getPositionName } from '@/constants/positions';
 import { Image } from 'expo-image';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
-  const { data, isLoading, isFetching } = useSearch(query);
+  const { data, isLoading, isFetching, error, refetch } = useSearch(query);
 
   const hasQuery = query.trim().length >= 2;
   const teams = data?.teams ?? [];
@@ -109,6 +110,14 @@ export default function SearchScreen() {
               )}
             </View>
           }
+        />
+      )}
+
+      {hasQuery && error && (
+        <ErrorState
+          title="Error en la búsqueda"
+          message="No se ha podido completar la búsqueda. Inténtalo de nuevo."
+          onRetry={refetch}
         />
       )}
     </SafeAreaView>
