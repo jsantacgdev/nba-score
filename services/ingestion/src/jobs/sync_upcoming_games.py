@@ -1,31 +1,14 @@
-import time
 from datetime import datetime, timedelta
 
-from src.clients.nba import get_scoreboard_for_date
+from src.clients.balldontlie import get_games_for_date_range
 from src.clients.supabase import get_supabase_client
 
 
-MAX_RETRIES = 3
-RETRY_DELAY = 5  # segundos
-
-
-def fetch_with_retry(date):
-    """Intenta obtener el scoreboard con reintentos exponenciales."""
-    last_error = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            return get_scoreboard_for_date(date)
-        except Exception as e:
-            last_error = e
-            if attempt < MAX_RETRIES:
-                wait = RETRY_DELAY * attempt
-                print(f"        ⚠️  Intento {attempt} falló ({e}). Esperando {wait}s...")
-                time.sleep(wait)
-    raise last_error
+CURRENT_SEASON = "2025-26"
 
 
 def sync_upcoming_games(days_ahead: int = 7, days_back: int = 2) -> None:
-    """Carga partidos de los últimos N días y los próximos M días."""
+    """Carga partidos de los últimos N días y los próximos M días usando balldontlie."""
     total_days = days_back + days_ahead + 1
     print(f"Sincronizando {total_days} días de partidos "
           f"(-{days_back} a +{days_ahead})...")
@@ -34,36 +17,37 @@ def sync_upcoming_games(days_ahead: int = 7, days_back: int = 2) -> None:
     teams = client.table("teams").select("id").execute()
     valid_ids = {row["id"] for row in teams.data}
 
-    total = 0
-    errors = 0
     today = datetime.now()
+    start_date = today - timedelta(days=days_back)
+    end_date = today + timedelta(days=days_ahead)
 
-    for offset in range(-days_back, days_ahead + 1):
-        date = today + timedelta(days=offset)
-        date_label = date.strftime("%Y-%m-%d")
-        print(f"   📅 {date_label}...")
-        try:
-            games = fetch_with_retry(date)
-            filtered = [
-                g for g in games
-                if g["home_team_id"] in valid_ids and g["away_team_id"] in valid_ids
-            ]
-            if filtered:
-                client.table("games").upsert(filtered).execute()
-                total += len(filtered)
-                print(f"        → {len(filtered)} partidos")
-            else:
-                print("        → sin partidos")
-        except Exception as e:
-            errors += 1
-            print(f"        ❌ Error tras {MAX_RETRIES} intentos: {e}")
+    print(f"   Rango: {start_date.date()} a {end_date.date()}")
 
-        # Pausa pequeña entre días para no saturar
-        time.sleep(1)
+    try:
+        games = get_games_for_date_range(start_date, end_date, CURRENT_SEASON)
+    except Exception as e:
+        print(f"Error: {e}")
+        return
 
-    print(f"\n✅ {total} partidos sincronizados")
-    if errors:
-        print(f"   ⚠️  {errors} días fallaron")
+    print(f"   {len(games)} partidos obtenidos")
+
+    filtered = [
+        g for g in games
+        if g["home_team_id"] in valid_ids and g["away_team_id"] in valid_ids
+    ]
+
+    if not filtered:
+        print("Sin partidos para insertar.")
+        return
+
+    batch_size = 500
+    total = 0
+    for i in range(0, len(filtered), batch_size):
+        batch = filtered[i : i + batch_size]
+        result = client.table("games").upsert(batch).execute()
+        total += len(result.data)
+
+    print(f"\n{total} partidos sincronizados")
 
 
 if __name__ == "__main__":
