@@ -8,12 +8,13 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import type { LeagueStanding } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { RefreshControl } from 'react-native';
 
 type ConferenceFilter = 'East' | 'West';
 
 export default function StandingsScreen() {
   const [conference, setConference] = useState<ConferenceFilter>('East');
-  const { data: standings, isLoading, error, refetch } = useStandings();
+  const { data: standings, isLoading, error, refetch, isRefetching } = useStandings();
 
   const filtered = (standings ?? []).filter((s) => s.conference === conference);
 
@@ -45,6 +46,14 @@ export default function StandingsScreen() {
           data={filtered}
           keyExtractor={(s) => s.teamId}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
           ListHeaderComponent={<StandingsHeaderRow />}
           renderItem={({ item, index }) => <StandingsRow standing={item} position={index + 1} />}
         />

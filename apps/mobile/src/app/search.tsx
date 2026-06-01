@@ -73,7 +73,7 @@ export default function SearchScreen() {
         <EmptyState
           icon="alert-circle-outline"
           title="Sin resultados"
-          message={`No encontramos nada para "${query}". Prueba con otro término.`}
+          message={`No encontramos nada para "${query}". Prueba con otro nombre.`}
         />
       )}
 
