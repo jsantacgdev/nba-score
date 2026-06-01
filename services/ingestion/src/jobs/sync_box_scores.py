@@ -50,6 +50,8 @@ def get_all_final_game_ids(client, exclude_preseason: bool = True) -> list[str]:
             # IDs que empiezan por "001" son pretemporada
             if exclude_preseason and game_id.startswith("001"):
                 continue
+            if game_id.startswith("bdl_"):
+                continue
             ids.append(game_id)
         if len(result.data) < page_size:
             break

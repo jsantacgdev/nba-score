@@ -1,5 +1,57 @@
 from src.clients.nba import CURRENT_SEASON, get_league_games
 from src.clients.supabase import get_supabase_client
+from datetime import datetime, timedelta
+
+
+def cleanup_balldontlie_duplicates(client, nba_games: list[dict]) -> int:
+    """
+    Para cada partido NBA, busca duplicados con ID 'bdl_*' que representen
+    el mismo partido (mismos equipos, fecha en rango ±1 día) y los borra.
+    
+    La búsqueda con margen de 1 día compensa que nba_api y balldontlie usan
+    zonas horarias distintas (ET vs UTC), lo que puede hacer que el mismo
+    partido aparezca en días "calendario" diferentes.
+    """
+    deleted_count = 0
+
+    for game in nba_games:
+        home_id = game["home_team_id"]
+        away_id = game["away_team_id"]
+        starts_at = game["starts_at"]
+
+        # Extraer fecha del partido NBA
+        if isinstance(starts_at, str):
+            try:
+                # Intentar parsear con timezone
+                game_dt = datetime.fromisoformat(starts_at.replace("Z", "+00:00"))
+            except Exception:
+                # Fallback: tomar solo la fecha
+                game_dt = datetime.strptime(starts_at[:10], "%Y-%m-%d")
+        else:
+            game_dt = starts_at
+
+        # Rango de búsqueda: ±1 día desde el partido NBA
+        date_start = (game_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+        date_end = (game_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        # Buscar partidos bdl_* con los mismos equipos en el rango
+        result = (
+            client.table("games")
+            .select("id, starts_at")
+            .like("id", "bdl_%")
+            .eq("home_team_id", home_id)
+            .eq("away_team_id", away_id)
+            .gte("starts_at", f"{date_start}T00:00:00")
+            .lte("starts_at", f"{date_end}T23:59:59")
+            .execute()
+        )
+
+        for row in result.data:
+            client.table("games").delete().eq("id", row["id"]).execute()
+            print(f"   🗑️  Eliminado duplicado balldontlie: {row['id']}")
+            deleted_count += 1
+
+    return deleted_count
 
 
 def sync_games() -> None:
@@ -22,6 +74,14 @@ def sync_games() -> None:
         if g["home_team_id"] in valid_ids and g["away_team_id"] in valid_ids
     ]
     print(f"   {len(filtered)} partidos con equipos válidos")
+
+    # Limpieza de duplicados balldontlie ANTES de insertar los NBA
+    print("   Buscando duplicados de balldontlie...")
+    deleted = cleanup_balldontlie_duplicates(client, filtered)
+    if deleted > 0:
+        print(f"   {deleted} duplicados balldontlie eliminados")
+    else:
+        print("   Sin duplicados que eliminar")
 
     # Upsert por lotes de 500 para no exceder límites
     batch_size = 500
