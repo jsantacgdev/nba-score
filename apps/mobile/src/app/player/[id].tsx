@@ -11,14 +11,38 @@ import type { PlayerGameLogEntry } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { RefreshControl } from 'react-native-gesture-handler';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const playerId = id ?? '';
 
-  const { data: player, isLoading } = usePlayer(playerId);
-  const { data: seasonStats } = usePlayerSeasonStats(playerId);
-  const { data: gameLog } = usePlayerGameLog(playerId);
+  const {
+    data: player,
+    isLoading,
+    refetch: refetchPlayer,
+    isRefetching: refetchingPlayer,
+  } = usePlayer(playerId);
+
+  const {
+    data: seasonStats,
+    refetch: refetchStats,
+    isRefetching: refetchingStats,
+  } = usePlayerSeasonStats(playerId);
+
+  const {
+    data: gameLog,
+    refetch: refetchGameLog,
+    isRefetching: refetchingGameLog,
+  } = usePlayerGameLog(playerId);
+
+  const isRefetching = refetchingPlayer || refetchingStats || refetchingGameLog;
+
+  const handleRefresh = () => {
+    refetchPlayer();
+    refetchStats();
+    refetchGameLog();
+  };
 
   if (isLoading) {
     return <LoadingState message="Cargando jugador..." />;
@@ -40,6 +64,14 @@ export default function PlayerDetailScreen() {
       data={gameLog ?? []}
       keyExtractor={(item) => item.gameId}
       contentContainerStyle={styles.listContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
       ListHeaderComponent={
         <View>
           {/* Cabecera */}

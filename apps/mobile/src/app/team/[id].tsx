@@ -7,19 +7,32 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { RefreshControl } from 'react-native-gesture-handler';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: team } = useTeam(id);
-  const { data: roster, isLoading, error, refetch } = useTeamRoster(id);
-  const { data: seasonStats } = useTeamSeasonStats(id);
+  const { data: team, refetch: refetchTeam } = useTeam(id);
+  const {
+    data: roster,
+    isLoading,
+    error,
+    refetch: refetchRoster,
+    isRefetching,
+  } = useTeamRoster(id);
+  const { data: seasonStats, refetch: refetchStats } = useTeamSeasonStats(id);
+
+  const handleRefresh = () => {
+    refetchTeam();
+    refetchRoster();
+    refetchStats();
+  };
 
   if (isLoading) {
     return <LoadingState message="Cargando plantilla..." />;
   }
 
   if (error) {
-    return <ErrorState title="No se puede cargar la plantilla" onRetry={refetch} />;
+    return <ErrorState title="No se puede cargar la plantilla" onRetry={refetchRoster} />;
   }
 
   return (
@@ -28,6 +41,14 @@ export default function TeamDetailScreen() {
       data={roster}
       keyExtractor={(p) => p.id}
       contentContainerStyle={styles.listContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
       ListHeaderComponent={
         team ? (
           <View style={styles.teamHeader}>

@@ -10,13 +10,31 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { RefreshControl } from 'react-native-gesture-handler';
 
 export default function FavoritesScreen() {
-  const { data: favoriteIds, isLoading: loadingIds } = useFavoriteTeamIds();
-  const { data: teams, isLoading: loadingTeams } = useTeams();
+  const {
+    data: favoriteIds,
+    isLoading: loadingIds,
+    refetch: refetchFavorites,
+    isRefetching: refetchingFavorites,
+  } = useFavoriteTeamIds();
+
+  const {
+    data: teams,
+    isLoading: loadingTeams,
+    refetch: refetchTeams,
+    isRefetching: refetchingTeams,
+  } = useTeams();
 
   const isLoading = loadingIds || loadingTeams;
+  const isRefetching = refetchingFavorites || refetchingTeams;
   const favoriteTeams = teams?.filter((t) => favoriteIds?.includes(t.id)) ?? [];
+
+  const handleRefresh = () => {
+    refetchFavorites();
+    refetchTeams();
+  };
 
   if (isLoading) {
     return (
@@ -61,6 +79,14 @@ export default function FavoritesScreen() {
         data={favoriteTeams}
         keyExtractor={(t) => t.id}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.headerSection}>
             <Text style={styles.title}>Favoritos</Text>
