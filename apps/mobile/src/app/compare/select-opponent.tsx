@@ -18,7 +18,6 @@ export default function SelectOpponentScreen() {
   const { data, isLoading } = useSearch(query);
 
   const hasQuery = query.trim().length >= 2;
-  // Filtramos al propio jugador para que no se pueda comparar consigo mismo
   const players = (data?.players ?? []).filter((p) => p.id !== playerId);
 
   const handleSelect = (otherId: string) => {

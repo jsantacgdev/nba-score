@@ -7,7 +7,7 @@ export function useFavoriteTeamIds() {
   return useQuery({
     queryKey: FAVORITES_KEY,
     queryFn: getFavoriteTeamIds,
-    staleTime: Infinity, // los favoritos son locales, no cambian sin que la app los cambie
+    staleTime: Infinity,
   });
 }
 

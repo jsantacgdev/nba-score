@@ -27,7 +27,7 @@ export async function fetchTeamById(teamId: string): Promise<Team | null> {
   const { data, error } = await supabase.from('teams').select('*').eq('id', teamId).single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // no encontrado
+    if (error.code === 'PGRST116') return null; // not found
     throw error;
   }
   return mapTeam(data);

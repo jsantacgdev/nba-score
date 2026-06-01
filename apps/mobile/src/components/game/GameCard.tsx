@@ -1,5 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
@@ -22,6 +30,27 @@ export function GameCard({ game, index = 0 }: Props) {
     router.push({ pathname: '/game/[id]', params: { id: game.id } });
   };
 
+  function PulsingDot() {
+    const opacity = useSharedValue(1);
+
+    useEffect(() => {
+      opacity.value = withRepeat(
+        withTiming(0.3, {
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        -1,
+        true,
+      );
+    }, [opacity]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      opacity: opacity.value,
+    }));
+
+    return <Animated.View style={[styles.liveDot, animatedStyle]} />;
+  }
+
   return (
     <Animated.View entering={FadeInDown.duration(300).delay(index * 50)}>
       <Pressable
@@ -31,7 +60,7 @@ export function GameCard({ game, index = 0 }: Props) {
         <View style={styles.header}>
           {isLive && (
             <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
+              <PulsingDot />
               <Text style={styles.liveText}>EN VIVO</Text>
             </View>
           )}

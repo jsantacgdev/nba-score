@@ -97,21 +97,18 @@ export async function fetchRecentGameDays(
   const beforeIso = new Date(before);
   beforeIso.setHours(0, 0, 0, 0);
 
-  // Buscamos los últimos N partidos finalizados ANTES de la fecha de referencia,
-  // agrupados por día.
   const { data, error } = await supabase
     .from('games')
     .select(SELECT_WITH_TEAMS)
     .lt('starts_at', beforeIso.toISOString())
     .eq('status', 'final')
     .order('starts_at', { ascending: false })
-    .limit(200); // límite generoso, luego agrupamos
+    .limit(200);
 
   if (error) throw error;
 
   const mapped = (data ?? []).map(mapGame).filter((g): g is Game => g !== null);
 
-  // Agrupar por día (YYYY-MM-DD)
   const byDay = new Map<string, Game[]>();
   for (const g of mapped) {
     const key = g.startsAt.toISOString().slice(0, 10);
@@ -119,7 +116,6 @@ export async function fetchRecentGameDays(
     byDay.get(key)!.push(g);
   }
 
-  // Devolver los N días más recientes
   const days = Array.from(byDay.entries())
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, daysCount)

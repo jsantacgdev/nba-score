@@ -16,7 +16,6 @@ import { CollapsibleDaySection } from '@/components/game/CollapsibleDaySection';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
-  const [initialized, setInitialized] = useState(false);
 
   const { data: games, isLoading, isRefetching, refetch, error } = useGamesByDate(selectedDate);
 
