@@ -6,7 +6,7 @@ import { DateSelector } from '@/components/game/DateSelector';
 import { useGamesByDate } from '@/hooks/useGamesByDate';
 import { fetchMostRecentGameDate } from '@/lib/api/games';
 import { formatLongDate, isSameDay, startOfDay, formatShortDate } from '@/lib/format';
-import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, spacing } from '@/constants/theme';
 import { useRecentDays } from '@/hooks/useRecentDays';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     textTransform: 'capitalize',
     letterSpacing: 0.5,
   },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   emptySubtitle: {
     color: colors.textMuted,
@@ -186,13 +186,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     flex: 1,
   },
   sectionCount: {
     color: colors.textMuted,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   recentDaysSection: {
     marginTop: spacing.lg,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   recentDaysTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   daySection: {
     marginBottom: spacing.lg,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   daySectionTitle: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     textTransform: 'capitalize',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,

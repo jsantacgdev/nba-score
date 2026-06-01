@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTeams } from '@/hooks/useTeams';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
     marginBottom: spacing.lg,
   },
   section: {
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   conferenceTitle: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: spacing.md,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   teamInfo: {
     flex: 1,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   teamName: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   titleRow: {
     flexDirection: 'row',

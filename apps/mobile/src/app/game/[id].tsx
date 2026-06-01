@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY } from '@/lib/format';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -208,12 +208,12 @@ const styles = StyleSheet.create({
   gameDate: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   gameStatus: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     letterSpacing: 1,
     marginTop: 2,
   },
@@ -244,12 +244,12 @@ const styles = StyleSheet.create({
   teamAbbr: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   bigScore: {
     color: colors.textSecondary,
     fontSize: 29,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
   bigScoreWinning: {
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   scoreSeparator: {
     color: colors.textMuted,
     fontSize: 24,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
 
   // MVP card
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   mvpBadgeText: {
     color: colors.background,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.heavy,
+    fontFamily: fontFamily.displayBold,
     letterSpacing: 0.5,
   },
   mvpContent: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   mvpName: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   mvpStatsRow: {
     flexDirection: 'row',
@@ -312,13 +312,13 @@ const styles = StyleSheet.create({
   },
   mvpStatValue: {
     color: colors.text,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   mvpStatDot: { color: colors.textMuted },
   mvpScore: {
     color: colors.primary,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     marginTop: spacing.xs,
   },
 
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   boxScoreTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   statsHeader: {
     flexDirection: 'row',
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   statsHeaderText: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     letterSpacing: 0.5,
   },
   colPlayer: { flex: 3 },
@@ -372,12 +372,12 @@ const styles = StyleSheet.create({
   playerName: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     flex: 1,
   },
   statValue: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
 });

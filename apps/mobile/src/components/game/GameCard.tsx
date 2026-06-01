@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
   game: Game;
@@ -172,19 +172,19 @@ const styles = StyleSheet.create({
   liveText: {
     color: colors.text,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     letterSpacing: 0.5,
   },
   statusText: {
     color: colors.textSecondary,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     letterSpacing: 0.5,
   },
   periodText: {
     color: colors.textSecondary,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   teamsContainer: {
     gap: spacing.sm,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: colors.text,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   teamCity: {
     color: colors.textMuted,
@@ -224,12 +224,12 @@ const styles = StyleSheet.create({
   teamName: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   score: {
     color: colors.textSecondary,
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     minWidth: 50,
     textAlign: 'right',
   },

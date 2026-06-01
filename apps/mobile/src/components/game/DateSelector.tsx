@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { addDays, getWeekdayLabel, isSameDay, startOfDay } from '@/lib/format';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
   selectedDate: Date;
@@ -118,13 +118,13 @@ const styles = StyleSheet.create({
   dayWeekday: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
     letterSpacing: 0.5,
   },
   dayNumber: {
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     marginTop: 2,
   },
   dayTextSelected: {

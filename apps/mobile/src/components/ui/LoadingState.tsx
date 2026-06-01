@@ -9,7 +9,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, fontWeight, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, spacing } from '@/constants/theme';
 
 type Props = {
   message?: string;
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   message: {
     color: colors.textSecondary,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
+    fontFamily: fontFamily.displayMedium,
     textAlign: 'center',
   },
   messageCompact: {

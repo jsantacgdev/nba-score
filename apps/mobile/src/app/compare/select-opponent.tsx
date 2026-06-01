@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useSearch } from '@/hooks/useSearch';
 import { getPositionName } from '@/constants/positions';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { SearchResultPlayer } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
   subtitle: {
     color: colors.textSecondary,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   rowName: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.displaySemibold,
   },
   rowMeta: {
     flexDirection: 'row',

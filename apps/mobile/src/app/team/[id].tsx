@@ -1,25 +1,29 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { TeamLogo } from '@/components/ui/TeamLogo';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
-import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
-import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { RefreshControl } from 'react-native-gesture-handler';
+import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
+import { getPositionName } from '@/constants/positions';
+import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
+import type { Player, PlayerSeasonStats } from '@/types/domain';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: team, refetch: refetchTeam } = useTeam(id);
+  const teamId = id ?? '';
+
+  const { data: team, refetch: refetchTeam } = useTeam(teamId);
   const {
     data: roster,
     isLoading,
     error,
     refetch: refetchRoster,
     isRefetching,
-  } = useTeamRoster(id);
-  const { data: seasonStats, refetch: refetchStats } = useTeamSeasonStats(id);
+  } = useTeamRoster(teamId);
+  const { data: seasonStats, refetch: refetchStats } = useTeamSeasonStats(teamId);
 
   const handleRefresh = () => {
     refetchTeam();
@@ -35,162 +39,198 @@ export default function TeamDetailScreen() {
     return <ErrorState title="No se puede cargar la plantilla" onRetry={refetchRoster} />;
   }
 
+  // Indexar stats por jugador
+  const statsByPlayer = new Map<string, PlayerSeasonStats>();
+  for (const s of seasonStats ?? []) {
+    statsByPlayer.set(s[0], s[1]);
+  }
+
   return (
-    <FlatList
-      style={styles.container}
-      data={roster}
-      keyExtractor={(p) => p.id}
-      contentContainerStyle={styles.listContent}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={handleRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-      ListHeaderComponent={
-        team ? (
-          <View style={styles.teamHeader}>
-            {team.logoUrl && (
-              <Image
-                source={{ uri: team.logoUrl }}
-                style={styles.teamHeaderLogo}
-                contentFit="contain"
-                transition={200}
-              />
-            )}
-            <View style={styles.teamNameRow}>
-              <Text style={styles.teamHeaderName}>{team.fullName}</Text>
-              <FavoriteTeamButton teamId={team.id} size={28} />
-            </View>
-            <Text style={styles.teamHeaderConf}>
-              Conferencia {team.conference === 'East' ? 'Este' : 'Oeste'}
-            </Text>
-            <Text style={styles.rosterCount}>{roster?.length ?? 0} jugadores</Text>
-          </View>
-        ) : null
-      }
-      renderItem={({ item }) => (
-        <Pressable
-          onPress={() => router.push(`/player/${item.id}`)}
-          style={({ pressed }) => [styles.playerCard, pressed && styles.playerCardPressed]}
-        >
-          <PlayerAvatar
-            photoUrl={item.photoUrl}
-            initials={`${item.firstName[0] ?? ''}${item.lastName[0] ?? ''}`}
-            size={52}
+    <>
+      <Stack.Screen
+        options={{
+          title: team?.fullName ?? 'Equipo',
+        }}
+      />
+      <FlatList
+        style={styles.container}
+        data={roster ?? []}
+        keyExtractor={(p) => p.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
-          <View style={styles.playerInfo}>
-            <Text style={styles.playerName}>
-              {item.firstName} {item.lastName}
-            </Text>
-            <Text style={styles.playerMeta}>{item.position ?? 'N/A'}</Text>
-            {(() => {
-              const s = seasonStats?.get(item.id);
-              if (!s || s.gamesPlayed === 0) return null;
-              return (
-                <View style={styles.statsRow}>
-                  <Text style={styles.statText}>{s.points} PTS</Text>
-                  <Text style={styles.statDivider}>·</Text>
-                  <Text style={styles.statText}>{s.rebounds} REB</Text>
-                  <Text style={styles.statDivider}>·</Text>
-                  <Text style={styles.statText}>{s.assists} AST</Text>
+        }
+        ListHeaderComponent={
+          team ? (
+            <View style={styles.header}>
+              <TeamLogo logoUrl={team.logoUrl} abbreviation={team.abbreviation} size={100} />
+              <Text style={styles.teamCity}>{team.city}</Text>
+              <Text style={styles.teamName}>{team.name}</Text>
+              <View style={styles.headerMeta}>
+                <View style={styles.conferenceBadge}>
+                  <Text style={styles.conferenceBadgeText}>
+                    {team.conference === 'East' ? 'Conferencia Este' : 'Conferencia Oeste'}
+                  </Text>
                 </View>
-              );
-            })()}
+                <FavoriteTeamButton teamId={team.id} size={28} />
+              </View>
+              <Text style={styles.sectionTitle}>Plantilla</Text>
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => <RosterRow player={item} stats={statsByPlayer.get(item.id)} />}
+      />
+    </>
+  );
+}
+
+function RosterRow({ player, stats }: { player: Player; stats?: PlayerSeasonStats }) {
+  return (
+    <Pressable
+      onPress={() =>
+        router.push({
+          pathname: '/player/[id]',
+          params: { id: player.id },
+        })
+      }
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <PlayerAvatar
+        photoUrl={player.photoUrl}
+        initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
+        size={48}
+      />
+      <View style={styles.rowInfo}>
+        <Text style={styles.rowName}>
+          {player.firstName} {player.lastName}
+        </Text>
+        <View style={styles.rowMeta}>
+          {player.jerseyNumber && <Text style={styles.rowMetaText}>#{player.jerseyNumber}</Text>}
+          {player.jerseyNumber && player.position && <Text style={styles.rowDivider}>·</Text>}
+          {player.position && (
+            <Text style={styles.rowMetaText}>{getPositionName(player.position)}</Text>
+          )}
+        </View>
+        {stats && stats.gamesPlayed > 0 && (
+          <View style={styles.statsInline}>
+            <Text style={styles.statInlineValue}>{stats.points.toFixed(1)}</Text>
+            <Text style={styles.statInlineLabel}>PTS</Text>
+            <Text style={styles.statInlineValue}>{stats.rebounds.toFixed(1)}</Text>
+            <Text style={styles.statInlineLabel}>REB</Text>
+            <Text style={styles.statInlineValue}>{stats.assists.toFixed(1)}</Text>
+            <Text style={styles.statInlineLabel}>AST</Text>
           </View>
-          {item.jerseyNumber && <Text style={styles.jersey}>#{item.jerseyNumber}</Text>}
-        </Pressable>
-      )}
-    />
+        )}
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    padding: spacing.md,
-  },
-  teamHeader: {
+  container: { flex: 1, backgroundColor: colors.background },
+  listContent: { padding: spacing.md },
+
+  // Cabecera
+  header: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
-    marginBottom: spacing.md,
   },
-  teamHeaderLogo: {
-    width: 96,
-    height: 96,
-    marginBottom: spacing.md,
+  teamCity: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.medium,
+    marginTop: spacing.md,
   },
-  teamHeaderName: {
+  teamName: {
     color: colors.text,
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.heavy,
-    textAlign: 'center',
-  },
-  teamHeaderConf: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
     marginTop: spacing.xs,
   },
-  rosterCount: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    marginTop: spacing.sm,
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
-  playerCard: {
+  conferenceBadge: {
+    backgroundColor: colors.surfaceLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+  },
+  conferenceBadgeText: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.semibold,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontFamily: fontFamily.bold,
+    marginTop: spacing.xl,
+    alignSelf: 'flex-start',
+  },
+
+  // Fila de jugador
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.md,
   },
-  playerCardPressed: {
+  rowPressed: {
     opacity: 0.7,
   },
-  playerInfo: {
+  rowInfo: {
     flex: 1,
   },
-  playerName: {
+  rowName: {
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
   },
-  playerMeta: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
+  rowMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginTop: 2,
   },
-  jersey: {
-    color: colors.textSecondary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+  rowMetaText: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.medium,
   },
-  statsRow: {
+  rowDivider: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+  },
+  statsInline: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xs,
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
-  statText: {
+  statInlineValue: {
     color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
   },
-  statDivider: {
+  statInlineLabel: {
     color: colors.textMuted,
     fontSize: fontSize.xs,
-  },
-  teamNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    fontFamily: fontFamily.medium,
+    marginRight: spacing.xs,
   },
 });

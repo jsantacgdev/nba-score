@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fontSize, fontWeight, radius } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius } from '@/constants/theme';
 
 type Props = {
   logoUrl?: string;
@@ -36,6 +36,6 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: colors.text,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
   },
 });
