@@ -2,9 +2,7 @@ name: Sync Weekly Data
 
 on:
   schedule:
-    # Lunes a las 10:00 UTC (12:00 hora española en invierno, 13:00 en verano)
     - cron: "0 10 * * 1"
-  # Permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
@@ -34,9 +32,3 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.jobs.sync_teams
-
-      - name: Sync players
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python -m src.jobs.sync_players
