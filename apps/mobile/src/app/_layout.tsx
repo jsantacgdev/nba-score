@@ -1,12 +1,42 @@
-import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
+import {
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/constants/theme';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    // Pantalla en blanco mientras cargan las fuentes (típicamente <1s)
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -16,14 +46,18 @@ export default function RootLayout() {
             screenOptions={{
               headerStyle: { backgroundColor: colors.background },
               headerTintColor: colors.text,
-              headerTitleStyle: { fontWeight: '700' },
               contentStyle: { backgroundColor: colors.background },
             }}
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="game/[id]" options={{ title: 'Partido', presentation: 'card' }} />
-            <Stack.Screen name="player/[id]" options={{ title: 'Jugador', presentation: 'card' }} />
-            <Stack.Screen name="team/[id]" options={{ title: 'Equipo', presentation: 'card' }} />
+            <Stack.Screen
+              name="search"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+              }}
+            />
             <Stack.Screen
               name="compare/[ids]"
               options={{
