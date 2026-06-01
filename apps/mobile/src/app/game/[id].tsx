@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useGameDetail } from '@/hooks/useGameDetail';
@@ -35,63 +35,68 @@ export default function GameDetailScreen() {
   const homeWinning = game.scoreHome > game.scoreAway;
   const awayWinning = game.scoreAway > game.scoreHome;
 
+  const title = `${game.homeTeam.name} vs ${game.awayTeam.name}`;
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Marcador */}
-      <View style={styles.scoreboard}>
-        <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>
-        <Text style={styles.gameStatus}>
-          {game.status === 'final' ? 'FINAL' : game.status === 'live' ? 'EN VIVO' : 'PROGRAMADO'}
-        </Text>
+    <>
+      <Stack.Screen options={{ title }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Marcador */}
+        <View style={styles.scoreboard}>
+          <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>
+          <Text style={styles.gameStatus}>
+            {game.status === 'final' ? 'FINAL' : game.status === 'live' ? 'EN VIVO' : 'PROGRAMADO'}
+          </Text>
 
-        <View style={styles.scoreboardRow}>
-          <View style={styles.teamScore}>
-            {game.homeTeam.logoUrl && (
-              <Image
-                source={{ uri: game.homeTeam.logoUrl }}
-                style={styles.scoreLogo}
-                contentFit="contain"
-              />
-            )}
-            <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
-            <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
-              {game.scoreHome}
-            </Text>
-          </View>
+          <View style={styles.scoreboardRow}>
+            <View style={styles.teamScore}>
+              {game.homeTeam.logoUrl && (
+                <Image
+                  source={{ uri: game.homeTeam.logoUrl }}
+                  style={styles.scoreLogo}
+                  contentFit="contain"
+                />
+              )}
+              <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
+              <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
+                {game.scoreHome}
+              </Text>
+            </View>
 
-          <Text style={styles.scoreSeparator}>·</Text>
+            <Text style={styles.scoreSeparator}>·</Text>
 
-          <View style={styles.teamScore}>
-            <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
-              {game.scoreAway}
-            </Text>
-            <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
-            {game.awayTeam.logoUrl && (
-              <Image
-                source={{ uri: game.awayTeam.logoUrl }}
-                style={styles.scoreLogo}
-                contentFit="contain"
-              />
-            )}
+            <View style={styles.teamScore}>
+              <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
+                {game.scoreAway}
+              </Text>
+              <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
+              {game.awayTeam.logoUrl && (
+                <Image
+                  source={{ uri: game.awayTeam.logoUrl }}
+                  style={styles.scoreLogo}
+                  contentFit="contain"
+                />
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* MVP */}
-      {mvp && <MVPCard mvp={mvp} />}
+        {/* MVP */}
+        {mvp && <MVPCard mvp={mvp} />}
 
-      {/* Box score por equipo */}
-      <TeamBoxScore
-        title={game.homeTeam.fullName}
-        logoUrl={game.homeTeam.logoUrl}
-        roster={homeRoster}
-      />
-      <TeamBoxScore
-        title={game.awayTeam.fullName}
-        logoUrl={game.awayTeam.logoUrl}
-        roster={awayRoster}
-      />
-    </ScrollView>
+        {/* Box score por equipo */}
+        <TeamBoxScore
+          title={game.homeTeam.fullName}
+          logoUrl={game.homeTeam.logoUrl}
+          roster={homeRoster}
+        />
+        <TeamBoxScore
+          title={game.awayTeam.fullName}
+          logoUrl={game.awayTeam.logoUrl}
+          roster={awayRoster}
+        />
+      </ScrollView>
+    </>
   );
 }
 
