@@ -39,7 +39,7 @@ function SpinningBall({ size }: { size: number }) {
         duration: 1200,
         easing: Easing.linear,
       }),
-      -1, // repetir infinitamente
+      -1,
       false,
     );
 

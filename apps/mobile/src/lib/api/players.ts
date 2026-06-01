@@ -50,7 +50,6 @@ function mapSeasonStats(row: SeasonStatsRow): PlayerSeasonStats {
 export async function fetchSeasonStatsByTeam(
   teamId: string,
 ): Promise<Map<string, PlayerSeasonStats>> {
-  // Primero obtenemos los IDs de jugadores del equipo
   const { data: players, error: playersError } = await supabase
     .from('players')
     .select('id')
@@ -126,7 +125,6 @@ export async function fetchPlayerSeasonStats(playerId: string): Promise<PlayerSe
 }
 
 export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLogEntry[]> {
-  // 1. Traemos el game log del jugador
   const { data: logData, error: logError } = await supabase
     .from('player_game_log')
     .select('*')
@@ -136,7 +134,6 @@ export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLo
   if (logError) throw logError;
   if (!logData || logData.length === 0) return [];
 
-  // 2. Traemos los partidos correspondientes con datos de ambos equipos
   const gameIds = logData.map((l) => l.game_id);
   const { data: gamesData, error: gamesError } = await supabase
     .from('games')
@@ -149,16 +146,13 @@ export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLo
 
   if (gamesError) throw gamesError;
 
-  // 3. Indexamos los partidos por id para cruzarlos rápido
   const gamesMap = new Map((gamesData ?? []).map((g) => [g.id, g]));
 
-  // 4. Combinamos
   return logData.map((row) => {
     const game = gamesMap.get(row.game_id);
     const entry = mapGameLog(row);
 
     if (game) {
-      // Supabase devuelve las relaciones; pueden venir como objeto
       const home = Array.isArray(game.home_team) ? game.home_team[0] : game.home_team;
       const away = Array.isArray(game.away_team) ? game.away_team[0] : game.away_team;
 

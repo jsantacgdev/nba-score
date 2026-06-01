@@ -23,21 +23,17 @@ export function DateSelector({
   const scrollRef = useRef<ScrollView>(null);
   const today = startOfDay(new Date());
 
-  // Generar la lista de días alrededor de hoy
   const days: Date[] = [];
   for (let i = -daysBack; i <= daysForward; i++) {
     days.push(addDays(today, i));
   }
 
-  // Centrar el día seleccionado al cargar y al cambiar
   useEffect(() => {
     const selectedIndex = days.findIndex((d) => isSameDay(d, selectedDate));
     if (selectedIndex >= 0 && scrollRef.current) {
-      // Posicionamos para que el día seleccionado quede más o menos centrado
       const offset = selectedIndex * (DAY_ITEM_WIDTH + DAY_ITEM_GAP) - 120;
       scrollRef.current.scrollTo({ x: Math.max(0, offset), animated: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   const goToPreviousDay = () => onDateChange(addDays(selectedDate, -1));

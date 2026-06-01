@@ -57,7 +57,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          href: null, // oculta la pestaña pero deja la ruta accesible
+          href: null,
         }}
       />
     </Tabs>

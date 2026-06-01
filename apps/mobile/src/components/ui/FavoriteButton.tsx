@@ -10,6 +10,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFavoriteTeam, useToggleFavoriteTeam } from '@/hooks/useFavorites';
 import { colors, spacing } from '@/constants/theme';
+import * as Haptics from 'expo-haptics';
 
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons);
 
@@ -25,13 +26,11 @@ export function FavoriteTeamButton({ teamId, size = 24 }: Props) {
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    // En el primer render no animamos, solo registramos que ya hemos pasado por aquí
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
 
-    // En cambios posteriores: un solo bote suave
     scale.value = withSequence(
       withTiming(1.25, { duration: 120 }),
       withSpring(1, { damping: 15, stiffness: 250 }),
@@ -44,6 +43,9 @@ export function FavoriteTeamButton({ teamId, size = 24 }: Props) {
 
   const handlePress = (e: any) => {
     e.stopPropagation?.();
+    Haptics.impactAsync(
+      isFavorite ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium,
+    );
     toggle.mutate({ teamId, isFavorite });
   };
 
