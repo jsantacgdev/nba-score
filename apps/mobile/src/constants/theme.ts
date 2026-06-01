@@ -1,42 +1,53 @@
+// apps/mobile/src/constants/theme.ts
+
 export const colors = {
   // Fondos
-  background: '#0A0E1A',
-  surface: '#141925',
-  surfaceLight: '#1E2535',
-  
-  // Texto
-  text: '#FFFFFF',
-  textSecondary: '#9BA3B4',
-  textMuted: '#5C6478',
-  
-  // Acentos
-  primary: '#FF6B35',      // naranja NBA
-  secondary: '#1D428A',    // azul NBA
-  success: '#10B981',
-  danger: '#EF4444',
-  warning: '#F59E0B',
-  
+  background: '#0E1117',
+  surface: '#1A1D24',
+  surfaceLight: '#252932',
+
   // Bordes
-  border: '#252B3D',
-  borderLight: '#2F3649',
-} as const;
+  border: '#2A2F38',
+  borderStrong: '#3A4049',
+
+  // Primary (ámbar quemado)
+  primary: '#E89154',
+  primaryDark: '#C77439',
+  primaryLight: '#F0A876',
+
+  // Secondary (azul acero)
+  secondary: '#5A8FB8',
+
+  // Texto
+  text: '#E8E6E1',
+  textSecondary: '#A8A8A0',
+  textMuted: '#6B6E78',
+
+  // Semánticos
+  success: '#5DAB85',
+  warning: '#D9B056',
+  danger: '#D16464',
+
+  // Sombras
+  shadow: 'rgba(0, 0, 0, 0.5)',
+};
 
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-} as const;
-
-export const radius = {
-  sm: 6,
   md: 12,
   lg: 16,
   xl: 24,
+  xxl: 32,
+};
+
+export const radius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 20,
   full: 9999,
-} as const;
+};
 
 export const fontSize = {
   xs: 11,
@@ -46,7 +57,7 @@ export const fontSize = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
-} as const;
+};
 
 export const fontWeight = {
   regular: '400' as const,
@@ -54,4 +65,18 @@ export const fontWeight = {
   semibold: '600' as const,
   bold: '700' as const,
   heavy: '800' as const,
+};
+
+export const fontFamily = {
+  // UI (text, labels, buttons)
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  heavy: 'Inter_800ExtraBold',
+
+  // Titles
+  displayMedium: 'SpaceGrotesk_500Medium',
+  displaySemibold: 'SpaceGrotesk_600SemiBold',
+  displayBold: 'SpaceGrotesk_700Bold',
 };
