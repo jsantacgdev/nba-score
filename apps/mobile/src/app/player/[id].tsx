@@ -10,6 +10,7 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import type { PlayerGameLogEntry } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,9 +26,11 @@ export default function PlayerDetailScreen() {
 
   if (!player) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Jugador no encontrado</Text>
-      </View>
+      <ErrorState
+        icon="person-remove-outline"
+        title="Jugador no encontrado"
+        message="Es posible que este jugador haya sido retirado o que su ID no sea válido."
+      />
     );
   }
 
@@ -207,13 +210,6 @@ function StatPill({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  errorText: { color: colors.danger, fontSize: fontSize.md },
   listContent: { padding: spacing.md },
 
   // Cabecera del jugador

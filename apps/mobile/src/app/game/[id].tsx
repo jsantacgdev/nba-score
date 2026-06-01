@@ -8,20 +8,26 @@ import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading, error } = useGameDetail(id);
+  const { data, isLoading, error, refetch } = useGameDetail(id);
 
   if (isLoading) {
     return <LoadingState message="Cargando partido..." />;
   }
+  if (error) {
+    return <ErrorState title="No se puede cargar el partido" onRetry={refetch} />;
+  }
 
-  if (error || !data) {
+  if (!data) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Partido no encontrado</Text>
-      </View>
+      <ErrorState
+        icon="basketball-outline"
+        title="Partido no encontrado"
+        message="Es posible que este partido no esté en nuestra base de datos."
+      />
     );
   }
 
@@ -193,13 +199,6 @@ function TeamBoxScore({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  errorText: { color: colors.danger, fontSize: fontSize.md },
 
   // Scoreboard
   scoreboard: {

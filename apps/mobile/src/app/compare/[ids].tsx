@@ -7,6 +7,7 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 import type { Player, PlayerSeasonStats } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function CompareScreen() {
   const { ids } = useLocalSearchParams<{ ids: string }>();
@@ -32,12 +33,13 @@ export default function CompareScreen() {
   if (isLoading) {
     return <LoadingState message="Cargando comparativa..." />;
   }
-
   if (!p1 || !p2) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Jugador no encontrado</Text>
-      </View>
+      <ErrorState
+        icon="person-remove-outline"
+        title="Jugador no encontrado"
+        message="No se pueden cargar los datos de uno de los jugadores."
+      />
     );
   }
 

@@ -6,11 +6,12 @@ import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoste
 import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function TeamDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: team } = useTeam(id);
-  const { data: roster, isLoading, error } = useTeamRoster(id);
+  const { data: roster, isLoading, error, refetch } = useTeamRoster(id);
   const { data: seasonStats } = useTeamSeasonStats(id);
 
   if (isLoading) {
@@ -18,11 +19,7 @@ export default function TeamDetailScreen() {
   }
 
   if (error) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Error al cargar la plantilla</Text>
-      </View>
-    );
+    return <ErrorState title="No se puede cargar la plantilla" onRetry={refetch} />;
   }
 
   return (
@@ -93,16 +90,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: fontSize.md,
   },
   listContent: {
     padding: spacing.md,

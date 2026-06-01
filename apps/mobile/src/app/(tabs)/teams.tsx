@@ -7,9 +7,10 @@ import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function TeamsScreen() {
-  const { data: teams, isLoading, error } = useTeams();
+  const { data: teams, isLoading, error, refetch } = useTeams();
 
   if (isLoading) {
     return (
@@ -22,10 +23,11 @@ export default function TeamsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>Error al cargar equipos</Text>
-          <Text style={styles.errorDetail}>{error.message}</Text>
-        </View>
+        <ErrorState
+          title="No se pueden cargar los equipos"
+          message="Comprueba tu conexión a internet e inténtalo de nuevo."
+          onRetry={refetch}
+        />
       </SafeAreaView>
     );
   }
@@ -91,23 +93,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-  },
-  errorDetail: {
-    color: colors.textMuted,
-    fontSize: fontSize.sm,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
   },
   content: {
     padding: spacing.md,
