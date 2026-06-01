@@ -7,10 +7,28 @@ from nba_api.stats.endpoints import scoreboardv2
 from nba_api.stats.endpoints import boxscoretraditionalv2
 from datetime import datetime
 import time
-# Temporada actual. Ajusta si cambia.
+from nba_api.stats.library.http import NBAStatsHTTP
+
+NBAStatsHTTP.headers = {
+    "Host": "stats.nba.com",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "*/*",
+    "Connection": "keep-alive",
+    "Referer": "https://www.nba.com/",
+    "Origin": "https://www.nba.com",
+    "x-nba-stats-origin": "stats",
+    "x-nba-stats-token": "true",
+}
+
+
 CURRENT_SEASON = "2025-26"
 
-# Pausa entre peticiones para no saturar stats.nba.com (en segundos)
 REQUEST_DELAY = 1.5
 
 def build_team_logo_url(abbreviation: str) -> str:
@@ -80,7 +98,6 @@ def get_all_rosters(team_ids: list[str], season: str = CURRENT_SEASON) -> list[d
 
     return all_players
 
-# Mapeo de equipos a conferencia y división (datos fijos de la NBA)
 TEAM_METADATA: dict[int, dict[str, str]] = {
     # Conferencia Este - División Atlántico
     1610612738: {"conference": "East", "division": "Atlantic"},   # Celtics
@@ -184,10 +201,9 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
 
     games = []
     for _, row in df.iterrows():
-        matchup = str(row["MATCHUP"])  # ej. "LAL vs. BOS" o "LAL @ BOS"
+        matchup = str(row["MATCHUP"])
         is_home = "vs." in matchup
 
-        # Extraer abreviatura del rival
         opponent = None
         if "vs." in matchup:
             opponent = matchup.split("vs.")[-1].strip()
