@@ -12,6 +12,7 @@ import { SearchButton } from '@/components/ui/SearchButton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { CollapsibleDaySection } from '@/components/game/CollapsibleDaySection';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -73,24 +74,24 @@ export default function GamesScreen() {
 
             {liveGames.length > 0 && (
               <Section title="En vivo" count={liveGames.length} showLiveIndicator>
-                {liveGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {liveGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
 
             {finalGames.length > 0 && (
               <Section title="Finalizados" count={finalGames.length}>
-                {finalGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {finalGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
 
             {scheduledGames.length > 0 && (
               <Section title="Próximos" count={scheduledGames.length}>
-                {scheduledGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {scheduledGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
@@ -98,15 +99,14 @@ export default function GamesScreen() {
             {showRecentDays && recentDays && recentDays.length > 0 && (
               <View style={styles.recentDaysSection}>
                 <View style={styles.recentDaysHeader}>
-                  <Text style={styles.recentDaysTitle}>Días anteriores</Text>
+                  <Text style={styles.recentDaysTitle}>Partidos pasados</Text>
                 </View>
                 {recentDays.map((day) => (
-                  <View key={day.date.toISOString()} style={styles.daySection}>
-                    <Text style={styles.daySectionTitle}>{formatShortDate(day.date)}</Text>
-                    {day.games.map((g) => (
-                      <GameCard key={g.id} game={g} />
-                    ))}
-                  </View>
+                  <CollapsibleDaySection
+                    key={day.date.toISOString()}
+                    date={day.date}
+                    games={day.games}
+                  />
                 ))}
               </View>
             )}

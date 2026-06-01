@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
@@ -6,9 +7,10 @@ import { colors, fontSize, fontWeight, radius, spacing } from '@/constants/theme
 
 type Props = {
   game: Game;
+  index?: number;
 };
 
-export function GameCard({ game }: Props) {
+export function GameCard({ game, index = 0 }: Props) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
   const isScheduled = game.status === 'scheduled';
@@ -21,48 +23,50 @@ export function GameCard({ game }: Props) {
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    >
-      <View style={styles.header}>
-        {isLive && (
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>EN VIVO</Text>
-          </View>
-        )}
-        {isFinal && <Text style={styles.statusText}>FINAL</Text>}
-        {isScheduled && (
-          <Text style={styles.statusText}>
-            {game.startsAt.toLocaleTimeString('es-ES', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-        )}
-        {isLive && game.timeRemaining && (
-          <Text style={styles.periodText}>
-            Q{game.period} · {game.timeRemaining}
-          </Text>
-        )}
-      </View>
+    <Animated.View entering={FadeInDown.duration(300).delay(index * 50)}>
+      <Pressable
+        onPress={handlePress}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      >
+        <View style={styles.header}>
+          {isLive && (
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>EN VIVO</Text>
+            </View>
+          )}
+          {isFinal && <Text style={styles.statusText}>FINAL</Text>}
+          {isScheduled && (
+            <Text style={styles.statusText}>
+              {game.startsAt.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          )}
+          {isLive && game.timeRemaining && (
+            <Text style={styles.periodText}>
+              Q{game.period} · {game.timeRemaining}
+            </Text>
+          )}
+        </View>
 
-      <View style={styles.teamsContainer}>
-        <TeamRow
-          team={game.awayTeam}
-          score={game.scoreAway}
-          isWinning={awayWinning}
-          showScore={!isScheduled}
-        />
-        <TeamRow
-          team={game.homeTeam}
-          score={game.scoreHome}
-          isWinning={homeWinning}
-          showScore={!isScheduled}
-        />
-      </View>
-    </Pressable>
+        <View style={styles.teamsContainer}>
+          <TeamRow
+            team={game.awayTeam}
+            score={game.scoreAway}
+            isWinning={awayWinning}
+            showScore={!isScheduled}
+          />
+          <TeamRow
+            team={game.homeTeam}
+            score={game.scoreHome}
+            isWinning={homeWinning}
+            showScore={!isScheduled}
+          />
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 

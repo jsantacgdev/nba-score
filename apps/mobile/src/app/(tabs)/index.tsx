@@ -74,24 +74,24 @@ export default function TodayScreen() {
 
             {liveGames.length > 0 && (
               <Section title="En vivo" count={liveGames.length} showLiveIndicator>
-                {liveGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {liveGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
 
             {finalGames.length > 0 && (
               <Section title="Finalizados" count={finalGames.length}>
-                {finalGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {finalGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
 
             {scheduledGames.length > 0 && (
               <Section title="Próximos" count={scheduledGames.length}>
-                {scheduledGames.map((g) => (
-                  <GameCard key={g.id} game={g} />
+                {scheduledGames.map((g, i) => (
+                  <GameCard key={g.id} game={g} index={i} />
                 ))}
               </Section>
             )}
