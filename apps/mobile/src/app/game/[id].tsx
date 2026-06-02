@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY } from '@/lib/format';
-import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -275,7 +275,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     borderWidth: 2,
     borderColor: colors.primary,
-    ...shadows.raised,
   },
   mvpCardPressed: { opacity: 0.85 },
   mvpBadge: {
@@ -367,7 +366,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
-    ...shadows.card,
   },
   playerRowPressed: { backgroundColor: colors.surface },
   playerRowDnp: { opacity: 0.4 },
