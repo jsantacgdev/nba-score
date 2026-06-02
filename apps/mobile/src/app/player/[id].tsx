@@ -169,7 +169,7 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
   return (
     <View style={styles.gameCard}>
       <View style={styles.gameCardHeader}>
-        <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>
+        {entry.gameDate && <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>}
         {entry.winLoss && (
           <View
             style={[styles.resultBadge, entry.winLoss === 'W' ? styles.winBadge : styles.lossBadge]}

@@ -61,10 +61,10 @@ export type PlayerSeasonStats = {
 export type PlayerGameLogEntry = {
   playerId: string;
   gameId: string;
-  gameDate: Date;
-  season: string;
-  matchup: string;
-  isHome: boolean;
+  gameDate: Date | null;
+  season?: string;
+  matchup?: string;
+  isHome?: boolean;
   opponentAbbreviation?: string;
   winLoss?: 'W' | 'L';
   minutes: number;

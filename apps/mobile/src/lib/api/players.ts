@@ -74,14 +74,16 @@ export async function fetchSeasonStatsByTeam(
   return map;
 }
 
-function mapGameLog(row: GameLogRow): PlayerGameLogEntry {
+function mapGameLog(row: GameLogRow, fallbackDate?: string | null): PlayerGameLogEntry {
+  const dateStr = row.game_date ?? fallbackDate ?? null;
+
   return {
     playerId: row.player_id,
     gameId: row.game_id,
-    gameDate: new Date(row.game_date),
-    season: row.season,
-    matchup: row.matchup,
-    isHome: row.is_home,
+    gameDate: dateStr ? new Date(dateStr) : null,
+    season: row.season ?? undefined,
+    matchup: row.matchup ?? undefined,
+    isHome: row.is_home ?? undefined,
     opponentAbbreviation: row.opponent_abbreviation ?? undefined,
     winLoss: (row.win_loss as 'W' | 'L') ?? undefined,
     minutes: row.minutes ?? 0,
@@ -138,7 +140,7 @@ export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLo
   const { data: gamesData, error: gamesError } = await supabase
     .from('games')
     .select(
-      `id, score_home, score_away,
+      `id, starts_at, score_home, score_away,
        home_team:teams!home_team_id(id, abbreviation, logo_url),
        away_team:teams!away_team_id(id, abbreviation, logo_url)`,
     )
@@ -150,7 +152,7 @@ export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLo
 
   return logData.map((row) => {
     const game = gamesMap.get(row.game_id);
-    const entry = mapGameLog(row);
+    const entry = mapGameLog(row, game?.starts_at);
 
     if (game) {
       const home = Array.isArray(game.home_team) ? game.home_team[0] : game.home_team;
