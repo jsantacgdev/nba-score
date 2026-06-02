@@ -59,7 +59,7 @@ export default function GameDetailScreen() {
               <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
                 {game.scoreHome}
               </Text>
-              <Text style={styles.scoreSeparator}>·</Text>
+              <Text style={styles.scoreSeparator}>-</Text>
               <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
                 {game.scoreAway}
               </Text>
@@ -240,12 +240,14 @@ const styles = StyleSheet.create({
   },
   scoreboardRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingHorizontal: 0, // antes: spacing.md
+    width: '100%',
     gap: spacing.sm,
   },
+
   teamScore: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,16 +277,17 @@ const styles = StyleSheet.create({
   },
   bigScore: {
     color: colors.textSecondary,
-    fontSize: 32,
+    fontSize: 36,
     fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
+
   bigScoreWinning: {
     color: colors.text,
   },
   scoreSeparator: {
     color: colors.textMuted,
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: fontFamily.displayBold,
   },
 
@@ -410,6 +413,8 @@ const styles = StyleSheet.create({
   teamBlock: {
     alignItems: 'center',
     gap: spacing.xs,
+    flex: 1,
+    maxWidth: 120,
   },
   teamCard: {
     alignItems: 'center',
@@ -419,6 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    width: '100%',
   },
   teamCardPressed: {
     opacity: 0.7,
@@ -429,8 +435,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    marginTop: -spacing.xl,
+    marginTop: spacing.md,
   },
 });
