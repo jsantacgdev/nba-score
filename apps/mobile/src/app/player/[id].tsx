@@ -167,67 +167,75 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
   const game = entry.game;
 
   return (
-    <View style={styles.gameCard}>
-      <View style={styles.gameCardHeader}>
-        {entry.gameDate && <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>}
-        {entry.winLoss && (
-          <View
-            style={[styles.resultBadge, entry.winLoss === 'W' ? styles.winBadge : styles.lossBadge]}
-          >
-            <Text style={styles.resultBadgeText}>
-              {entry.winLoss === 'W' ? 'VICTORIA' : 'DERROTA'}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {game ? (
-        <View style={styles.scoreboardRow}>
-          <View style={[styles.scoreTeam, styles.scoreTeamHome]}>
-            {game.homeTeamLogo && (
-              <Image
-                source={{ uri: game.homeTeamLogo }}
-                style={styles.scoreLogo}
-                contentFit="contain"
-                transition={150}
-              />
-            )}
-            <Text style={styles.scoreAbbr}>{game.homeTeamAbbr}</Text>
-          </View>
-
-          <View style={styles.scoreCenter}>
-            <Text style={styles.scoreText}>
-              {game.scoreHome} - {game.scoreAway}
-            </Text>
-          </View>
-
-          <View style={[styles.scoreTeam, styles.scoreTeamAway]}>
-            <Text style={styles.scoreAbbr}>{game.awayTeamAbbr}</Text>
-            {game.awayTeamLogo && (
-              <Image
-                source={{ uri: game.awayTeamLogo }}
-                style={styles.scoreLogo}
-                contentFit="contain"
-                transition={150}
-              />
-            )}
-          </View>
+    <Pressable
+      onPress={() => router.push({ pathname: '/game/[id]', params: { id: entry.gameId } })}
+      style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
+    >
+      <View style={styles.gameCard}>
+        <View style={styles.gameCardHeader}>
+          {entry.gameDate && <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>}
+          {entry.winLoss && (
+            <View
+              style={[
+                styles.resultBadge,
+                entry.winLoss === 'W' ? styles.winBadge : styles.lossBadge,
+              ]}
+            >
+              <Text style={styles.resultBadgeText}>
+                {entry.winLoss === 'W' ? 'VICTORIA' : 'DERROTA'}
+              </Text>
+            </View>
+          )}
         </View>
-      ) : (
-        <Text style={styles.gameMatchupFallback}>
-          {entry.isHome ? 'vs' : '@'} {entry.opponentAbbreviation ?? '???'}
-        </Text>
-      )}
 
-      <View style={styles.playerStatsRow}>
-        <StatPill label="MIN" value={entry.minutes.toFixed(0)} />
-        <StatPill label="PTS" value={String(entry.points)} highlight />
-        <StatPill label="REB" value={String(entry.rebounds)} />
-        <StatPill label="AST" value={String(entry.assists)} />
-        <StatPill label="ROB" value={String(entry.steals)} />
-        <StatPill label="TAP" value={String(entry.blocks)} />
+        {game ? (
+          <View style={styles.scoreboardRow}>
+            <View style={[styles.scoreTeam, styles.scoreTeamHome]}>
+              {game.homeTeamLogo && (
+                <Image
+                  source={{ uri: game.homeTeamLogo }}
+                  style={styles.scoreLogo}
+                  contentFit="contain"
+                  transition={150}
+                />
+              )}
+              <Text style={styles.scoreAbbr}>{game.homeTeamAbbr}</Text>
+            </View>
+
+            <View style={styles.scoreCenter}>
+              <Text style={styles.scoreText}>
+                {game.scoreHome} - {game.scoreAway}
+              </Text>
+            </View>
+
+            <View style={[styles.scoreTeam, styles.scoreTeamAway]}>
+              <Text style={styles.scoreAbbr}>{game.awayTeamAbbr}</Text>
+              {game.awayTeamLogo && (
+                <Image
+                  source={{ uri: game.awayTeamLogo }}
+                  style={styles.scoreLogo}
+                  contentFit="contain"
+                  transition={150}
+                />
+              )}
+            </View>
+          </View>
+        ) : (
+          <Text style={styles.gameMatchupFallback}>
+            {entry.isHome ? 'vs' : '@'} {entry.opponentAbbreviation ?? '???'}
+          </Text>
+        )}
+
+        <View style={styles.playerStatsRow}>
+          <StatPill label="MIN" value={entry.minutes.toFixed(0)} />
+          <StatPill label="PTS" value={String(entry.points)} highlight />
+          <StatPill label="REB" value={String(entry.rebounds)} />
+          <StatPill label="AST" value={String(entry.assists)} />
+          <StatPill label="ROB" value={String(entry.steals)} />
+          <StatPill label="TAP" value={String(entry.blocks)} />
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
