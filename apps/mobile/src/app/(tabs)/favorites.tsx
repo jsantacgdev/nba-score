@@ -6,7 +6,7 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { useFavoriteTeamIds } from '@/hooks/useFavorites';
 import { useTeams } from '@/hooks/useTeams';
-import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.md,
+    ...shadows.card,
   },
   teamCardPressed: { opacity: 0.7 },
   teamInfo: { flex: 1 },
