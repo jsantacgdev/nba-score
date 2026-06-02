@@ -9,16 +9,22 @@ type Props = {
   onDateChange: (date: Date) => void;
   daysBack?: number;
   daysForward?: number;
+  gameCounts?: Map<string, number>;
 };
 
-const DAY_ITEM_WIDTH = 56;
+const DAY_ITEM_WIDTH = 64;
 const DAY_ITEM_GAP = 8;
+
+function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
 
 export function DateSelector({
   selectedDate,
   onDateChange,
-  daysBack = 14,
-  daysForward = 14,
+  daysBack = 60,
+  daysForward = 60,
+  gameCounts,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const today = startOfDay(new Date());
@@ -54,6 +60,7 @@ export function DateSelector({
         {days.map((day) => {
           const isSelected = isSameDay(day, selectedDate);
           const isToday = isSameDay(day, today);
+          const count = gameCounts?.get(toDateKey(day)) ?? 0;
 
           return (
             <Pressable
@@ -65,9 +72,15 @@ export function DateSelector({
                 {getWeekdayLabel(day)}
               </Text>
               <Text style={[styles.dayNumber, isSelected && styles.dayTextSelected]}>
-                {day.getDate()}
+                {String(day.getDate()).padStart(2, '0')}/
+                {String(day.getMonth() + 1).padStart(2, '0')}
               </Text>
-              {isToday && !isSelected && <View style={styles.todayDot} />}
+              {count >= 0 && (
+                <Text style={[styles.dayCount, isSelected && styles.dayCountSelected]}>
+                  {count} {count === 1 ? 'partido' : 'partidos'}
+                </Text>
+              )}
+              {isToday && !isSelected && count === 0 && <View style={styles.todayDot} />}
             </Pressable>
           );
         })}
@@ -90,7 +103,7 @@ const styles = StyleSheet.create({
   },
   arrowButton: {
     width: 32,
-    height: 56,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
@@ -102,7 +115,7 @@ const styles = StyleSheet.create({
   },
   dayItem: {
     width: DAY_ITEM_WIDTH,
-    height: 56,
+    height: 72,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     alignItems: 'center',
@@ -110,6 +123,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     position: 'relative',
+    paddingVertical: 4,
   },
   dayItemSelected: {
     backgroundColor: colors.primary,
@@ -123,12 +137,24 @@ const styles = StyleSheet.create({
   },
   dayNumber: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md, // antes fontSize.lg
     fontFamily: fontFamily.displayBold,
-    marginTop: 2,
+    marginTop: 1,
+    lineHeight: 20,
   },
   dayTextSelected: {
     color: colors.text,
+  },
+  dayCount: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontFamily: fontFamily.medium,
+    marginTop: 2,
+    letterSpacing: 0.2,
+  },
+  dayCountSelected: {
+    color: colors.text,
+    opacity: 0.85,
   },
   todayDot: {
     position: 'absolute',
