@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { usePlayer, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
-import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { Player, PlayerSeasonStats } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -287,7 +287,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
   statValuesRow: {
     flexDirection: 'row',

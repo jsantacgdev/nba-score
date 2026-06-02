@@ -2,14 +2,12 @@
 import { Platform } from 'react-native';
 
 export const colors = {
-  // Fondos
   background: '#0E1117',
-  surface: '#1A1D24',
-  surfaceLight: '#252932',
+  surface: '#1F242E', // subido de '#1A1D24'
+  surfaceLight: '#2A3140', // subido de '#252932'
 
-  // Bordes
-  border: '#2A2F38',
-  borderStrong: '#3A4049',
+  border: '#363B45', // subido de '#2A2F38'
+  borderStrong: '#454C58', // subido de '#3A4049'
 
   // Primary (ámbar quemado)
   primary: '#E89154',
@@ -80,51 +78,4 @@ export const fontFamily = {
   displayMedium: 'Sora_500Medium',
   displaySemibold: 'Sora_600SemiBold',
   displayBold: 'Sora_700Bold',
-};
-
-export const shadows = {
-  // Sombra sutil para tarjetas (lo que más usaremos)
-  card: Platform.select({
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-    },
-    android: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-    },
-    default: {},
-  }),
-
-  // Sombra más pronunciada para elementos destacados (MVP, modales)
-  raised: Platform.select({
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-    },
-    android: {
-      elevation: 6,
-    },
-    default: {},
-  }),
-
-  // Sombra muy suave para elementos pequeños (botones, badges)
-  subtle: Platform.select({
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-    },
-    android: {
-      elevation: 1,
-    },
-    default: {},
-  }),
 };

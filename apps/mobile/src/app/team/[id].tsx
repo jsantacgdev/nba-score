@@ -8,7 +8,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
 import { getPositionName } from '@/constants/positions';
-import { colors, fontFamily, fontSize, radius, shadows, spacing } from '@/constants/theme';
+import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { Player, PlayerSeasonStats } from '@/types/domain';
 
 export default function TeamDetailScreen() {
@@ -189,7 +189,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.md,
-    ...shadows.card,
   },
   rowPressed: {
     opacity: 0.7,

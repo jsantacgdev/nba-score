@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useSearch } from '@/hooks/useSearch';
-import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { SearchResultPlayer, SearchResultTeam } from '@/types/domain';
 import { getPositionName } from '@/constants/positions';
 import { Image } from 'expo-image';
@@ -255,7 +255,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.md,
-    ...shadows.card,
   },
   resultRowPressed: {
     opacity: 0.7,

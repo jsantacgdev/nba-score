@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
-import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
   game: Game;
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
   cardPressed: {
     opacity: 0.7,

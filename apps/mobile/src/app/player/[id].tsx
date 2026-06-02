@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { usePlayer, usePlayerGameLog, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { formatDateDMY } from '@/lib/format';
-import { colors, fontFamily, fontSize, radius, shadows, spacing } from '@/constants/theme';
+import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { PlayerGameLogEntry } from '@/types/domain';
 
 export default function PlayerDetailScreen() {
@@ -294,7 +294,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: spacing.sm,
     marginBottom: spacing.lg,
-    ...shadows.card,
   },
   compareButtonPressed: {
     opacity: 0.7,
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
   seasonTitle: {
     color: colors.textSecondary,
@@ -368,7 +366,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
   gameCardHeader: {
     flexDirection: 'row',
