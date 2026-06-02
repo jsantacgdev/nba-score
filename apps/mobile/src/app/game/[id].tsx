@@ -8,11 +8,14 @@ import { formatDateDMY } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
+
+  const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
   if (isLoading) {
     return <LoadingState message="Cargando partido..." />;
@@ -76,17 +79,33 @@ export default function GameDetailScreen() {
         {/* MVP */}
         {mvp && <MVPCard mvp={mvp} />}
 
-        {/* Box score por equipo */}
-        <TeamBoxScore
-          title={game.homeTeam.fullName}
-          logoUrl={game.homeTeam.logoUrl}
-          roster={homeRoster}
-        />
-        <TeamBoxScore
-          title={game.awayTeam.fullName}
-          logoUrl={game.awayTeam.logoUrl}
-          roster={awayRoster}
-        />
+        {/* Toggle entre equipos */}
+        <View style={styles.teamToggleRow}>
+          <TeamToggle
+            label={game.homeTeam.abbreviation}
+            active={selectedTeam === 'home'}
+            onPress={() => setSelectedTeam('home')}
+          />
+          <TeamToggle
+            label={game.awayTeam.abbreviation}
+            active={selectedTeam === 'away'}
+            onPress={() => setSelectedTeam('away')}
+          />
+        </View>
+
+        {selectedTeam === 'home' ? (
+          <TeamBoxScore
+            title={game.homeTeam.fullName}
+            logoUrl={game.homeTeam.logoUrl}
+            roster={homeRoster}
+          />
+        ) : (
+          <TeamBoxScore
+            title={game.awayTeam.fullName}
+            logoUrl={game.awayTeam.logoUrl}
+            roster={awayRoster}
+          />
+        )}
       </ScrollView>
     </>
   );
@@ -214,6 +233,22 @@ function TeamBoxScore({
         </Pressable>
       ))}
     </View>
+  );
+}
+
+function TeamToggle({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.teamToggle, active && styles.teamToggleActive]}>
+      <Text style={[styles.teamToggleText, active && styles.teamToggleTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -436,5 +471,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  teamToggleRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  teamToggle: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  teamToggleActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  teamToggleText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+    letterSpacing: 0.5,
+  },
+  teamToggleTextActive: {
+    color: colors.text,
   },
 });
