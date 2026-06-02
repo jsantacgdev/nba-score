@@ -1,7 +1,7 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTeams } from '@/hooks/useTeams';
-import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
+import { colors, fontSize, fontFamily, radius, spacing, shadows } from '@/constants/theme';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
@@ -124,6 +124,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.md,
+    ...shadows.card,
   },
   teamCardPressed: {
     opacity: 0.7,
