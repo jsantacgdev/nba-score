@@ -7,7 +7,7 @@ from src.clients.supabase import get_supabase_client
 CURRENT_SEASON = "2025-26"
 
 
-def sync_upcoming_games(days_ahead: int = 15, days_back: int = 2) -> None:
+def sync_upcoming_games(days_ahead: int = 30, days_back: int = 2) -> None:
     """Carga partidos de los últimos N días y los próximos M días usando balldontlie."""
     total_days = days_back + days_ahead + 1
     print(f"Sincronizando {total_days} días de partidos "
@@ -51,4 +51,4 @@ def sync_upcoming_games(days_ahead: int = 15, days_back: int = 2) -> None:
 
 
 if __name__ == "__main__":
-    sync_upcoming_games(days_ahead=7, days_back=2)
+    sync_upcoming_games(days_ahead=30, days_back=2)

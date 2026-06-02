@@ -126,3 +126,32 @@ export async function fetchRecentGameDays(
 
   return days;
 }
+/**
+ * Devuelve un Map con el número de partidos por día en un rango de fechas.
+ * La clave es la fecha en formato 'YYYY-MM-DD'.
+ */
+export async function fetchGameCountsByDateRange(
+  startDate: Date,
+  endDate: Date,
+): Promise<Map<string, number>> {
+  const startIso = startDate.toISOString();
+  const endIso = endDate.toISOString();
+
+  const { data, error } = await supabase
+    .from('games')
+    .select('starts_at')
+    .gte('starts_at', startIso)
+    .lte('starts_at', endIso);
+
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const date = new Date(row.starts_at);
+    // Clave: YYYY-MM-DD en hora local (no UTC)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return counts;
+}

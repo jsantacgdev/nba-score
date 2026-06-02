@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CollapsibleDaySection } from '@/components/game/CollapsibleDaySection';
+import { useGameCounts } from '@/hooks/useGameCounts';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -28,6 +29,7 @@ export default function GamesScreen() {
   const showRecentDays = isSameDay(selectedDate, today) || safeGames.length === 0;
 
   const { data: recentDays } = useRecentDays(selectedDate, 4);
+  const { data: gameCounts } = useGameCounts(today, 60, 60);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -36,7 +38,11 @@ export default function GamesScreen() {
         <SearchButton />
       </View>
 
-      <DateSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      <DateSelector
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        gameCounts={gameCounts}
+      />
       <FlatList
         data={[]}
         renderItem={null}
