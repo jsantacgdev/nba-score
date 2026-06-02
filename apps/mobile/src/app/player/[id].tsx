@@ -472,4 +472,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     marginTop: 2,
   },
+  gameCardPressed: {
+    opacity: 0.7,
+  },
 });
