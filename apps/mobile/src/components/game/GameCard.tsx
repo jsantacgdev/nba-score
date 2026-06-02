@@ -16,9 +16,10 @@ import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme
 type Props = {
   game: Game;
   index?: number;
+  showDate?: boolean;
 };
 
-export function GameCard({ game, index = 0 }: Props) {
+export function GameCard({ game, index = 0, showDate = false }: Props) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
   const isScheduled = game.status === 'scheduled';
@@ -58,6 +59,15 @@ export function GameCard({ game, index = 0 }: Props) {
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
         <View style={styles.header}>
+          {showDate && (
+            <Text style={styles.dateLabel}>
+              {game.startsAt.toLocaleDateString('es-ES', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+              })}
+            </Text>
+          )}
           {isLive && (
             <View style={styles.liveBadge}>
               <PulsingDot />
@@ -235,5 +245,16 @@ const styles = StyleSheet.create({
   },
   scoreWinning: {
     color: colors.text,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dateLabel: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    textTransform: 'capitalize',
   },
 });

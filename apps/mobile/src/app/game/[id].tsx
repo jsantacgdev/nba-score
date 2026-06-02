@@ -49,35 +49,27 @@ export default function GameDetailScreen() {
           </Text>
 
           <View style={styles.scoreboardRow}>
-            <View style={styles.teamScore}>
-              {game.homeTeam.logoUrl && (
-                <Image
-                  source={{ uri: game.homeTeam.logoUrl }}
-                  style={styles.scoreLogo}
-                  contentFit="contain"
-                />
-              )}
-              <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
+            <TeamBlock
+              teamId={game.homeTeam.id}
+              abbreviation={game.homeTeam.abbreviation}
+              logoUrl={game.homeTeam.logoUrl}
+            />
+
+            <View style={styles.scoresCenter}>
               <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
                 {game.scoreHome}
               </Text>
-            </View>
-
-            <Text style={styles.scoreSeparator}>·</Text>
-
-            <View style={styles.teamScore}>
+              <Text style={styles.scoreSeparator}>·</Text>
               <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
                 {game.scoreAway}
               </Text>
-              <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
-              {game.awayTeam.logoUrl && (
-                <Image
-                  source={{ uri: game.awayTeam.logoUrl }}
-                  style={styles.scoreLogo}
-                  contentFit="contain"
-                />
-              )}
             </View>
+
+            <TeamBlock
+              teamId={game.awayTeam.id}
+              abbreviation={game.awayTeam.abbreviation}
+              logoUrl={game.awayTeam.logoUrl}
+            />
           </View>
         </View>
 
@@ -97,6 +89,30 @@ export default function GameDetailScreen() {
         />
       </ScrollView>
     </>
+  );
+}
+
+function TeamBlock({
+  teamId,
+  abbreviation,
+  logoUrl,
+}: {
+  teamId: string;
+  abbreviation: string;
+  logoUrl?: string;
+}) {
+  return (
+    <View style={styles.teamBlock}>
+      <Pressable
+        onPress={() => router.push({ pathname: '/team/[id]', params: { id: teamId } })}
+        style={({ pressed }) => [styles.teamCard, pressed && styles.teamCardPressed]}
+      >
+        {logoUrl && (
+          <Image source={{ uri: logoUrl }} style={styles.scoreLogo} contentFit="contain" />
+        )}
+      </Pressable>
+      <Text style={styles.teamAbbr}>{abbreviation}</Text>
+    </View>
   );
 }
 
@@ -208,7 +224,7 @@ const styles = StyleSheet.create({
   // Scoreboard
   scoreboard: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xs,
   },
   gameDate: {
     color: colors.textSecondary,
@@ -225,16 +241,21 @@ const styles = StyleSheet.create({
   scoreboardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
-    width: '100%',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   teamScore: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  teamScorePressed: {
+    opacity: 0.6,
   },
   teamColumn: {
     alignItems: 'center',
@@ -243,17 +264,18 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   scoreLogo: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
   },
   teamAbbr: {
     color: colors.text,
     fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
   },
   bigScore: {
     color: colors.textSecondary,
-    fontSize: 29,
+    fontSize: 32,
     fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
@@ -384,5 +406,31 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
+  },
+  teamBlock: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  teamCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  teamCardPressed: {
+    opacity: 0.7,
+    borderColor: colors.primary,
+  },
+  scoresCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.xl,
   },
 });
