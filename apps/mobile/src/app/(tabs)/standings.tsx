@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { TeamLogo } from '@/components/ui/TeamLogo';
@@ -8,7 +8,6 @@ import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme
 import type { LeagueStanding } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { RefreshControl } from 'react-native';
 
 type ConferenceFilter = 'East' | 'West';
 
@@ -54,7 +53,12 @@ export default function StandingsScreen() {
               colors={[colors.primary]}
             />
           }
-          ListHeaderComponent={<StandingsHeaderRow />}
+          ListHeaderComponent={
+            <View>
+              <Legend />
+              <StandingsHeaderRow />
+            </View>
+          }
           renderItem={({ item, index }) => <StandingsRow standing={item} position={index + 1} />}
         />
       )}
@@ -75,6 +79,21 @@ function ConferenceTab({
     <Pressable onPress={onPress} style={[styles.confTab, active && styles.confTabActive]}>
       <Text style={[styles.confTabText, active && styles.confTabTextActive]}>{label}</Text>
     </Pressable>
+  );
+}
+
+function Legend() {
+  return (
+    <View style={styles.legend}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendSwatch, styles.legendSwatchPlayoff]} />
+        <Text style={styles.legendText}>Playoffs</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendSwatch, styles.legendSwatchPlayIn]} />
+        <Text style={styles.legendText}>Play-in</Text>
+      </View>
+    </View>
   );
 }
 
@@ -99,11 +118,14 @@ function StandingsRow({ standing, position }: { standing: LeagueStanding; positi
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/team/[id]', params: { id: standing.teamId } })}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      style={({ pressed }) => [
+        styles.row,
+        isPlayoffSpot && styles.rowPlayoff,
+        isPlayInSpot && styles.rowPlayIn,
+        pressed && styles.rowPressed,
+      ]}
     >
       <View style={[styles.colPosition, styles.positionWrap]}>
-        {isPlayoffSpot && <View style={styles.positionDotPlayoff} />}
-        {isPlayInSpot && <View style={styles.positionDotPlayIn} />}
         <Text style={styles.positionText}>{position}</Text>
       </View>
 
@@ -178,6 +200,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },
+
+  // Leyenda
+  legend: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendSwatch: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    borderWidth: 1,
+  },
+  legendSwatchPlayoff: {
+    backgroundColor: 'rgba(93, 171, 133, 0.18)',
+    borderColor: 'rgba(93, 171, 133, 0.35)',
+  },
+  legendSwatchPlayIn: {
+    backgroundColor: 'rgba(217, 176, 86, 0.18)',
+    borderColor: 'rgba(217, 176, 86, 0.35)',
+  },
+  legendText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+
+  // Tabla
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,30 +271,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  rowPlayoff: {
+    backgroundColor: 'rgba(93, 171, 133, 0.12)',
+  },
+  rowPlayIn: {
+    backgroundColor: 'rgba(217, 176, 86, 0.12)',
+  },
   rowPressed: {
     backgroundColor: colors.surface,
   },
   positionWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
   },
   positionText: {
     color: colors.text,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
-  },
-  positionDotPlayoff: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.success,
-  },
-  positionDotPlayIn: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.warning,
   },
   teamCell: {
     flexDirection: 'row',
