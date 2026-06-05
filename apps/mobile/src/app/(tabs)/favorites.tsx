@@ -1,61 +1,62 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { TeamLogo } from '@/components/ui/TeamLogo';
-import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
-import { useFavoriteTeamIds } from '@/hooks/useFavorites';
-import { useTeams } from '@/hooks/useTeams';
-import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { GameCard } from '@/components/game/GameCard';
 import { SearchButton } from '@/components/ui/SearchButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { RefreshControl } from 'react-native-gesture-handler';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useFavoriteTeamIds } from '@/hooks/useFavorites';
+import { useFavoritesTimeline } from '@/hooks/useFavoritesTimeline';
+import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 
 export default function FavoritesScreen() {
+  const { data: favoriteIds = [], isLoading: loadingIds } = useFavoriteTeamIds();
   const {
-    data: favoriteIds,
-    isLoading: loadingIds,
-    refetch: refetchFavorites,
-    isRefetching: refetchingFavorites,
-  } = useFavoriteTeamIds();
+    data: games,
+    isLoading: loadingGames,
+    error,
+    refetch,
+    isRefetching,
+  } = useFavoritesTimeline();
 
-  const {
-    data: teams,
-    isLoading: loadingTeams,
-    refetch: refetchTeams,
-    isRefetching: refetchingTeams,
-  } = useTeams();
+  const isLoading = loadingIds || loadingGames;
 
-  const isLoading = loadingIds || loadingTeams;
-  const isRefetching = refetchingFavorites || refetchingTeams;
-  const favoriteTeams = teams?.filter((t) => favoriteIds?.includes(t.id)) ?? [];
+  // Separar partidos en próximos y pasados
+  const now = new Date();
+  const upcoming = (games ?? [])
+    .filter((g) => g.startsAt >= now || g.status === 'live')
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  const past = (games ?? [])
+    .filter((g) => g.startsAt < now && g.status !== 'live')
+    .sort((a, b) => b.startsAt.getTime() - a.startsAt.getTime());
 
-  const handleRefresh = () => {
-    refetchFavorites();
-    refetchTeams();
-  };
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>Favoritos</Text>
+        <SearchButton />
+      </View>
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <LoadingState message="Cargando favoritos..." />
-      </SafeAreaView>
-    );
-  }
+      {/* Estado: cargando */}
+      {isLoading && favoriteIds.length > 0 && <LoadingState message="Cargando partidos..." />}
 
-  if (favoriteTeams.length === 0) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Favoritos</Text>
-          <SearchButton />
-        </View>
+      {/* Estado: error */}
+      {error && (
+        <ErrorState
+          title="No se pueden cargar los partidos"
+          message="Comprueba tu conexión e inténtalo de nuevo."
+          onRetry={refetch}
+        />
+      )}
+
+      {/* Estado: sin equipos favoritos */}
+      {!isLoading && favoriteIds.length === 0 && (
         <View style={styles.emptyWrapper}>
           <EmptyState
             icon="star-outline"
-            title="Aún no tienes favoritos"
-            message="Marca tus equipos preferidos con la estrella para verlos aquí."
+            title="Aún no sigues ningún equipo"
+            message="Ve a Equipos y marca tus preferidos con la estrella para verlos aquí."
             action={
               <Pressable
                 onPress={() => router.push('/(tabs)/teams')}
@@ -69,123 +70,99 @@ export default function FavoritesScreen() {
             }
           />
         </View>
-      </SafeAreaView>
-    );
-  }
+      )}
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <FlatList
-        data={favoriteTeams}
-        keyExtractor={(t) => t.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        ListHeaderComponent={
-          <View style={styles.headerSection}>
-            <Text style={styles.title}>Favoritos</Text>
-            <Text style={styles.subtitle}>
-              {favoriteTeams.length}{' '}
-              {favoriteTeams.length === 1 ? 'equipo seguido' : 'equipos seguidos'}
-            </Text>
+      {/* Estado: con equipos pero sin partidos */}
+      {!isLoading &&
+        !error &&
+        favoriteIds.length > 0 &&
+        upcoming.length === 0 &&
+        past.length === 0 && (
+          <View style={styles.emptyWrapper}>
+            <EmptyState
+              icon="calendar-outline"
+              title="Sin partidos cercanos"
+              message="No hay partidos de tus equipos favoritos en las próximas semanas."
+            />
           </View>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push({ pathname: '/team/[id]', params: { id: item.id } })}
-            style={({ pressed }) => [styles.teamCard, pressed && styles.teamCardPressed]}
-          >
-            <TeamLogo logoUrl={item.logoUrl} abbreviation={item.abbreviation} size={56} />
-            <View style={styles.teamInfo}>
-              <Text style={styles.teamCity}>{item.city}</Text>
-              <Text style={styles.teamName}>{item.name}</Text>
-              <Text style={styles.teamConference}>
-                Conferencia {item.conference === 'East' ? 'Este' : 'Oeste'}
-              </Text>
-            </View>
-            <FavoriteTeamButton teamId={item.id} size={22} />
-          </Pressable>
         )}
-      />
+
+      {/* Lista de partidos */}
+      {!isLoading &&
+        !error &&
+        favoriteIds.length > 0 &&
+        (upcoming.length > 0 || past.length > 0) && (
+          <FlatList
+            data={[]}
+            renderItem={null}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+            ListHeaderComponent={
+              <View>
+                {/* Próximos partidos */}
+                {upcoming.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Próximos partidos</Text>
+                    {upcoming.map((g, i) => (
+                      <GameCard key={g.id} game={g} index={i} showDate />
+                    ))}
+                  </View>
+                )}
+
+                {/* Pasados */}
+                {past.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Últimos partidos</Text>
+                    {past.map((g, i) => (
+                      <GameCard key={g.id} game={g} index={i} showDate />
+                    ))}
+                  </View>
+                )}
+              </View>
+            }
+          />
+        )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md },
-  listContent: { padding: spacing.md },
-  headerSection: { marginBottom: spacing.lg },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
   title: {
     color: colors.text,
     fontSize: fontSize.xxxl,
     fontFamily: fontFamily.displayBold,
   },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: fontSize.md,
-    marginTop: spacing.xs,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    gap: spacing.md,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontFamily: fontFamily.displayBold,
-  },
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: fontSize.md,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  teamCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
+  listContent: {
     padding: spacing.md,
-    borderRadius: radius.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
   },
-  teamCardPressed: { opacity: 0.7 },
-  teamInfo: { flex: 1 },
-  teamCity: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
+  section: {
+    marginBottom: spacing.lg,
   },
-  teamName: {
+  sectionTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontFamily: fontFamily.displayBold,
-  },
-  teamConference: {
-    color: colors.textSecondary,
-    fontSize: fontSize.xs,
-    marginTop: 2,
+    marginBottom: spacing.md,
   },
   emptyWrapper: {
     flex: 1,
     justifyContent: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
   },
   actionButton: {
     backgroundColor: colors.primary,
@@ -199,6 +176,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: colors.background,
     fontSize: fontSize.md,
-    fontFamily: fontFamily.displayBold,
+    fontFamily: fontFamily.bold,
   },
 });

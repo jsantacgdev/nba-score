@@ -155,3 +155,79 @@ export async function fetchGameCountsByDateRange(
 
   return counts;
 }
+
+export async function fetchGamesByTeams(
+  teamIds: string[],
+  daysBack: number,
+  daysForward: number,
+): Promise<Game[]> {
+  if (teamIds.length === 0) return [];
+
+  const now = new Date();
+  const startDate = new Date(now);
+  startDate.setDate(startDate.getDate() - daysBack);
+  startDate.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(now);
+  endDate.setDate(endDate.getDate() + daysForward);
+  endDate.setHours(23, 59, 59, 999);
+
+  const filters = teamIds
+    .flatMap((id) => [`home_team_id.eq.${id}`, `away_team_id.eq.${id}`])
+    .join(',');
+
+  const { data, error } = await supabase
+    .from('games')
+    .select(
+      `
+      id,
+      starts_at,
+      score_home,
+      score_away,
+      status,
+      period,
+      time_remaining,
+      home_team:teams!home_team_id(id, name, full_name, city, abbreviation, conference, logo_url),
+      away_team:teams!away_team_id(id, name, full_name, city, abbreviation, conference, logo_url)
+    `,
+    )
+    .or(filters)
+    .gte('starts_at', startDate.toISOString())
+    .lte('starts_at', endDate.toISOString())
+    .order('starts_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const home = Array.isArray(row.home_team) ? row.home_team[0] : row.home_team;
+    const away = Array.isArray(row.away_team) ? row.away_team[0] : row.away_team;
+
+    return {
+      id: row.id,
+      startsAt: new Date(row.starts_at),
+      status: row.status as Game['status'],
+      period: row.period ?? 0,
+      timeRemaining: row.time_remaining ?? undefined,
+      scoreHome: row.score_home ?? 0,
+      scoreAway: row.score_away ?? 0,
+      homeTeam: {
+        id: home?.id ?? '',
+        name: home?.name ?? '',
+        fullName: home?.full_name ?? '',
+        city: home?.city ?? '',
+        abbreviation: home?.abbreviation ?? '',
+        conference: (home?.conference ?? 'East') as 'East' | 'West',
+        logoUrl: home?.logo_url ?? undefined,
+      },
+      awayTeam: {
+        id: away?.id ?? '',
+        name: away?.name ?? '',
+        fullName: away?.full_name ?? '',
+        city: away?.city ?? '',
+        abbreviation: away?.abbreviation ?? '',
+        conference: (away?.conference ?? 'East') as 'East' | 'West',
+        logoUrl: away?.logo_url ?? undefined,
+      },
+    };
+  });
+}
