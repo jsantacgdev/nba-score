@@ -111,8 +111,8 @@ function StandingsHeaderRow() {
 }
 
 function StandingsRow({ standing, position }: { standing: LeagueStanding; position: number }) {
-  const isPlayoffSpot = position <= 8;
-  const isPlayInSpot = position >= 9 && position <= 10;
+  const isPlayoffSpot = position <= 6;
+  const isPlayInSpot = position >= 7 && position <= 10;
   const diff = standing.pointDifferential;
 
   return (
