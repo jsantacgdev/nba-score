@@ -9,7 +9,7 @@ from datetime import datetime
 import time
 from nba_api.stats.library.http import NBAStatsHTTP
 
-CURRENT_SEASON = "2025-26"
+CURRENT_SEASON = "2026-27"
 
 REQUEST_DELAY = 1.5
 
