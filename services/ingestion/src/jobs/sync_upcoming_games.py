@@ -4,7 +4,7 @@ from src.clients.balldontlie import get_games_for_date_range
 from src.clients.supabase import get_supabase_client
 
 
-CURRENT_SEASON = "2025-26"
+CURRENT_SEASON = "2026-27"
 
 
 def sync_upcoming_games(days_ahead: int = 30, days_back: int = 2) -> None:
