@@ -14,8 +14,17 @@ CURRENT_SEASON = "2026-27"
 REQUEST_DELAY = 1.5
 
 def build_team_logo_url(abbreviation: str) -> str:
-    """URL del logo del equipo (PNG vía ESPN CDN)."""
-    return f"https://a.espncdn.com/i/teamlogos/nba/500/{abbreviation.lower()}.png"
+    """URL del logo del equipo (PNG vía ESPN CDN) con parseo de excepciones."""
+    abbr_lower = abbreviation.lower()
+    
+    espn_exceptions = {
+        "uta": "utah",
+        "nop": "no"
+    }
+
+    final_abbr = espn_exceptions.get(abbr_lower, abbr_lower)
+
+    return f"https://a.espncdn.com/i/teamlogos/nba/500/{final_abbr}.png"
 
 
 def build_player_photo_url(player_id: str) -> str:
