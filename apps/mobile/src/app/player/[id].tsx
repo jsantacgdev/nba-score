@@ -1,16 +1,35 @@
+import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
+import { TeamLogo } from '@/components/ui/TeamLogo';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { usePlayer, usePlayerGameLog, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
+import {
+  usePlayer,
+  usePlayerCareer,
+  usePlayerGameLog,
+  usePlayerSeasonStats,
+} from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { formatDateDMY } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { PlayerGameLogEntry } from '@/types/domain';
+import type { PlayerCareerEntry, PlayerGameLogEntry } from '@/types/domain';
+
+type TabKey = 'games' | 'career';
+
+/** La lista es una sola FlatList y cambia de contenido segun la pestaña. */
+type ListRow =
+  | { kind: 'game'; game: PlayerGameLogEntry }
+  | { kind: 'career'; career: PlayerCareerEntry };
+
+/** Los nulos son reales: temporada con plantilla cargada pero sin jugar. */
+function stat(value: number | null, decimals = 1): string {
+  return value === null ? '—' : value.toFixed(decimals);
+}
 
 export default function PlayerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,13 +54,28 @@ export default function PlayerDetailScreen() {
     isRefetching: refetchingGameLog,
   } = usePlayerGameLog(playerId);
 
-  const isRefetching = refetchingPlayer || refetchingStats || refetchingGameLog;
+  const {
+    data: career,
+    refetch: refetchCareer,
+    isRefetching: refetchingCareer,
+  } = usePlayerCareer(playerId);
+
+  const [tab, setTab] = useState<TabKey>('games');
+
+  const isRefetching =
+    refetchingPlayer || refetchingStats || refetchingGameLog || refetchingCareer;
 
   const handleRefresh = () => {
     refetchPlayer();
     refetchStats();
     refetchGameLog();
+    refetchCareer();
   };
+
+  const rows: ListRow[] =
+    tab === 'games'
+      ? (gameLog ?? []).map((game) => ({ kind: 'game', game }) as ListRow)
+      : (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
 
   if (isLoading) {
     return <LoadingState message="Cargando jugador..." />;
@@ -66,8 +100,12 @@ export default function PlayerDetailScreen() {
       />
       <FlatList
         style={styles.container}
-        data={gameLog ?? []}
-        keyExtractor={(item) => item.gameId}
+        data={rows}
+        keyExtractor={(item) =>
+          item.kind === 'game'
+            ? item.game.gameId
+            : `${item.career.season}-${item.career.teamId}`
+        }
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -136,21 +174,110 @@ export default function PlayerDetailScreen() {
               </View>
             )}
 
-            {/* Título historial */}
-            <Text style={styles.sectionTitle}>Historial de partidos</Text>
-            {(!gameLog || gameLog.length === 0) && (
-              <EmptyState
-                icon="calendar-outline"
-                title="Sin partidos cargados"
-                message="Este jugador aún no tiene partidos registrados en la base de datos."
-                compact
+            {/* Pestañas */}
+            <View style={styles.detailTabs}>
+              <DetailTab
+                label="Partidos"
+                active={tab === 'games'}
+                onPress={() => setTab('games')}
               />
+              <DetailTab
+                label="Carrera"
+                active={tab === 'career'}
+                onPress={() => setTab('career')}
+              />
+            </View>
+
+            {tab === 'games' ? (
+              (!gameLog || gameLog.length === 0) && (
+                <EmptyState
+                  icon="calendar-outline"
+                  title="Sin partidos cargados"
+                  message="Este jugador aún no tiene partidos registrados en la base de datos."
+                  compact
+                />
+              )
+            ) : (
+              <>
+                {career && career.length > 0 && <CareerHeaderRow />}
+                {(!career || career.length === 0) && (
+                  <EmptyState
+                    icon="time-outline"
+                    title="Sin histórico"
+                    message="Este jugador no tiene temporadas registradas todavía."
+                    compact
+                  />
+                )}
+              </>
             )}
           </View>
         }
-        renderItem={({ item }) => <GameLogRow entry={item} />}
+        renderItem={({ item }) =>
+          item.kind === 'game' ? (
+            <GameLogRow entry={item.game} />
+          ) : (
+            <CareerRow entry={item.career} />
+          )
+        }
       />
     </>
+  );
+}
+
+function DetailTab({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.detailTab, active && styles.detailTabActive]}>
+      <Text style={[styles.detailTabText, active && styles.detailTabTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function CareerHeaderRow() {
+  return (
+    <View style={styles.careerHeader}>
+      <Text style={[styles.careerHeaderText, styles.colSeason]}>TEMP.</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerTeam]}>EQUIPO</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>PTS</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>REB</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>AST</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>ROB</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>TAP</Text>
+    </View>
+  );
+}
+
+function CareerRow({ entry }: { entry: PlayerCareerEntry }) {
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/team/[id]', params: { id: entry.teamId } })}
+      style={({ pressed }) => [styles.careerRow, pressed && styles.careerRowPressed]}
+    >
+      <Text style={[styles.careerSeason, styles.colSeason]}>{entry.season}</Text>
+
+      <View style={[styles.colCareerTeam, styles.careerTeamCell]}>
+        <TeamLogo logoUrl={entry.teamLogoUrl} abbreviation={entry.teamAbbreviation} size={20} />
+        <Text style={styles.careerTeamText} numberOfLines={1}>
+          {entry.teamAbbreviation}
+        </Text>
+        {entry.wonChampionship && (
+          <Ionicons name="trophy" size={12} color={colors.warning} />
+        )}
+      </View>
+
+      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.points)}</Text>
+      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.rebounds)}</Text>
+      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.assists)}</Text>
+      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.steals)}</Text>
+      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.blocks)}</Text>
+    </Pressable>
   );
 }
 
@@ -474,5 +601,88 @@ const styles = StyleSheet.create({
   },
   gameCardPressed: {
     opacity: 0.7,
+  },
+  // Pestañas Partidos / Carrera
+  detailTabs: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  detailTab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  detailTabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  detailTabText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  detailTabTextActive: {
+    color: colors.text,
+  },
+
+  // Tabla de carrera
+  careerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  careerHeaderText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
+  },
+  careerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  careerRowPressed: {
+    backgroundColor: colors.surface,
+  },
+  colSeason: {
+    width: 58,
+  },
+  colCareerTeam: {
+    flex: 1,
+  },
+  colCareerStat: {
+    width: 38,
+    textAlign: 'center',
+  },
+  careerSeason: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  careerTeamCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  careerTeamText: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  careerStat: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
   },
 });

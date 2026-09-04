@@ -137,6 +137,36 @@ export type LeagueStanding = {
   gamesPlayed: number;
   winPercentage: number;
   pointDifferential: number;
+  wonChampionship: boolean;
+};
+
+export type StandingsSeason = {
+  season: string;
+  gamesCount: number;
+};
+
+/** Una etapa de la carrera: un jugador en un equipo durante una temporada. */
+export type PlayerCareerEntry = {
+  season: string;
+  teamId: string;
+  teamName: string;
+  teamAbbreviation: string;
+  teamLogoUrl?: string;
+  /** null cuando la temporada aun no ha empezado y solo hay plantilla. */
+  gamesPlayed: number | null;
+  minutes: number | null;
+  points: number | null;
+  rebounds: number | null;
+  assists: number | null;
+  steals: number | null;
+  blocks: number | null;
+  turnovers: number | null;
+  fieldGoalPct: number | null;
+  threePointPct: number | null;
+  freeThrowPct: number | null;
+  /** Numero de equipos en los que jugo esa temporada. >1 significa traspaso. */
+  teamCount: number;
+  wonChampionship: boolean;
 };
 
 export type SearchResultPlayer = {

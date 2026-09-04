@@ -54,24 +54,26 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict]) -> int:
     return deleted_count
 
 
-def sync_games(days_back: int | None = None) -> None:
+def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> None:
     """
-    Sincroniza los partidos ya jugados de la temporada.
+    Sincroniza los partidos ya jugados de una temporada.
 
     Args:
         days_back: Si se indica, sincroniza solo los ultimos N dias en lugar
                    de la temporada completa. Util para el sync diario.
+        season: Temporada a sincronizar. Por defecto la actual, pero admite
+                temporadas pasadas para tapar huecos ('2025-26').
     """
     if days_back is not None:
         date_to = date.today()
         date_from = date_to - timedelta(days=days_back)
     else:
-        date_from, date_to = season_date_range(CURRENT_SEASON)
+        date_from, date_to = season_date_range(season)
 
-    print(f"Sincronizando partidos de la temporada {CURRENT_SEASON} "
+    print(f"Sincronizando partidos de la temporada {season} "
           f"de {date_from} a {date_to}...")
 
-    games = get_league_games(CURRENT_SEASON, date_from, date_to)
+    games = get_league_games(season, date_from, date_to)
     print(f"   {len(games)} partidos obtenidos")
 
     if not games:
@@ -113,6 +115,13 @@ def sync_games(days_back: int | None = None) -> None:
 if __name__ == "__main__":
     import sys
 
-    # Por defecto la temporada completa. Con "--days N" solo los ultimos N dias.
+    # Por defecto la temporada actual completa.
+    #   --days N      solo los ultimos N dias
+    #   --season X    otra temporada ("2025-26")
     days = int(sys.argv[sys.argv.index("--days") + 1]) if "--days" in sys.argv else None
-    sync_games(days_back=days)
+    temporada = (
+        sys.argv[sys.argv.index("--season") + 1]
+        if "--season" in sys.argv
+        else CURRENT_SEASON
+    )
+    sync_games(days_back=days, season=temporada)

@@ -88,6 +88,7 @@ export type Database = {
           score_away: number | null
           score_home: number | null
           season: string
+          season_type: string
           starts_at: string
           status: string
           time_remaining: string | null
@@ -102,6 +103,7 @@ export type Database = {
           score_away?: number | null
           score_home?: number | null
           season: string
+          season_type?: string
           starts_at: string
           status: string
           time_remaining?: string | null
@@ -116,6 +118,7 @@ export type Database = {
           score_away?: number | null
           score_home?: number | null
           season?: string
+          season_type?: string
           starts_at?: string
           status?: string
           time_remaining?: string | null
@@ -339,6 +342,88 @@ export type Database = {
           },
         ]
       }
+      player_season_history: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          field_goal_pct: number | null
+          free_throw_pct: number | null
+          games_played: number | null
+          minutes: number | null
+          player_id: string
+          points: number | null
+          primary_team_id: string | null
+          rebounds: number | null
+          season: string
+          steals: number | null
+          team_count: number | null
+          three_point_pct: number | null
+          turnovers: number | null
+          updated_at: string | null
+          won_championship: boolean | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          minutes?: number | null
+          player_id: string
+          points?: number | null
+          primary_team_id?: string | null
+          rebounds?: number | null
+          season: string
+          steals?: number | null
+          team_count?: number | null
+          three_point_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          won_championship?: boolean | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          minutes?: number | null
+          player_id?: string
+          points?: number | null
+          primary_team_id?: string | null
+          rebounds?: number | null
+          season?: string
+          steals?: number | null
+          team_count?: number | null
+          three_point_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          won_championship?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_history_primary_team_id_fkey"
+            columns: ["primary_team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_season_history_primary_team_id_fkey"
+            columns: ["primary_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_season_stats: {
         Row: {
           assists: number | null
@@ -391,6 +476,88 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_season_teams: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          field_goal_pct: number | null
+          free_throw_pct: number | null
+          games_played: number | null
+          jersey_number: string | null
+          minutes: number | null
+          player_id: string
+          points: number | null
+          position: string | null
+          rebounds: number | null
+          season: string
+          steals: number | null
+          team_id: string
+          three_point_pct: number | null
+          turnovers: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          jersey_number?: string | null
+          minutes?: number | null
+          player_id: string
+          points?: number | null
+          position?: string | null
+          rebounds?: number | null
+          season: string
+          steals?: number | null
+          team_id: string
+          three_point_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          field_goal_pct?: number | null
+          free_throw_pct?: number | null
+          games_played?: number | null
+          jersey_number?: string | null
+          minutes?: number | null
+          player_id?: string
+          points?: number | null
+          position?: string | null
+          rebounds?: number | null
+          season?: string
+          steals?: number | null
+          team_id?: string
+          three_point_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_teams_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_season_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_season_teams_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -449,6 +616,42 @@ export type Database = {
           },
         ]
       }
+      season_champions: {
+        Row: {
+          decided_at: string | null
+          season: string
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          decided_at?: string | null
+          season: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          decided_at?: string | null
+          season?: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_champions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "season_champions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           abbreviation: string
@@ -499,6 +702,7 @@ export type Database = {
           losses: number | null
           name: string | null
           point_differential: number | null
+          season: string | null
           team_id: string | null
           total_points_against: number | null
           total_points_for: number | null
@@ -509,6 +713,29 @@ export type Database = {
       }
     }
     Functions: {
+      player_career: {
+        Args: { target_player_id: string }
+        Returns: {
+          assists: number
+          blocks: number
+          field_goal_pct: number
+          free_throw_pct: number
+          games_played: number
+          minutes: number
+          points: number
+          rebounds: number
+          season: string
+          steals: number
+          team_abbreviation: string
+          team_count: number
+          team_id: string
+          team_logo_url: string
+          team_name: string
+          three_point_pct: number
+          turnovers: number
+          won_championship: boolean
+        }[]
+      }
       search_players: {
         Args: { max_results?: number; query: string }
         Returns: {
@@ -537,6 +764,32 @@ export type Database = {
           name: string
         }[]
       }
+      season_standings: {
+        Args: { target_season: string }
+        Returns: {
+          abbreviation: string
+          city: string
+          conference: string
+          division: string
+          full_name: string
+          games_played: number
+          logo_url: string
+          losses: number
+          name: string
+          point_differential: number
+          team_id: string
+          win_percentage: number
+          wins: number
+          won_championship: boolean
+        }[]
+      }
+      standings_seasons: {
+        Args: never
+        Returns: {
+          games_count: number
+          season: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -555,12 +808,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -584,11 +837,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -609,11 +862,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -634,11 +887,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -651,11 +904,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

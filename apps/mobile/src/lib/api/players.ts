@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import type { Player, PlayerGameLogEntry, PlayerSeasonStats } from '@/types/domain';
+import type {
+  Player,
+  PlayerCareerEntry,
+  PlayerGameLogEntry,
+  PlayerSeasonStats,
+} from '@/types/domain';
 import type { Database } from '@/types/database';
 
 type PlayerRow = Database['public']['Tables']['players']['Row'];
@@ -172,4 +177,43 @@ export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLo
 
     return entry;
   });
+}
+
+/** Convierte a number respetando el null (temporada sin empezar). */
+function num(value: number | string | null): number | null {
+  return value === null || value === undefined ? null : Number(value);
+}
+
+/**
+ * Carrera completa: una fila por temporada y equipo.
+ * Un jugador traspasado a mitad de temporada tiene dos filas del mismo año,
+ * cada una con las medias de esa etapa.
+ */
+export async function fetchPlayerCareer(playerId: string): Promise<PlayerCareerEntry[]> {
+  const { data, error } = await supabase.rpc('player_career', {
+    target_player_id: playerId,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    season: row.season ?? '',
+    teamId: row.team_id ?? '',
+    teamName: row.team_name ?? '',
+    teamAbbreviation: row.team_abbreviation ?? '',
+    teamLogoUrl: row.team_logo_url ?? undefined,
+    gamesPlayed: row.games_played ?? null,
+    minutes: num(row.minutes),
+    points: num(row.points),
+    rebounds: num(row.rebounds),
+    assists: num(row.assists),
+    steals: num(row.steals),
+    blocks: num(row.blocks),
+    turnovers: num(row.turnovers),
+    fieldGoalPct: num(row.field_goal_pct),
+    threePointPct: num(row.three_point_pct),
+    freeThrowPct: num(row.free_throw_pct),
+    teamCount: row.team_count ?? 1,
+    wonChampionship: row.won_championship ?? false,
+  }));
 }
