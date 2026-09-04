@@ -1,6 +1,6 @@
-from src.clients.nba import CURRENT_SEASON, get_league_games
+from src.clients.nba import CURRENT_SEASON, get_league_games, season_date_range
 from src.clients.supabase import get_supabase_client
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 
 def cleanup_balldontlie_duplicates(client, nba_games: list[dict]) -> int:
@@ -54,14 +54,30 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict]) -> int:
     return deleted_count
 
 
-def sync_games() -> None:
-    print("Sincronizando partidos de la temporada...")
+def sync_games(days_back: int | None = None) -> None:
+    """
+    Sincroniza los partidos ya jugados de la temporada.
 
-    games = get_league_games(CURRENT_SEASON)
+    Args:
+        days_back: Si se indica, sincroniza solo los ultimos N dias en lugar
+                   de la temporada completa. Util para el sync diario.
+    """
+    if days_back is not None:
+        date_to = date.today()
+        date_from = date_to - timedelta(days=days_back)
+    else:
+        date_from, date_to = season_date_range(CURRENT_SEASON)
+
+    print(f"Sincronizando partidos de la temporada {CURRENT_SEASON} "
+          f"de {date_from} a {date_to}...")
+
+    games = get_league_games(CURRENT_SEASON, date_from, date_to)
     print(f"   {len(games)} partidos obtenidos")
 
     if not games:
-        print("No se obtuvieron partidos.")
+        print("No hay partidos jugados en ese rango.")
+        print("   (Este endpoint solo devuelve partidos ya disputados; "
+              "el calendario futuro lo trae sync_upcoming_games.)")
         return
 
     client = get_supabase_client()
@@ -95,4 +111,8 @@ def sync_games() -> None:
 
 
 if __name__ == "__main__":
-    sync_games()
+    import sys
+
+    # Por defecto la temporada completa. Con "--days N" solo los ultimos N dias.
+    days = int(sys.argv[sys.argv.index("--days") + 1]) if "--days" in sys.argv else None
+    sync_games(days_back=days)
