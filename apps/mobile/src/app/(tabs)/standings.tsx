@@ -55,6 +55,7 @@ export default function StandingsScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.seasonsScroll}
           contentContainerStyle={styles.seasonsRow}
         >
           {seasons.map((s) => (
@@ -99,7 +100,9 @@ export default function StandingsScreen() {
               <StandingsHeaderRow />
             </View>
           }
-          renderItem={({ item, index }) => <StandingsRow standing={item} position={index + 1} />}
+          renderItem={({ item, index }) => (
+            <StandingsRow standing={item} position={index + 1} season={season} />
+          )}
         />
       )}
     </SafeAreaView>
@@ -151,14 +154,27 @@ function StandingsHeaderRow() {
   );
 }
 
-function StandingsRow({ standing, position }: { standing: LeagueStanding; position: number }) {
+function StandingsRow({
+  standing,
+  position,
+  season,
+}: {
+  standing: LeagueStanding;
+  position: number;
+  season?: string;
+}) {
   const isPlayoffSpot = position <= 6;
   const isPlayInSpot = position >= 7 && position <= 10;
   const diff = standing.pointDifferential;
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/team/[id]', params: { id: standing.teamId } })}
+      onPress={() =>
+        router.push({
+          pathname: '/team/[id]',
+          params: { id: standing.teamId, season: season ?? '' },
+        })
+      }
       style={({ pressed }) => [
         styles.row,
         isPlayoffSpot && styles.rowPlayoff,
@@ -243,14 +259,22 @@ const styles = StyleSheet.create({
   confTabTextActive: {
     color: colors.text,
   },
+  // flexGrow 0: sin esto el ScrollView horizontal se estira dentro de la
+  // columna y se come el espacio de la tabla
+  seasonsScroll: {
+    flexGrow: 0,
+    marginBottom: spacing.md,
+  },
   seasonsRow: {
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    alignItems: 'center',
     gap: spacing.sm,
   },
   seasonPill: {
-    paddingVertical: 6,
-    paddingHorizontal: spacing.md,
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: radius.full,
     borderWidth: 1,
@@ -259,11 +283,12 @@ const styles = StyleSheet.create({
   seasonPillActive: {
     backgroundColor: colors.surfaceLight,
     borderColor: colors.primary,
+    borderWidth: 2,
   },
   seasonPillText: {
     color: colors.textSecondary,
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.semibold,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
   },
   seasonPillTextActive: {
     color: colors.text,

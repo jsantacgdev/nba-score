@@ -1,23 +1,31 @@
 import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { GameCard } from '@/components/game/GameCard';
-import { useTeam, useTeamRoster, useTeamSeasonStats } from '@/hooks/useTeamRoster';
+import {
+  useTeam,
+  useTeamRoster,
+  useTeamSeasonRoster,
+  useTeamSeasonStats,
+} from '@/hooks/useTeamRoster';
 import { useTeamGames } from '@/hooks/useTeamGames';
 import { getPositionName } from '@/constants/positions';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { Game, Player, PlayerSeasonStats, Team } from '@/types/domain';
+import type { Game, PlayerSeasonStats, Team, TeamSeasonPlayer } from '@/types/domain';
 
 type Tab = 'roster' | 'games';
 
 export default function TeamDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
   const teamId = id ?? '';
+  // Llegamos desde la clasificacion de una temporada pasada
+  const historicSeason = season && season.length > 0 ? season : undefined;
   const [activeTab, setActiveTab] = useState<Tab>('roster');
 
   const { data: team, refetch: refetchTeam } = useTeam(teamId);
@@ -29,6 +37,10 @@ export default function TeamDetailScreen() {
     isRefetching: refetchingRoster,
   } = useTeamRoster(teamId);
   const { data: seasonStats, refetch: refetchStats } = useTeamSeasonStats(teamId);
+  const { data: seasonRoster, isLoading: seasonRosterLoading } = useTeamSeasonRoster(
+    teamId,
+    historicSeason,
+  );
   const {
     data: games,
     isLoading: gamesLoading,
@@ -45,16 +57,39 @@ export default function TeamDetailScreen() {
     refetchGames();
   };
 
-  if (rosterLoading) {
+  if (historicSeason ? seasonRosterLoading : rosterLoading) {
     return <LoadingState message="Cargando plantilla..." />;
   }
 
-  if (rosterError) {
+  if (!historicSeason && rosterError) {
     return <ErrorState title="No se puede cargar la plantilla" onRetry={refetchRoster} />;
   }
 
   // Indexar stats por jugador
   const statsByPlayer = seasonStats ?? new Map<string, PlayerSeasonStats>();
+
+  // Las dos plantillas se normalizan a la misma forma para pintarlas igual
+  const rosterRows: TeamSeasonPlayer[] = historicSeason
+    ? (seasonRoster ?? [])
+    : (roster ?? []).map((p) => {
+        const st = statsByPlayer.get(p.id);
+        return {
+          playerId: p.id,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          photoUrl: p.photoUrl,
+          jerseyNumber: p.jerseyNumber,
+          position: p.position,
+          gamesPlayed: st?.gamesPlayed ?? null,
+          minutes: st?.minutes ?? null,
+          points: st?.points ?? null,
+          rebounds: st?.rebounds ?? null,
+          assists: st?.assists ?? null,
+          steals: st?.steals ?? null,
+          blocks: st?.blocks ?? null,
+          wonChampionship: false,
+        };
+      });
 
   // Separar partidos en futuros y pasados
   const now = new Date();
@@ -69,15 +104,17 @@ export default function TeamDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: team?.fullName ?? 'Equipo',
+          title: historicSeason
+            ? `${team?.fullName ?? 'Equipo'} · ${historicSeason}`
+            : (team?.fullName ?? 'Equipo'),
         }}
       />
 
       {activeTab === 'roster' ? (
         <FlatList
           style={styles.container}
-          data={roster ?? []}
-          keyExtractor={(p) => p.id}
+          data={rosterRows}
+          keyExtractor={(p) => p.playerId}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -91,10 +128,17 @@ export default function TeamDetailScreen() {
             <View>
               <TeamHeader team={team} />
               <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
-              <Text style={styles.sectionTitle}>Plantilla</Text>
+              <Text style={styles.sectionTitle}>
+                {historicSeason ? `Plantilla ${historicSeason}` : 'Plantilla'}
+              </Text>
+              {historicSeason && rosterRows.length === 0 && (
+                <Text style={styles.emptyText}>
+                  No hay plantilla registrada para esta temporada.
+                </Text>
+              )}
             </View>
           }
-          renderItem={({ item }) => <RosterRow player={item} stats={statsByPlayer.get(item.id)} />}
+          renderItem={({ item }) => <RosterRow entry={item} />}
         />
       ) : (
         <FlatList
@@ -189,40 +233,45 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
   );
 }
 
-function RosterRow({ player, stats }: { player: Player; stats?: PlayerSeasonStats }) {
+function RosterRow({ entry }: { entry: TeamSeasonPlayer }) {
+  const hasStats = (entry.gamesPlayed ?? 0) > 0;
+
   return (
     <Pressable
       onPress={() =>
         router.push({
           pathname: '/player/[id]',
-          params: { id: player.id },
+          params: { id: entry.playerId },
         })
       }
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
     >
       <PlayerAvatar
-        photoUrl={player.photoUrl}
-        initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
+        photoUrl={entry.photoUrl}
+        initials={`${entry.firstName[0] ?? ''}${entry.lastName[0] ?? ''}`}
         size={48}
       />
       <View style={styles.rowInfo}>
         <Text style={styles.rowName}>
-          {player.firstName} {player.lastName}
+          {entry.firstName} {entry.lastName}
         </Text>
         <View style={styles.rowMeta}>
-          {player.jerseyNumber && <Text style={styles.rowMetaText}>#{player.jerseyNumber}</Text>}
-          {player.jerseyNumber && player.position && <Text style={styles.rowDivider}>·</Text>}
-          {player.position && (
-            <Text style={styles.rowMetaText}>{getPositionName(player.position)}</Text>
+          {entry.jerseyNumber && <Text style={styles.rowMetaText}>#{entry.jerseyNumber}</Text>}
+          {entry.jerseyNumber && entry.position && <Text style={styles.rowDivider}>·</Text>}
+          {entry.position && (
+            <Text style={styles.rowMetaText}>{getPositionName(entry.position)}</Text>
+          )}
+          {entry.wonChampionship && (
+            <Ionicons name="trophy" size={12} color={colors.warning} />
           )}
         </View>
-        {stats && stats.gamesPlayed > 0 && (
+        {hasStats && (
           <View style={styles.statsInline}>
-            <Text style={styles.statInlineValue}>{stats.points.toFixed(1)}</Text>
+            <Text style={styles.statInlineValue}>{(entry.points ?? 0).toFixed(1)}</Text>
             <Text style={styles.statInlineLabel}>PTS</Text>
-            <Text style={styles.statInlineValue}>{stats.rebounds.toFixed(1)}</Text>
+            <Text style={styles.statInlineValue}>{(entry.rebounds ?? 0).toFixed(1)}</Text>
             <Text style={styles.statInlineLabel}>REB</Text>
-            <Text style={styles.statInlineValue}>{stats.assists.toFixed(1)}</Text>
+            <Text style={styles.statInlineValue}>{(entry.assists ?? 0).toFixed(1)}</Text>
             <Text style={styles.statInlineLabel}>AST</Text>
           </View>
         )}
