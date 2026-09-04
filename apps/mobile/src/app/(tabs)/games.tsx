@@ -7,7 +7,7 @@ import { useGamesByDate } from '@/hooks/useGamesByDate';
 import { fetchMostRecentGameDate } from '@/lib/api/games';
 import { formatLongDate, isSameDay, startOfDay, formatShortDate } from '@/lib/format';
 import { colors, fontSize, fontFamily, spacing } from '@/constants/theme';
-import { useRecentDays } from '@/hooks/useRecentDays';
+import { useRecentDays, useUpcomingDays } from '@/hooks/useRecentDays';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -29,6 +29,7 @@ export default function GamesScreen() {
   const showRecentDays = isSameDay(selectedDate, today) || safeGames.length === 0;
 
   const { data: recentDays } = useRecentDays(selectedDate, 4);
+  const { data: upcomingDays } = useUpcomingDays(selectedDate, 4);
   const { data: gameCounts } = useGameCounts(today, 60, 60);
 
   return (
@@ -75,6 +76,23 @@ export default function GamesScreen() {
                 message="No hay partidos programados para este día."
                 compact
               />
+            )}
+
+            {/* Fuera de temporada lo util es saber cuando se vuelve a jugar,
+                asi que los proximos van antes que los pasados. */}
+            {showRecentDays && upcomingDays && upcomingDays.length > 0 && (
+              <View style={styles.recentDaysSection}>
+                <View style={styles.recentDaysHeader}>
+                  <Text style={styles.recentDaysTitle}>Próximos partidos</Text>
+                </View>
+                {upcomingDays.map((day) => (
+                  <CollapsibleDaySection
+                    key={day.date.toISOString()}
+                    date={day.date}
+                    games={day.games}
+                  />
+                ))}
+              </View>
             )}
 
             {liveGames.length > 0 && (

@@ -239,3 +239,9 @@ export type TeamSeasonPlayer = {
   blocks: number | null;
   wonChampionship: boolean;
 };
+
+export type TeamSeason = {
+  season: string;
+  players: number;
+  wonChampionship: boolean;
+};

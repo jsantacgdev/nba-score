@@ -65,10 +65,7 @@ export default function StandingsScreen() {
               style={[styles.seasonPill, s.season === season && styles.seasonPillActive]}
             >
               <Text
-                style={[
-                  styles.seasonPillText,
-                  s.season === season && styles.seasonPillTextActive,
-                ]}
+                style={[styles.seasonPillText, s.season === season && styles.seasonPillTextActive]}
               >
                 {s.season}
               </Text>
@@ -194,9 +191,7 @@ function StandingsRow({
       </View>
 
       <View style={styles.colTrophy}>
-        {standing.wonChampionship && (
-          <Ionicons name="trophy" size={13} color={colors.warning} />
-        )}
+        {standing.wonChampionship && <Ionicons name="trophy" size={13} color={colors.warning} />}
       </View>
 
       <Text style={[styles.statText, styles.colStat]}>{standing.wins}</Text>
@@ -271,12 +266,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   seasonPill: {
-    minHeight: 42,
+    minHeight: 54,
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
-    borderRadius: radius.full,
+    // borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -287,7 +282,7 @@ const styles = StyleSheet.create({
   },
   seasonPillText: {
     color: colors.textSecondary,
-    fontSize: fontSize.md,
+    fontSize: fontSize.lg,
     fontFamily: fontFamily.displaySemibold,
   },
   seasonPillTextActive: {

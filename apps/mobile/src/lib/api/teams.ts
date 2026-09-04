@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Team, TeamSeasonPlayer } from '@/types/domain';
+import type { Team, TeamSeason, TeamSeasonPlayer } from '@/types/domain';
 import type { Database } from '@/types/database';
 import type { Game } from '@/types/domain';
 
@@ -119,6 +119,21 @@ export async function fetchTeamSeasonRoster(
     assists: num(row.assists),
     steals: num(row.steals),
     blocks: num(row.blocks),
+    wonChampionship: row.won_championship ?? false,
+  }));
+}
+
+/** Temporadas con plantilla registrada de un equipo, marcando sus anillos. */
+export async function fetchTeamSeasons(teamId: string): Promise<TeamSeason[]> {
+  const { data, error } = await supabase.rpc('team_seasons', {
+    target_team_id: teamId,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    season: row.season ?? '',
+    players: row.players ?? 0,
     wonChampionship: row.won_championship ?? false,
   }));
 }
