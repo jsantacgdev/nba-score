@@ -149,9 +149,8 @@ export default function PlayerDetailScreen() {
               </View>
             </View>
 
-            {/* Botón Comparar. Solo para activos: la comparativa lee
-                player_season_stats, que no tiene datos de históricos. */}
-            {!isRetired && (
+            {/* Botón Comparar. Vale también para retirados: la comparativa
+                usa medias de carrera, que sí tenemos de los históricos. */}
             <Pressable
               onPress={() =>
                 router.push({
@@ -169,7 +168,6 @@ export default function PlayerDetailScreen() {
               </View>
               <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
             </Pressable>
-            )}
 
             {/* Medias de temporada */}
             {seasonStats && seasonStats.gamesPlayed > 0 && (

@@ -1,10 +1,10 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
-import { usePlayer, usePlayerSeasonStats } from '@/hooks/usePlayerDetail';
+import { usePlayer, usePlayerCareerTotals } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
-import type { Player, PlayerSeasonStats } from '@/types/domain';
+import type { Player } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -17,8 +17,10 @@ export default function CompareScreen() {
 
   const { data: p1, isLoading: l1 } = usePlayer(id1);
   const { data: p2, isLoading: l2 } = usePlayer(id2);
-  const { data: s1, isLoading: ls1 } = usePlayerSeasonStats(id1);
-  const { data: s2, isLoading: ls2 } = usePlayerSeasonStats(id2);
+  // Medias de carrera, no de temporada: es lo unico que permite comparar
+  // a un retirado con un jugador en activo.
+  const { data: s1, isLoading: ls1 } = usePlayerCareerTotals(id1);
+  const { data: s2, isLoading: ls2 } = usePlayerCareerTotals(id2);
 
   const isLoading = l1 || l2 || ls1 || ls2;
 
@@ -55,7 +57,18 @@ export default function CompareScreen() {
       {/* Stats comparadas */}
       {s1 && s2 ? (
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Medias de temporada</Text>
+          <Text style={styles.sectionTitle}>Medias de carrera</Text>
+          <Text style={styles.sectionCaption}>
+            {s1.firstSeason}–{s1.lastSeason} vs {s2.firstSeason}–{s2.lastSeason}. Solo cuentan
+            las temporadas cargadas en la base de datos.
+          </Text>
+          <StatComparison label="Temporadas" v1={s1.seasons} v2={s2.seasons} higherIsBetter />
+          <StatComparison
+            label="Anillos"
+            v1={s1.championships}
+            v2={s2.championships}
+            higherIsBetter
+          />
           <StatComparison label="Partidos" v1={s1.gamesPlayed} v2={s2.gamesPlayed} higherIsBetter />
           <StatComparison
             label="Minutos"
@@ -123,7 +136,7 @@ export default function CompareScreen() {
           <EmptyState
             icon="stats-chart-outline"
             title="Sin datos para comparar"
-            message="Uno o ambos jugadores no tienen stats de temporada cargadas todavía."
+            message="Uno o ambos jugadores no tienen temporadas registradas en el histórico."
             compact
           />
         </View>
@@ -225,6 +238,12 @@ function StatComparison({
 }
 
 const styles = StyleSheet.create({
+  sectionCaption: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    marginBottom: spacing.md,
+  },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   centered: {

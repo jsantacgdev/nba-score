@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchPlayerById,
   fetchPlayerCareer,
+  fetchPlayerCareerTotals,
   fetchPlayerGameLog,
   fetchPlayerSeasonStats,
 } from '@/lib/api/players';
@@ -40,6 +41,15 @@ export function usePlayerCareer(playerId: string) {
     queryFn: () => fetchPlayerCareer(playerId),
     enabled: !!playerId,
     // El historico no cambia salvo backfill, aguanta de sobra una hora
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function usePlayerCareerTotals(playerId: string) {
+  return useQuery({
+    queryKey: ['playerCareerTotals', playerId],
+    queryFn: () => fetchPlayerCareerTotals(playerId),
+    enabled: !!playerId,
     staleTime: 1000 * 60 * 60,
   });
 }

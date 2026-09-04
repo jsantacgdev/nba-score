@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   Player,
   PlayerCareerEntry,
+  PlayerCareerTotals,
   PlayerGameLogEntry,
   PlayerSeasonStats,
 } from '@/types/domain';
@@ -217,4 +218,41 @@ export async function fetchPlayerCareer(playerId: string): Promise<PlayerCareerE
     teamCount: row.team_count ?? 1,
     wonChampionship: row.won_championship ?? false,
   }));
+}
+
+/**
+ * Medias de carrera. Solo cubren las temporadas cargadas en la base de
+ * datos, asi que en jugadores anteriores a ese rango no coinciden con la
+ * media oficial de su carrera completa.
+ */
+export async function fetchPlayerCareerTotals(
+  playerId: string,
+): Promise<PlayerCareerTotals | null> {
+  const { data, error } = await supabase.rpc('player_career_totals', {
+    target_player_id: playerId,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+  if (!row || !row.games_played) return null;
+
+  return {
+    playerId,
+    seasons: row.seasons ?? 0,
+    gamesPlayed: row.games_played ?? 0,
+    minutes: Number(row.minutes ?? 0),
+    points: Number(row.points ?? 0),
+    rebounds: Number(row.rebounds ?? 0),
+    assists: Number(row.assists ?? 0),
+    steals: Number(row.steals ?? 0),
+    blocks: Number(row.blocks ?? 0),
+    turnovers: Number(row.turnovers ?? 0),
+    fieldGoalPct: Number(row.field_goal_pct ?? 0),
+    threePointPct: Number(row.three_point_pct ?? 0),
+    freeThrowPct: Number(row.free_throw_pct ?? 0),
+    championships: row.championships ?? 0,
+    firstSeason: row.first_season ?? '',
+    lastSeason: row.last_season ?? '',
+  };
 }
