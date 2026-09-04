@@ -1,6 +1,6 @@
 import time
 
-from src.clients.nba import REQUEST_DELAY, get_box_score
+from src.clients.nba import CURRENT_SEASON, REQUEST_DELAY, get_box_score
 from src.clients.supabase import get_supabase_client
 
 
@@ -28,17 +28,32 @@ def get_games_with_box_scores(client) -> set[str]:
     return loaded
 
 
-def get_all_final_game_ids(client, exclude_preseason: bool = True) -> list[str]:
-    """Lista todos los game_ids con status='final', con paginación completa."""
+def get_all_final_game_ids(
+    client,
+    exclude_preseason: bool = True,
+    season: str | None = CURRENT_SEASON,
+) -> list[str]:
+    """
+    Lista los game_ids con status='final', con paginación completa.
+
+    Por defecto se limita a la temporada actual. La tabla guarda 26
+    temporadas de histórico y recorrerlas todas son ~32.000 partidos, o
+    sea unas 13 horas: eso hay que pedirlo a propósito, no por descuido.
+    """
     ids: list[str] = []
     page_size = 1000
     offset = 0
 
     while True:
-        result = (
+        query = (
             client.table("games")
             .select("id")
             .eq("status", "final")
+        )
+        if season:
+            query = query.eq("season", season)
+        result = (
+            query
             .order("starts_at", desc=False)
             .range(offset, offset + page_size - 1)
             .execute()
@@ -87,6 +102,7 @@ def get_existing_player_ids(client) -> set[str]:
 def sync_box_scores(
     skip_existing: bool = True,
     exclude_preseason: bool = True,
+    season: str | None = CURRENT_SEASON,
 ) -> None:
     """
     Recorre los partidos finalizados y carga sus box scores.
@@ -95,18 +111,22 @@ def sync_box_scores(
     Args:
         skip_existing: Si True, ignora partidos que ya tienen box score.
         exclude_preseason: Si True, ignora partidos de pretemporada (IDs que empiezan por 001).
+        season: Temporada a procesar. None recorre TODO el histórico (horas).
     """
     print("🏀 Sincronizando box scores...")
 
     client = get_supabase_client()
 
     # 1. Listar partidos finalizados (con paginación)
-    all_game_ids = get_all_final_game_ids(client, exclude_preseason=exclude_preseason)
+    all_game_ids = get_all_final_game_ids(
+        client, exclude_preseason=exclude_preseason, season=season
+    )
     if not all_game_ids:
         print("⚠️  No hay partidos finalizados en la base de datos.")
         return
 
-    print(f"   {len(all_game_ids)} partidos finalizados encontrados"
+    ambito = f"de {season}" if season else "de TODAS las temporadas"
+    print(f"   {len(all_game_ids)} partidos finalizados {ambito}"
           + (" (excluyendo pretemporada)" if exclude_preseason else ""))
 
     # 2. Filtrar los que ya tienen box score
@@ -180,7 +200,18 @@ if __name__ == "__main__":
     skip = "--all" not in sys.argv
     include_preseason = "--include-preseason" in sys.argv
 
+    #   (sin flags)          solo la temporada actual
+    #   --season 2015-16     una temporada concreta
+    #   --all-seasons        todo el historico (horas)
+    if "--all-seasons" in sys.argv:
+        temporada = None
+    elif "--season" in sys.argv:
+        temporada = sys.argv[sys.argv.index("--season") + 1]
+    else:
+        temporada = CURRENT_SEASON
+
     sync_box_scores(
         skip_existing=skip,
         exclude_preseason=not include_preseason,
+        season=temporada,
     )
