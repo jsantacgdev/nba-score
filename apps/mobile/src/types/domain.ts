@@ -198,3 +198,23 @@ export type SearchResultTeam = {
 };
 
 export type SearchResult = SearchResultPlayer | SearchResultTeam;
+
+/** Medias de toda la carrera, ponderadas por partidos jugados. */
+export type PlayerCareerTotals = {
+  playerId: string;
+  seasons: number;
+  gamesPlayed: number;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fieldGoalPct: number;
+  threePointPct: number;
+  freeThrowPct: number;
+  championships: number;
+  firstSeason: string;
+  lastSeason: string;
+};

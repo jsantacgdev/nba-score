@@ -736,6 +736,27 @@ export type Database = {
           won_championship: boolean
         }[]
       }
+      player_career_totals: {
+        Args: { target_player_id: string }
+        Returns: {
+          assists: number
+          blocks: number
+          championships: number
+          field_goal_pct: number
+          first_season: string
+          free_throw_pct: number
+          games_played: number
+          last_season: string
+          minutes: number
+          player_id: string
+          points: number
+          rebounds: number
+          seasons: number
+          steals: number
+          three_point_pct: number
+          turnovers: number
+        }[]
+      }
       search_players: {
         Args: { max_results?: number; query: string }
         Returns: {
