@@ -116,6 +116,8 @@ def _map_game_to_internal(game: dict, season: str) -> Optional[dict]:
         "status": status,
         "score_home": game.get("home_team_score") or 0,
         "score_away": game.get("visitor_team_score") or 0,
+        # balldontlie no publica pretemporada, solo marca los de playoffs
+        "season_type": "playoffs" if game.get("postseason") else "regular",
     }
 
 

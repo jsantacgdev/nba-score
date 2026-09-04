@@ -1,9 +1,18 @@
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
-import { useStandings } from '@/hooks/useStandings';
+import { useStandings, useStandingsSeasons } from '@/hooks/useStandings';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -13,7 +22,13 @@ type ConferenceFilter = 'East' | 'West';
 
 export default function StandingsScreen() {
   const [conference, setConference] = useState<ConferenceFilter>('East');
-  const { data: standings, isLoading, error, refetch, isRefetching } = useStandings();
+  const [pickedSeason, setPickedSeason] = useState<string | null>(null);
+
+  const { data: seasons } = useStandingsSeasons();
+  // Sin elección explícita, la temporada más reciente disponible
+  const season = pickedSeason ?? seasons?.[0]?.season;
+
+  const { data: standings, isLoading, error, refetch, isRefetching } = useStandings(season);
 
   const filtered = (standings ?? []).filter((s) => s.conference === conference);
 
@@ -35,6 +50,31 @@ export default function StandingsScreen() {
           onPress={() => setConference('West')}
         />
       </View>
+
+      {seasons && seasons.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.seasonsRow}
+        >
+          {seasons.map((s) => (
+            <Pressable
+              key={s.season}
+              onPress={() => setPickedSeason(s.season)}
+              style={[styles.seasonPill, s.season === season && styles.seasonPillActive]}
+            >
+              <Text
+                style={[
+                  styles.seasonPillText,
+                  s.season === season && styles.seasonPillTextActive,
+                ]}
+              >
+                {s.season}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
 
       {isLoading && <LoadingState message="Cargando clasificación..." />}
 
@@ -102,6 +142,7 @@ function StandingsHeaderRow() {
     <View style={styles.headerRow}>
       <Text style={[styles.headerText, styles.colPosition]}>#</Text>
       <Text style={[styles.headerText, styles.colTeam]}>Equipo</Text>
+      <View style={styles.colTrophy} />
       <Text style={[styles.headerText, styles.colStat]}>V</Text>
       <Text style={[styles.headerText, styles.colStat]}>D</Text>
       <Text style={[styles.headerText, styles.colStat]}>%</Text>
@@ -134,6 +175,12 @@ function StandingsRow({ standing, position }: { standing: LeagueStanding; positi
         <Text style={styles.teamName} numberOfLines={1}>
           {standing.name}
         </Text>
+      </View>
+
+      <View style={styles.colTrophy}>
+        {standing.wonChampionship && (
+          <Ionicons name="trophy" size={13} color={colors.warning} />
+        )}
       </View>
 
       <Text style={[styles.statText, styles.colStat]}>{standing.wins}</Text>
@@ -194,6 +241,31 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displaySemibold,
   },
   confTabTextActive: {
+    color: colors.text,
+  },
+  seasonsRow: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  seasonPill: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  seasonPillActive: {
+    backgroundColor: colors.surfaceLight,
+    borderColor: colors.primary,
+  },
+  seasonPillText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  seasonPillTextActive: {
     color: colors.text,
   },
   listContent: {
@@ -258,6 +330,12 @@ const styles = StyleSheet.create({
   colStat: {
     width: 40,
     textAlign: 'center',
+  },
+  // Columna fija aunque no haya trofeo, para que no bailen las cifras
+  colTrophy: {
+    width: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   colStatDiff: {
     width: 56,

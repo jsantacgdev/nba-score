@@ -2,6 +2,7 @@ from nba_api.stats.static import teams as nba_teams_static
 from nba_api.stats.endpoints import commonteamroster
 from nba_api.stats.endpoints import leaguedashplayerstats
 from nba_api.stats.endpoints import playergamelog
+from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import scoreboardv2
 from nba_api.stats.endpoints import boxscoretraditionalv2
@@ -35,6 +36,20 @@ def season_date_range(season: str = CURRENT_SEASON) -> tuple[date, date]:
     """
     start_year = int(season.split("-")[0])
     return date(start_year, 9, 1), date(start_year + 1, 8, 31)
+
+
+SEASON_TYPE_BY_PREFIX = {
+    "001": "preseason",
+    "002": "regular",
+    "003": "allstar",
+    "004": "playoffs",
+    "005": "playin",
+}
+
+
+def season_type_from_id(game_id: str) -> str:
+    """El prefijo del ID de la NBA codifica el tipo de partido."""
+    return SEASON_TYPE_BY_PREFIX.get(str(game_id)[:3], "regular")
 
 
 def build_team_logo_url(abbreviation: str) -> str:
@@ -295,6 +310,7 @@ def get_league_games(
                 "score_home": 0,
                 "score_away": 0,
                 "status": "final",
+                "season_type": season_type_from_id(game_id),
             }
 
         entry = games_by_id[game_id]
@@ -348,6 +364,7 @@ def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> lis
             "status": status,
             "score_home": scores.get(home_id, 0),
             "score_away": scores.get(away_id, 0),
+            "season_type": season_type_from_id(game_id),
         })
 
     return games
@@ -403,3 +420,157 @@ def get_box_score(game_id: str) -> list[dict]:
         })
 
     return entries
+
+
+def season_range(start: str = "2000-01", end: str = CURRENT_SEASON) -> list[str]:
+    """Lista de temporadas entre dos extremos, ambos incluidos. '2000-01' -> '2000-01'."""
+    first = int(start.split("-")[0])
+    last = int(end.split("-")[0])
+    return [f"{y}-{str(y + 1)[-2:]}" for y in range(first, last + 1)]
+
+
+def _num(row, field: str, decimals: int = 1) -> float:
+    """
+    Convierte un campo a float tolerando NaN.
+
+    En temporadas antiguas hay jugadores con 0 intentos, y entonces los
+    porcentajes vienen como NaN, que no es JSON valido y revienta el upsert.
+    """
+    value = row.get(field)
+    if value is None:
+        return 0.0
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if num != num:  # NaN
+        return 0.0
+    return round(num, decimals)
+
+
+def _whole(row, field: str) -> int:
+    """Convierte un campo a int tolerando NaN y None."""
+    return int(_num(row, field, 0))
+
+
+def get_season_champion(season: str) -> dict | None:
+    """
+    Devuelve el campeon de una temporada deduciendolo del ultimo partido
+    de playoffs disputado: quien gana ese partido levanta el trofeo.
+
+    Devuelve None si la temporada aun no tiene playoffs jugados.
+    """
+    finder = leaguegamefinder.LeagueGameFinder(
+        season_nullable=season,
+        league_id_nullable="00",
+        season_type_nullable="Playoffs",
+        timeout=60,
+    )
+    df = finder.get_data_frames()[0]
+    if df.empty:
+        return None
+
+    last_date = df["GAME_DATE"].max()
+    final_game = df[(df["GAME_DATE"] == last_date) & (df["WL"] == "W")]
+    if final_game.empty:
+        return None
+
+    row = final_game.iloc[0]
+    return {
+        "season": season,
+        "team_id": str(row["TEAM_ID"]),
+        "decided_at": str(last_date)[:10],
+    }
+
+
+def get_season_history_stats(season: str) -> list[dict]:
+    """
+    Medias de todos los jugadores de una temporada, con el equipo con el
+    que la terminaron y cuantos equipos pisaron (team_count).
+
+    Incluye 'player_name', que NO es columna de la tabla: sirve para dar de
+    alta a los jugadores historicos que aun no existen en 'players'.
+    """
+    stats = leaguedashplayerstats.LeagueDashPlayerStats(
+        season=season,
+        per_mode_detailed="PerGame",
+        timeout=60,
+    )
+    df = stats.get_data_frames()[0]
+
+    results = []
+    for _, row in df.iterrows():
+        results.append(
+            {
+                "player_id": str(row["PLAYER_ID"]),
+                "player_name": str(row["PLAYER_NAME"]).strip(),
+                "season": season,
+                "primary_team_id": str(row["TEAM_ID"]),
+                "team_count": _whole(row, "TEAM_COUNT") or 1,
+                "games_played": _whole(row, "GP"),
+                "minutes": _num(row, "MIN"),
+                "points": _num(row, "PTS"),
+                "rebounds": _num(row, "REB"),
+                "assists": _num(row, "AST"),
+                "steals": _num(row, "STL"),
+                "blocks": _num(row, "BLK"),
+                "turnovers": _num(row, "TOV"),
+                "field_goal_pct": _num(row, "FG_PCT", 3),
+                "three_point_pct": _num(row, "FG3_PCT", 3),
+                "free_throw_pct": _num(row, "FT_PCT", 3),
+            }
+        )
+
+    return results
+
+
+def get_player_career_splits(player_id: str) -> list[dict]:
+    """
+    Medias por temporada Y equipo de toda la carrera de un jugador.
+
+    Es la unica fuente que separa las etapas de un traspasado: donde
+    LeagueDashPlayerStats da una fila con los promedios mezclados, esto da
+    una fila por equipo. Una sola llamada cubre la carrera entera.
+
+    Descarta las filas 'TOT' (team_id 0), que son el agregado que ya
+    tenemos en player_season_history.
+    """
+    try:
+        career = playercareerstats.PlayerCareerStats(
+            player_id=int(player_id),
+            per_mode36="PerGame",
+            timeout=60,
+        )
+        df = career.get_data_frames()[0]
+    except KeyError:
+        # La API responde {} para jugadores muy marginales (contratos de
+        # 10 dias con un puñado de partidos). No hay ficha de carrera y no
+        # sirve de nada reintentarlo: el dato no existe aguas arriba.
+        return []
+
+    splits = []
+    for _, row in df.iterrows():
+        team_id = str(row["TEAM_ID"])
+        if team_id == "0":  # fila TOT
+            continue
+
+        splits.append(
+            {
+                "player_id": str(player_id),
+                "season": str(row["SEASON_ID"]),
+                "team_id": team_id,
+                "games_played": _whole(row, "GP"),
+                "minutes": _num(row, "MIN"),
+                "points": _num(row, "PTS"),
+                "rebounds": _num(row, "REB"),
+                "assists": _num(row, "AST"),
+                "steals": _num(row, "STL"),
+                "blocks": _num(row, "BLK"),
+                "turnovers": _num(row, "TOV"),
+                "field_goal_pct": _num(row, "FG_PCT", 3),
+                "three_point_pct": _num(row, "FG3_PCT", 3),
+                "free_throw_pct": _num(row, "FT_PCT", 3),
+            }
+        )
+
+    return splits

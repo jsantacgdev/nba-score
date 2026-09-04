@@ -1,10 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchStandings } from '@/lib/api/standings';
+import { fetchStandingsBySeason, fetchStandingsSeasons } from '@/lib/api/standings';
 
-export function useStandings() {
+/** Temporadas seleccionables. Cambian poco, así que aguantan una hora. */
+export function useStandingsSeasons() {
   return useQuery({
-    queryKey: ['standings'],
-    queryFn: fetchStandings,
+    queryKey: ['standingsSeasons'],
+    queryFn: fetchStandingsSeasons,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useStandings(season?: string) {
+  return useQuery({
+    queryKey: ['standings', season],
+    queryFn: () => fetchStandingsBySeason(season!),
+    enabled: !!season,
     staleTime: 1000 * 60 * 10,
   });
 }
