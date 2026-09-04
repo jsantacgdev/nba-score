@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPlayersByTeam } from '@/lib/api/players';
-import { fetchTeamById } from '@/lib/api/teams';
+import { fetchTeamById, fetchTeamSeasonRoster } from '@/lib/api/teams';
 import { fetchSeasonStatsByTeam } from '@/lib/api/players';
 
 export function useTeam(teamId: string) {
@@ -24,5 +24,15 @@ export function useTeamSeasonStats(teamId: string) {
     queryKey: ['seasonStats', teamId],
     queryFn: () => fetchSeasonStatsByTeam(teamId),
     enabled: !!teamId,
+  });
+}
+
+/** Plantilla historica. Solo se consulta si hay temporada seleccionada. */
+export function useTeamSeasonRoster(teamId: string, season?: string) {
+  return useQuery({
+    queryKey: ['teamSeasonRoster', teamId, season],
+    queryFn: () => fetchTeamSeasonRoster(teamId, season!),
+    enabled: !!teamId && !!season,
+    staleTime: 1000 * 60 * 60,
   });
 }

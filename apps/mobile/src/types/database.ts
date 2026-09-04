@@ -811,6 +811,28 @@ export type Database = {
           season: string
         }[]
       }
+      team_season_roster: {
+        Args: { target_season: string; target_team_id: string }
+        Returns: {
+          assists: number
+          blocks: number
+          field_goal_pct: number
+          first_name: string
+          free_throw_pct: number
+          games_played: number
+          jersey_number: string
+          last_name: string
+          minutes: number
+          photo_url: string
+          player_id: string
+          player_position: string
+          points: number
+          rebounds: number
+          steals: number
+          three_point_pct: number
+          won_championship: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

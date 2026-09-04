@@ -218,3 +218,24 @@ export type PlayerCareerTotals = {
   firstSeason: string;
   lastSeason: string;
 };
+
+/**
+ * Una fila de plantilla, valga para la temporada actual o para una pasada.
+ * Los nulos son reales: hay temporadas cargadas sin estadisticas.
+ */
+export type TeamSeasonPlayer = {
+  playerId: string;
+  firstName: string;
+  lastName: string;
+  photoUrl?: string;
+  jerseyNumber?: string;
+  position?: string;
+  gamesPlayed: number | null;
+  minutes: number | null;
+  points: number | null;
+  rebounds: number | null;
+  assists: number | null;
+  steals: number | null;
+  blocks: number | null;
+  wonChampionship: boolean;
+};
