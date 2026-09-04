@@ -20,6 +20,7 @@ function mapPlayer(row: PlayerRow): Player {
     position: row.position ?? undefined,
     jerseyNumber: row.jersey_number ?? undefined,
     photoUrl: row.photo_url ?? undefined,
+    isActive: row.is_active ?? true,
   };
 }
 

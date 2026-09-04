@@ -16,6 +16,8 @@ export type Player = {
   position?: string;
   jerseyNumber?: string;
   photoUrl?: string;
+  /** false en los jugadores históricos: no tienen partidos cargados. */
+  isActive: boolean;
 };
 
 export type GameStatus = 'scheduled' | 'live' | 'final';

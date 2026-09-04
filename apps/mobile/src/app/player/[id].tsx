@@ -48,11 +48,14 @@ export default function PlayerDetailScreen() {
     isRefetching: refetchingStats,
   } = usePlayerSeasonStats(playerId);
 
+  // Los históricos no tienen box scores: ni se consulta
+  const isRetired = player?.isActive === false;
+
   const {
     data: gameLog,
     refetch: refetchGameLog,
     isRefetching: refetchingGameLog,
-  } = usePlayerGameLog(playerId);
+  } = usePlayerGameLog(playerId, !isRetired);
 
   const {
     data: career,
@@ -60,7 +63,9 @@ export default function PlayerDetailScreen() {
     isRefetching: refetchingCareer,
   } = usePlayerCareer(playerId);
 
-  const [tab, setTab] = useState<TabKey>('games');
+  const [selectedTab, setSelectedTab] = useState<TabKey>('games');
+  // Un retirado solo tiene carrera, asi que no hay eleccion que ofrecer
+  const tab: TabKey = isRetired ? 'career' : selectedTab;
 
   const isRefetching =
     refetchingPlayer || refetchingStats || refetchingGameLog || refetchingCareer;
@@ -136,10 +141,17 @@ export default function PlayerDetailScreen() {
                 <View style={styles.metaBadge}>
                   <Text style={styles.metaBadgeText}>{getPositionName(player.position)}</Text>
                 </View>
+                {isRetired && (
+                  <View style={[styles.metaBadge, styles.metaBadgeRetired]}>
+                    <Text style={styles.metaBadgeText}>Retirado</Text>
+                  </View>
+                )}
               </View>
             </View>
 
-            {/* Botón Comparar */}
+            {/* Botón Comparar. Solo para activos: la comparativa lee
+                player_season_stats, que no tiene datos de históricos. */}
+            {!isRetired && (
             <Pressable
               onPress={() =>
                 router.push({
@@ -157,6 +169,7 @@ export default function PlayerDetailScreen() {
               </View>
               <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
             </Pressable>
+            )}
 
             {/* Medias de temporada */}
             {seasonStats && seasonStats.gamesPlayed > 0 && (
@@ -174,19 +187,23 @@ export default function PlayerDetailScreen() {
               </View>
             )}
 
-            {/* Pestañas */}
-            <View style={styles.detailTabs}>
-              <DetailTab
-                label="Partidos"
-                active={tab === 'games'}
-                onPress={() => setTab('games')}
-              />
-              <DetailTab
-                label="Carrera"
-                active={tab === 'career'}
-                onPress={() => setTab('career')}
-              />
-            </View>
+            {/* Pestañas. Un retirado va directo a Carrera. */}
+            {isRetired ? (
+              <Text style={styles.sectionTitle}>Carrera</Text>
+            ) : (
+              <View style={styles.detailTabs}>
+                <DetailTab
+                  label="Partidos"
+                  active={tab === 'games'}
+                  onPress={() => setSelectedTab('games')}
+                />
+                <DetailTab
+                  label="Carrera"
+                  active={tab === 'career'}
+                  onPress={() => setSelectedTab('career')}
+                />
+              </View>
+            )}
 
             {tab === 'games' ? (
               (!gameLog || gameLog.length === 0) && (
@@ -602,6 +619,10 @@ const styles = StyleSheet.create({
   gameCardPressed: {
     opacity: 0.7,
   },
+  metaBadgeRetired: {
+    borderColor: colors.borderStrong,
+  },
+
   // Pestañas Partidos / Carrera
   detailTabs: {
     flexDirection: 'row',
