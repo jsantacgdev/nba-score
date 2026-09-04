@@ -52,6 +52,27 @@ def season_type_from_id(game_id: str) -> str:
     return SEASON_TYPE_BY_PREFIX.get(str(game_id)[:3], "regular")
 
 
+def _id(value) -> str:
+    """
+    Normaliza un identificador a texto.
+
+    pandas convierte una columna entera a float en cuanto alguna fila trae
+    NaN, y entonces str() devuelve '1610612759.0'. Ese sufijo no casa con
+    ninguna clave foranea y las filas se descartan en silencio.
+
+    Ojo con los GAME_ID: llevan ceros a la izquierda ('0040400407'), asi
+    que los valores que ya son texto se dejan intactos.
+    """
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, float):
+        if value != value:  # NaN
+            return ""
+        if value.is_integer():
+            return str(int(value))
+    return str(value)
+
+
 def build_team_logo_url(abbreviation: str) -> str:
     """URL del logo del equipo (PNG vía ESPN CDN) con parseo de excepciones."""
     abbr_lower = abbreviation.lower()
@@ -95,13 +116,13 @@ def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
 
         players.append(
             {
-                "id": str(row["PLAYER_ID"]),
+                "id": _id(row["PLAYER_ID"]),
                 "team_id": str(team_id),
                 "first_name": first_name,
                 "last_name": last_name,
                 "position": position,
                 "jersey_number": jersey,
-                "photo_url": build_player_photo_url(str(row["PLAYER_ID"])),
+                "photo_url": build_player_photo_url(_id(row["PLAYER_ID"])),
                 "is_active": True,
             }
         )
@@ -204,7 +225,7 @@ def get_season_stats(season: str = CURRENT_SEASON) -> list[dict]:
     for _, row in df.iterrows():
         results.append(
             {
-                "player_id": str(row["PLAYER_ID"]),
+                "player_id": _id(row["PLAYER_ID"]),
                 "season": season,
                 "games_played": int(row["GP"]),
                 "minutes": round(float(row["MIN"]), 1),
@@ -244,7 +265,7 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
         games.append(
             {
                 "player_id": str(player_id),
-                "game_id": str(row["Game_ID"]),
+                "game_id": _id(row["Game_ID"]),
                 "game_date": str(row["GAME_DATE"]),
                 "season": season,
                 "matchup": matchup,
@@ -294,10 +315,10 @@ def get_league_games(
     games_by_id: dict[str, dict] = {}
 
     for _, row in df.iterrows():
-        game_id = str(row["GAME_ID"])
+        game_id = _id(row["GAME_ID"])
         matchup = str(row["MATCHUP"])
         is_home = "vs." in matchup
-        team_id = str(row["TEAM_ID"])
+        team_id = _id(row["TEAM_ID"])
         pts = int(row["PTS"]) if row.get("PTS") is not None else 0
 
         if game_id not in games_by_id:
@@ -337,17 +358,17 @@ def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> lis
     # Indexamos las puntuaciones por game_id
     scores_by_game: dict[str, dict] = {}
     for _, row in line_score.iterrows():
-        gid = str(row["GAME_ID"])
+        gid = _id(row["GAME_ID"])
         if gid not in scores_by_game:
             scores_by_game[gid] = {}
-        team_id = str(row["TEAM_ID"])
+        team_id = _id(row["TEAM_ID"])
         scores_by_game[gid][team_id] = int(row["PTS"]) if row.get("PTS") else 0
 
     games = []
     for _, row in game_header.iterrows():
-        game_id = str(row["GAME_ID"])
-        home_id = str(row["HOME_TEAM_ID"])
-        away_id = str(row["VISITOR_TEAM_ID"])
+        game_id = _id(row["GAME_ID"])
+        home_id = _id(row["HOME_TEAM_ID"])
+        away_id = _id(row["VISITOR_TEAM_ID"])
 
         # Estado: GAME_STATUS_ID 1=scheduled, 2=live, 3=final
         status_id = int(row["GAME_STATUS_ID"])
@@ -401,7 +422,7 @@ def get_box_score(game_id: str) -> list[dict]:
             return int(val) if val is not None and str(val) != "nan" else 0
 
         entries.append({
-            "player_id": str(row["PLAYER_ID"]),
+            "player_id": _id(row["PLAYER_ID"]),
             "game_id": str(game_id),
             "minutes": round(minutes, 1),
             "points": _int("PTS"),
@@ -478,7 +499,7 @@ def get_season_champion(season: str) -> dict | None:
     row = final_game.iloc[0]
     return {
         "season": season,
-        "team_id": str(row["TEAM_ID"]),
+        "team_id": _id(row["TEAM_ID"]),
         "decided_at": str(last_date)[:10],
     }
 
@@ -502,10 +523,10 @@ def get_season_history_stats(season: str) -> list[dict]:
     for _, row in df.iterrows():
         results.append(
             {
-                "player_id": str(row["PLAYER_ID"]),
+                "player_id": _id(row["PLAYER_ID"]),
                 "player_name": str(row["PLAYER_NAME"]).strip(),
                 "season": season,
-                "primary_team_id": str(row["TEAM_ID"]),
+                "primary_team_id": _id(row["TEAM_ID"]),
                 "team_count": _whole(row, "TEAM_COUNT") or 1,
                 "games_played": _whole(row, "GP"),
                 "minutes": _num(row, "MIN"),
@@ -550,7 +571,7 @@ def get_player_career_splits(player_id: str) -> list[dict]:
 
     splits = []
     for _, row in df.iterrows():
-        team_id = str(row["TEAM_ID"])
+        team_id = _id(row["TEAM_ID"])
         if team_id == "0":  # fila TOT
             continue
 

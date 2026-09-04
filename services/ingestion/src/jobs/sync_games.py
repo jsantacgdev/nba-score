@@ -1,57 +1,77 @@
-from src.clients.nba import CURRENT_SEASON, get_league_games, season_date_range
-from src.clients.supabase import get_supabase_client
 from datetime import date, datetime, timedelta
 
+from src.clients.nba import CURRENT_SEASON, get_league_games, season_date_range
+from src.clients.supabase import get_supabase_client
 
-def cleanup_balldontlie_duplicates(client, nba_games: list[dict]) -> int:
-    """
-    Para cada partido NBA, busca duplicados con ID 'bdl_*' que representen
-    el mismo partido (mismos equipos, fecha en rango ±1 día) y los borra.
-    
-    La búsqueda con margen de 1 día compensa que nba_api y balldontlie usan
-    zonas horarias distintas (ET vs UTC), lo que puede hacer que el mismo
-    partido aparezca en días "calendario" diferentes.
-    """
-    deleted_count = 0
 
+def _day(value) -> date | None:
+    """Fecha de un partido, venga como timestamptz de Supabase o como texto."""
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    except ValueError:
+        try:
+            return datetime.strptime(value[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+
+def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -> int:
+    """
+    Borra los partidos 'bdl_*' que duplican a uno traido de nba_api.
+
+    El cruce se hace en memoria: antes esto lanzaba un SELECT por partido,
+    unos 1300 viajes a Supabase por temporada. Ahora es una sola consulta.
+
+    Se mantiene el margen de +-1 dia porque nba_api y balldontlie usan zonas
+    horarias distintas (ET vs UTC) y el mismo partido puede caer en dias
+    "calendario" diferentes segun la fuente.
+    """
+    existing = (
+        client.table("games")
+        .select("id, home_team_id, away_team_id, starts_at")
+        .like("id", "bdl_%")
+        .eq("season", season)
+        .execute()
+    )
+    if not existing.data:
+        return 0
+
+    # Indice (local, visitante, dia) -> ids de balldontlie
+    index: dict[tuple, list[str]] = {}
+    for row in existing.data:
+        day = _day(row["starts_at"])
+        if day is None:
+            continue
+        key = (row["home_team_id"], row["away_team_id"], day)
+        index.setdefault(key, []).append(row["id"])
+
+    to_delete: set[str] = set()
     for game in nba_games:
-        home_id = game["home_team_id"]
-        away_id = game["away_team_id"]
-        starts_at = game["starts_at"]
+        day = _day(game["starts_at"])
+        if day is None:
+            continue
+        for offset in (-1, 0, 1):
+            key = (
+                game["home_team_id"],
+                game["away_team_id"],
+                day + timedelta(days=offset),
+            )
+            to_delete.update(index.get(key, []))
 
-        # Extraer fecha del partido NBA
-        if isinstance(starts_at, str):
-            try:
-                # Intentar parsear con timezone
-                game_dt = datetime.fromisoformat(starts_at.replace("Z", "+00:00"))
-            except Exception:
-                # Fallback: tomar solo la fecha
-                game_dt = datetime.strptime(starts_at[:10], "%Y-%m-%d")
-        else:
-            game_dt = starts_at
+    if not to_delete:
+        return 0
 
-        # Rango de búsqueda: ±1 día desde el partido NBA
-        date_start = (game_dt - timedelta(days=1)).strftime("%Y-%m-%d")
-        date_end = (game_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+    ids = sorted(to_delete)
+    for i in range(0, len(ids), 100):
+        client.table("games").delete().in_("id", ids[i : i + 100]).execute()
 
-        # Buscar partidos bdl_* con los mismos equipos en el rango
-        result = (
-            client.table("games")
-            .select("id, starts_at")
-            .like("id", "bdl_%")
-            .eq("home_team_id", home_id)
-            .eq("away_team_id", away_id)
-            .gte("starts_at", f"{date_start}T00:00:00")
-            .lte("starts_at", f"{date_end}T23:59:59")
-            .execute()
-        )
-
-        for row in result.data:
-            client.table("games").delete().eq("id", row["id"]).execute()
-            print(f"   🗑️  Eliminado duplicado balldontlie: {row['id']}")
-            deleted_count += 1
-
-    return deleted_count
+    return len(ids)
 
 
 def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> None:
@@ -91,17 +111,14 @@ def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> No
         g for g in games
         if g["home_team_id"] in valid_ids and g["away_team_id"] in valid_ids
     ]
-    print(f"   {len(filtered)} partidos con equipos válidos")
+    print(f"   {len(filtered)} partidos con equipos validos")
 
     # Limpieza de duplicados balldontlie ANTES de insertar los NBA
-    print("   Buscando duplicados de balldontlie...")
-    deleted = cleanup_balldontlie_duplicates(client, filtered)
+    deleted = cleanup_balldontlie_duplicates(client, filtered, season)
     if deleted > 0:
-        print(f"   {deleted} duplicados balldontlie eliminados")
-    else:
-        print("   Sin duplicados que eliminar")
+        print(f"   {deleted} duplicados de balldontlie eliminados")
 
-    # Upsert por lotes de 500 para no exceder límites
+    # Upsert por lotes de 500 para no exceder limites
     batch_size = 500
     total = 0
     for i in range(0, len(filtered), batch_size):
@@ -109,19 +126,39 @@ def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> No
         result = client.table("games").upsert(batch).execute()
         total += len(result.data)
 
-    print(f"✅ {total} partidos sincronizados")
+    print(f"✅ {total} partidos sincronizados en {season}")
+
+
+def sync_seasons(first: str, last: str = CURRENT_SEASON) -> None:
+    """Recorre un rango de temporadas. Los upserts hacen que sea reejecutable."""
+    from src.clients.nba import season_range
+
+    seasons = season_range(first, last)
+    print(f"Sincronizando {len(seasons)} temporadas: {seasons[0]} -> {seasons[-1]}\n")
+
+    for i, season in enumerate(seasons, start=1):
+        print(f"===== [{i}/{len(seasons)}] =====")
+        try:
+            sync_games(season=season)
+        except Exception as e:
+            print(f"   Error en {season}: {e}")
+        print()
+
+    print("Completado.")
 
 
 if __name__ == "__main__":
     import sys
 
-    # Por defecto la temporada actual completa.
-    #   --days N      solo los ultimos N dias
-    #   --season X    otra temporada ("2025-26")
-    days = int(sys.argv[sys.argv.index("--days") + 1]) if "--days" in sys.argv else None
-    temporada = (
-        sys.argv[sys.argv.index("--season") + 1]
-        if "--season" in sys.argv
-        else CURRENT_SEASON
-    )
-    sync_games(days_back=days, season=temporada)
+    def _flag(name: str, default=None):
+        return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+    # --from X    recorre desde esa temporada hasta la actual
+    # --season X  solo esa temporada
+    # --days N    solo los ultimos N dias de la temporada actual
+    desde = _flag("--from")
+    if desde:
+        sync_seasons(desde, _flag("--to", CURRENT_SEASON))
+    else:
+        days = int(_flag("--days")) if "--days" in sys.argv else None
+        sync_games(days_back=days, season=_flag("--season", CURRENT_SEASON))
