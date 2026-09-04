@@ -22,11 +22,15 @@ export function usePlayerSeasonStats(playerId: string) {
   });
 }
 
-export function usePlayerGameLog(playerId: string) {
+/**
+ * @param enabled Los jugadores históricos no tienen box scores cargados,
+ *                así que ni se pide.
+ */
+export function usePlayerGameLog(playerId: string, enabled = true) {
   return useQuery({
     queryKey: ['playerGameLog', playerId],
     queryFn: () => fetchPlayerGameLog(playerId),
-    enabled: !!playerId,
+    enabled: !!playerId && enabled,
   });
 }
 
