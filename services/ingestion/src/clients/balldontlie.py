@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -6,6 +7,10 @@ import httpx
 from src.config import config
 
 BASE_URL = "https://api.balldontlie.io/v1"
+
+# El plan gratuito permite 5 peticiones/minuto. Al paginar una temporada
+# entera nos pasamos de largo, asi que respetamos las cabeceras de cuota.
+MAX_RETRIES = 5
 
 
 # Mapeo de IDs de balldontlie a los IDs de nba_api en nuestra BD
@@ -52,6 +57,37 @@ def _get_headers() -> dict:
     return {"Authorization": config.BALLDONTLIE_API_KEY}
 
 
+def _get(url: str, headers: dict, params: dict) -> httpx.Response:
+    """GET que respeta el rate limit: reintenta los 429 y frena antes de agotar la cuota."""
+    for attempt in range(1, MAX_RETRIES + 1):
+        response = httpx.get(url, headers=headers, params=params, timeout=30)
+
+        if response.status_code == 429:
+            if attempt == MAX_RETRIES:
+                response.raise_for_status()
+            wait = int(response.headers.get("retry-after", 60))
+            print(f"   Rate limit alcanzado, esperando {wait}s "
+                  f"(intento {attempt}/{MAX_RETRIES})...")
+            time.sleep(wait + 1)
+            continue
+
+        response.raise_for_status()
+
+        # Si esta peticion agoto la cuota, esperamos al reset antes de seguir
+        if response.headers.get("x-ratelimit-remaining") == "0":
+            reset = response.headers.get("x-ratelimit-reset", "")
+            wait = 60
+            if reset.isdigit():
+                wait = max(0, int(reset) - int(time.time())) + 1
+            if wait > 0:
+                print(f"   Cuota agotada, esperando {wait}s hasta el reset...")
+                time.sleep(wait)
+
+        return response
+
+    raise RuntimeError("Rate limit de balldontlie: agotados todos los reintentos")
+
+
 def _map_game_to_internal(game: dict, season: str) -> Optional[dict]:
     """Convierte un partido de balldontlie al formato de nuestra BD."""
     if not game.get("home_team") or not game.get("visitor_team"):
@@ -96,19 +132,16 @@ def get_games_for_date_range(
 
     all_games: list[dict] = []
     cursor = None
+    page = 0
 
     while True:
         if cursor:
             params["cursor"] = cursor
 
-        response = httpx.get(
-            f"{BASE_URL}/games",
-            headers=headers,
-            params=params,
-            timeout=30,
-        )
-        response.raise_for_status()
+        page += 1
+        response = _get(f"{BASE_URL}/games", headers, params)
         data = response.json()
+        print(f"   pagina {page}: {len(data.get('data', []))} partidos")
 
         for raw_game in data.get("data", []):
             mapped = _map_game_to_internal(raw_game, season)

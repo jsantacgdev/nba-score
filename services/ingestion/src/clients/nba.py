@@ -5,13 +5,37 @@ from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import scoreboardv2
 from nba_api.stats.endpoints import boxscoretraditionalv2
-from datetime import datetime
+from datetime import date, datetime
 import time
 from nba_api.stats.library.http import NBAStatsHTTP
 
 CURRENT_SEASON = "2026-27"
 
 REQUEST_DELAY = 1.5
+
+_TEAM_NAMES: dict[str, str] = {}
+
+
+def get_team_name(team_id: str) -> str:
+    """Nombre del equipo a partir de su ID (datos estaticos, sin peticiones)."""
+    global _TEAM_NAMES
+    if not _TEAM_NAMES:
+        _TEAM_NAMES = {
+            str(t["id"]): t["full_name"] for t in nba_teams_static.get_teams()
+        }
+    return _TEAM_NAMES.get(str(team_id), str(team_id))
+
+
+def season_date_range(season: str = CURRENT_SEASON) -> tuple[date, date]:
+    """
+    Rango de fechas que cubre una temporada NBA.
+
+    '2026-27' -> (2026-09-01, 2027-08-31). Empieza en septiembre para incluir
+    la pretemporada y termina en agosto para no cortar unas Finales largas.
+    """
+    start_year = int(season.split("-")[0])
+    return date(start_year, 9, 1), date(start_year + 1, 8, 31)
+
 
 def build_team_logo_url(abbreviation: str) -> str:
     """URL del logo del equipo (PNG vía ESPN CDN) con parseo de excepciones."""
@@ -75,13 +99,14 @@ def get_all_rosters(team_ids: list[str], season: str = CURRENT_SEASON) -> list[d
     all_players = []
 
     for i, team_id in enumerate(team_ids, start=1):
-        print(f"   [{i}/{len(team_ids)}] Obteniendo plantilla del equipo {team_id}...")
+        team_name = get_team_name(team_id)
+        print(f"   [{i}/{len(team_ids)}] Obteniendo plantilla del equipo {team_name}...")
         try:
             players = get_team_roster(team_id, season)
             all_players.extend(players)
             print(f"        → {len(players)} jugadores")
         except Exception as e:
-            print(f"        Error con el equipo {team_id}: {e}")
+            print(f"        Error con el equipo {team_name}: {e}")
 
         # Pausa entre peticiones (excepto en la última)
         if i < len(team_ids):
@@ -230,11 +255,22 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
 
     return games
 
-def get_league_games(season: str = CURRENT_SEASON) -> list[dict]:
-    """Obtiene todos los partidos de la temporada con su marcador."""
+def get_league_games(
+    season: str = CURRENT_SEASON,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> list[dict]:
+    """
+    Obtiene los partidos de la temporada con su marcador.
+
+    Ojo: este endpoint solo devuelve partidos YA JUGADOS. El calendario
+    futuro no aparece aqui, lo trae sync_upcoming_games via balldontlie.
+    """
     finder = leaguegamefinder.LeagueGameFinder(
         season_nullable=season,
         league_id_nullable="00",  # 00 = NBA
+        date_from_nullable=date_from.strftime("%m/%d/%Y") if date_from else "",
+        date_to_nullable=date_to.strftime("%m/%d/%Y") if date_to else "",
         timeout=60,
     )
     df = finder.get_data_frames()[0]
