@@ -833,6 +833,14 @@ export type Database = {
           won_championship: boolean
         }[]
       }
+      team_seasons: {
+        Args: { target_team_id: string }
+        Returns: {
+          players: number
+          season: string
+          won_championship: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

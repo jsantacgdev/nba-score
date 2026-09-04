@@ -127,6 +127,46 @@ export async function fetchRecentGameDays(
   return days;
 }
 /**
+ * Los siguientes N días que tienen partidos programados (posteriores a una
+ * fecha de referencia). Es el espejo de fetchRecentGameDays: sirve para que
+ * fuera de temporada la pantalla siga diciendo cuándo se vuelve a jugar.
+ */
+export async function fetchUpcomingGameDays(
+  after: Date,
+  daysCount: number,
+): Promise<{ date: Date; games: Game[] }[]> {
+  const afterIso = new Date(after);
+  afterIso.setHours(23, 59, 59, 999);
+
+  const { data, error } = await supabase
+    .from('games')
+    .select(SELECT_WITH_TEAMS)
+    .gt('starts_at', afterIso.toISOString())
+    .neq('status', 'final')
+    .order('starts_at', { ascending: true })
+    .limit(200);
+
+  if (error) throw error;
+
+  const mapped = (data ?? []).map(mapGame).filter((g): g is Game => g !== null);
+
+  const byDay = new Map<string, Game[]>();
+  for (const g of mapped) {
+    const key = g.startsAt.toISOString().slice(0, 10);
+    if (!byDay.has(key)) byDay.set(key, []);
+    byDay.get(key)!.push(g);
+  }
+
+  return Array.from(byDay.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(0, daysCount)
+    .map(([key, games]) => ({
+      date: new Date(key + 'T00:00:00'),
+      games,
+    }));
+}
+
+/**
  * Devuelve un Map con el número de partidos por día en un rango de fechas.
  * La clave es la fecha en formato 'YYYY-MM-DD'.
  */
