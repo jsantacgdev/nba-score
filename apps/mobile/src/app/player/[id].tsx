@@ -14,6 +14,7 @@ import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy, awardLabel } from '@/components/ui/Trophy';
 import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
+import { usePlayerDraft } from '@/hooks/useDraft';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -68,6 +69,7 @@ export default function PlayerDetailScreen() {
   } = usePlayerCareer(playerId);
 
   const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
+  const { data: draft } = usePlayerDraft(playerId);
 
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
   const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
@@ -169,6 +171,27 @@ export default function PlayerDetailScreen() {
                 <View style={styles.metaBadge}>
                   <Text style={styles.metaBadgeText}>{getPositionName(player.position)}</Text>
                 </View>
+                {draft && (
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: '/draft',
+                        params: { year: String(draft.draftYear) },
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.metaBadge,
+                      styles.metaBadgeDraft,
+                      pressed && styles.metaBadgePressed,
+                    ]}
+                  >
+                    <Text style={styles.metaBadgeText}>
+                      {draft.overallPick && draft.overallPick > 0
+                        ? `${draft.overallPick}º Draft ${draft.draftYear}`
+                        : `Draft ${draft.draftYear}`}
+                    </Text>
+                  </Pressable>
+                )}
                 {isRetired && (
                   <View style={[styles.metaBadge, styles.metaBadgeRetired]}>
                     <Text style={styles.metaBadgeText}>Retirado</Text>
@@ -728,6 +751,13 @@ const styles = StyleSheet.create({
   },
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
+  },
+  // Se distingue del resto porque este si es pulsable
+  metaBadgeDraft: {
+    borderColor: colors.primary,
+  },
+  metaBadgePressed: {
+    backgroundColor: colors.surfaceLight,
   },
 
   seasonRow: {

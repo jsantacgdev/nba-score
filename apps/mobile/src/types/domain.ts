@@ -282,3 +282,40 @@ export type TeamTitle = {
   /** Ano en que se levanto el titulo: la temporada 1969-70 es el 1970. */
   year: number;
 };
+
+export type DraftPick = {
+  playerId: string;
+  playerName: string;
+  draftYear: number;
+  round: number | null;
+  roundPick: number | null;
+  /** 0 en las elecciones territoriales de los 60, que no llevaban numero. */
+  overallPick: number | null;
+  teamId?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+  /** Universidad o club de procedencia. */
+  organization?: string;
+  photoUrl?: string;
+  /** Temporada en que gano el Rookie del Año, si lo gano. */
+  roySeason?: string;
+  /** Llego a jugar en la NBA y tiene ficha que abrir. */
+  hasProfile: boolean;
+};
+
+export type DraftYear = {
+  year: number;
+  picks: number;
+  rounds: number;
+  /**
+   * Rookies del Año salidos de esa clase. Normalmente uno, a veces dos
+   * (premio compartido o novato que debuto con un año de retraso), y a
+   * veces ninguno: el ROY de esa temporada puede venir de otra clase.
+   */
+  roy: {
+    playerId: string;
+    playerName: string;
+    photoUrl?: string;
+    season: string;
+  }[];
+};

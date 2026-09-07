@@ -39,6 +39,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      draft_picks: {
+        Row: {
+          draft_year: number
+          organization: string | null
+          overall_pick: number | null
+          player_id: string
+          player_name: string
+          round: number | null
+          round_pick: number | null
+          team_abbreviation: string | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          draft_year: number
+          organization?: string | null
+          overall_pick?: number | null
+          player_id: string
+          player_name: string
+          round?: number | null
+          round_pick?: number | null
+          team_abbreviation?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          draft_year?: number
+          organization?: string | null
+          overall_pick?: number | null
+          player_id?: string
+          player_name?: string
+          round?: number | null
+          round_pick?: number | null
+          team_abbreviation?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       game_mvp: {
         Row: {
           calculated_at: string | null
@@ -748,6 +787,46 @@ export type Database = {
       }
     }
     Functions: {
+      backfill_game_log_dates: {
+        Args: never
+        Returns: {
+          fechas_rellenadas: number
+          temporadas_rellenadas: number
+        }[]
+      }
+      draft_class: {
+        Args: { target_year: number }
+        Returns: {
+          has_profile: boolean
+          organization: string
+          overall_pick: number
+          photo_url: string
+          player_id: string
+          player_name: string
+          round: number
+          round_pick: number
+          roy_season: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+        }[]
+      }
+      draft_years: {
+        Args: never
+        Returns: {
+          draft_year: number
+          picks: number
+          rounds: number
+          roy_photo_url: string
+          roy_player_id: string
+          roy_player_name: string
+          roy_season: string
+          roy2_photo_url: string
+          roy2_player_id: string
+          roy2_player_name: string
+          roy2_season: string
+        }[]
+      }
       player_career: {
         Args: { target_player_id: string }
         Returns: {
