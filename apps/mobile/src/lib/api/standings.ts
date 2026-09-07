@@ -14,6 +14,14 @@ export async function fetchStandingsSeasons(): Promise<StandingsSeason[]> {
   return (data ?? []).map((row) => ({
     season: row.season,
     gamesCount: row.games_count ?? 0,
+    champion: row.champion_team_id
+      ? {
+          teamId: row.champion_team_id,
+          name: row.champion_name ?? '',
+          abbreviation: row.champion_abbreviation ?? '',
+          logoUrl: row.champion_logo_url ?? undefined,
+        }
+      : undefined,
   }));
 }
 

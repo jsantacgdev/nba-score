@@ -145,6 +145,13 @@ export type LeagueStanding = {
 export type StandingsSeason = {
   season: string;
   gamesCount: number;
+  /** Campeon de esa temporada. Falta en la temporada aun en juego. */
+  champion?: {
+    teamId: string;
+    name: string;
+    abbreviation: string;
+    logoUrl?: string;
+  };
 };
 
 /** Una etapa de la carrera: un jugador en un equipo durante una temporada. */
