@@ -99,12 +99,20 @@ export function trophyArt(award: TrophyCode, season: string): number | null {
 export function Trophy({
   award,
   season,
+  seasons,
   size = 40,
   style,
   interactive = true,
 }: {
   award: TrophyCode;
+  /** Decide el diseño del trofeo (viejo o nuevo). Usa el más reciente. */
   season: string;
+  /**
+   * Todas las veces que se gano, ya con la etiqueta que quiera quien lo
+   * usa: el equipo muestra anos (1989) y el jugador temporadas (1988-89).
+   * Sin esto un trofeo que representa tres titulos solo explicaba uno.
+   */
+  seasons?: string[];
   size?: number;
   style?: StyleProp<ImageStyle>;
   /** A false el trofeo es decorativo y no abre la explicación. */
@@ -151,7 +159,17 @@ export function Trophy({
               transition={150}
             />
             <Text style={styles.cardTitle}>{art.label}</Text>
-            {season.length > 0 && <Text style={styles.cardSeason}>{season}</Text>}
+
+            {seasons && seasons.length > 0 ? (
+              <>
+                {seasons.length > 1 && (
+                  <Text style={styles.cardCount}>{seasons.length} veces</Text>
+                )}
+                <Text style={styles.cardSeason}>{seasons.join('  ·  ')}</Text>
+              </>
+            ) : (
+              season.length > 0 && <Text style={styles.cardSeason}>{season}</Text>
+            )}
             <Text style={styles.cardText}>{art.description}</Text>
             <Text style={styles.cardHint}>Toca fuera para cerrar</Text>
           </Pressable>
@@ -190,10 +208,17 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
+  cardCount: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: spacing.xs,
+  },
   cardSeason: {
     color: colors.primary,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
+    textAlign: 'center',
     marginTop: spacing.xs,
   },
   cardText: {
