@@ -245,3 +245,26 @@ export type TeamSeason = {
   players: number;
   wonChampionship: boolean;
 };
+
+export type AwardCode =
+  | 'champion'
+  | 'mvp'
+  | 'finals_mvp'
+  | 'roy'
+  | 'dpoy'
+  | 'mip'
+  | 'clutch'
+  | 'sixth_man';
+
+export type PlayerAward = {
+  season: string;
+  award: AwardCode;
+  teamName?: string;
+};
+
+export type TeamTitle = {
+  competition: 'nba' | 'nba_cup';
+  season: string;
+  /** Ano en que se levanto el titulo: la temporada 1969-70 es el 1970. */
+  year: number;
+};

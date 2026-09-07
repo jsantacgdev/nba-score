@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPlayersByTeam } from '@/lib/api/players';
-import { fetchTeamById, fetchTeamSeasonRoster, fetchTeamSeasons } from '@/lib/api/teams';
+import {
+  fetchTeamById,
+  fetchTeamPalmares,
+  fetchTeamSeasonRoster,
+  fetchTeamSeasons,
+} from '@/lib/api/teams';
 import { fetchSeasonStatsByTeam } from '@/lib/api/players';
 
 export function useTeam(teamId: string) {
@@ -42,6 +47,15 @@ export function useTeamSeasons(teamId: string) {
   return useQuery({
     queryKey: ['teamSeasons', teamId],
     queryFn: () => fetchTeamSeasons(teamId),
+    enabled: !!teamId,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useTeamPalmares(teamId: string) {
+  return useQuery({
+    queryKey: ['teamPalmares', teamId],
+    queryFn: () => fetchTeamPalmares(teamId),
     enabled: !!teamId,
     staleTime: 1000 * 60 * 60,
   });

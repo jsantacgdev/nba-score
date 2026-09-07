@@ -1,15 +1,24 @@
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { TeamLogo } from '@/components/ui/TeamLogo';
+import { Trophy, awardLabel } from '@/components/ui/Trophy';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   usePlayer,
+  usePlayerAwards,
   usePlayerCareer,
   usePlayerGameLog,
   usePlayerSeasonStats,
@@ -17,7 +26,7 @@ import {
 import { getPositionName } from '@/constants/positions';
 import { formatDateDMY } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { PlayerCareerEntry, PlayerGameLogEntry } from '@/types/domain';
+import type { PlayerAward, PlayerCareerEntry, PlayerGameLogEntry } from '@/types/domain';
 
 type TabKey = 'games' | 'career';
 
@@ -63,6 +72,8 @@ export default function PlayerDetailScreen() {
     isRefetching: refetchingCareer,
   } = usePlayerCareer(playerId);
 
+  const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
+
   const [selectedTab, setSelectedTab] = useState<TabKey>('games');
   // Un retirado solo tiene carrera, asi que no hay eleccion que ofrecer
   const tab: TabKey = isRetired ? 'career' : selectedTab;
@@ -75,6 +86,7 @@ export default function PlayerDetailScreen() {
     refetchStats();
     refetchGameLog();
     refetchCareer();
+    refetchAwards();
   };
 
   const rows: ListRow[] =
@@ -169,6 +181,9 @@ export default function PlayerDetailScreen() {
               <Text style={styles.compareButtonText}>Comparar con otro jugador</Text>
             </Pressable>
 
+            {/* Palmarés */}
+            {awards && awards.length > 0 && <Palmares awards={awards} />}
+
             {/* Medias de temporada */}
             {seasonStats && seasonStats.gamesPlayed > 0 && (
               <View style={styles.seasonCard}>
@@ -239,6 +254,58 @@ export default function PlayerDetailScreen() {
   );
 }
 
+/**
+ * Los premios se agrupan por tipo: interesa "5 MVP" de un vistazo, no cinco
+ * trofeos repetidos. El trofeo que se dibuja es el del año más reciente en
+ * que lo gano, porque es el diseño que la gente asocia al jugador.
+ */
+function Palmares({ awards }: { awards: PlayerAward[] }) {
+  const grupos = new Map<string, PlayerAward[]>();
+  for (const a of awards) {
+    if (!grupos.has(a.award)) grupos.set(a.award, []);
+    grupos.get(a.award)!.push(a);
+  }
+
+  const orden = ['champion', 'mvp', 'finals_mvp', 'dpoy', 'roy', 'mip', 'sixth_man', 'clutch'];
+  const entradas = Array.from(grupos.entries()).sort(
+    ([a], [b]) => orden.indexOf(a) - orden.indexOf(b),
+  );
+
+  return (
+    <View style={styles.palmaresCard}>
+      <Text style={styles.palmaresTitle}>Palmarés</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.palmaresRow}>
+          {entradas.map(([award, lista]) => {
+            const primero = lista[0];
+            if (!primero) return null;
+            const temporadas = lista.map((a) => a.season).sort().reverse();
+            const ultima = temporadas[0] ?? primero.season;
+            return (
+              <View key={award} style={styles.palmaresItem}>
+                <View style={styles.palmaresArt}>
+                  <Trophy award={primero.award} season={ultima} size={52} />
+                  {lista.length > 1 && (
+                    <View style={styles.palmaresBadge}>
+                      <Text style={styles.palmaresBadgeText}>{lista.length}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.palmaresLabel} numberOfLines={2}>
+                  {awardLabel(primero.award)}
+                </Text>
+                <Text style={styles.palmaresSeasons} numberOfLines={2}>
+                  {temporadas.join(', ')}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
 function DetailTab({
   label,
   active,
@@ -283,7 +350,7 @@ function CareerRow({ entry }: { entry: PlayerCareerEntry }) {
           {entry.teamAbbreviation}
         </Text>
         {entry.wonChampionship && (
-          <Ionicons name="trophy" size={12} color={colors.warning} />
+          <Trophy award="champion" season={entry.season} size={16} />
         )}
       </View>
 
@@ -619,6 +686,69 @@ const styles = StyleSheet.create({
   },
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
+  },
+
+  // Palmarés
+  palmaresCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    marginTop: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  palmaresTitle: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displayBold,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  palmaresRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  palmaresItem: {
+    width: 96,
+    alignItems: 'center',
+  },
+  palmaresArt: {
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  palmaresBadge: {
+    position: 'absolute',
+    right: -6,
+    bottom: -2,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  palmaresBadgeText: {
+    color: colors.background,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displayBold,
+  },
+  palmaresLabel: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  palmaresSeasons: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fontFamily.regular,
+    textAlign: 'center',
+    marginTop: 2,
   },
 
   // Pestañas Partidos / Carrera
