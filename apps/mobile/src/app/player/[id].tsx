@@ -13,6 +13,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy, awardLabel } from '@/components/ui/Trophy';
+import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -41,7 +42,7 @@ function stat(value: number | null, decimals = 1): string {
 }
 
 export default function PlayerDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
   const playerId = id ?? '';
 
   const {
@@ -61,18 +62,28 @@ export default function PlayerDetailScreen() {
   const isRetired = player?.isActive === false;
 
   const {
-    data: gameLog,
-    refetch: refetchGameLog,
-    isRefetching: refetchingGameLog,
-  } = usePlayerGameLog(playerId, !isRetired);
-
-  const {
     data: career,
     refetch: refetchCareer,
     isRefetching: refetchingCareer,
   } = usePlayerCareer(playerId);
 
   const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
+
+  const [pickedSeason, setPickedSeason] = useState<string | null>(null);
+  const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
+
+  // Las temporadas seleccionables son las de su carrera, sin repetir: un
+  // traspasado tiene dos filas del mismo año, una por equipo.
+  const careerSeasons = Array.from(new Set((career ?? []).map((c) => c.season)));
+  const activeSeason =
+    pickedSeason ?? (season && season.length > 0 ? season : careerSeasons[0]);
+
+  // Va despues de la carrera porque necesita saber que temporada pedir
+  const {
+    data: gameLog,
+    refetch: refetchGameLog,
+    isRefetching: refetchingGameLog,
+  } = usePlayerGameLog(playerId, !isRetired, activeSeason);
 
   const [selectedTab, setSelectedTab] = useState<TabKey>('games');
   // Un retirado solo tiene carrera, asi que no hay eleccion que ofrecer
@@ -88,6 +99,11 @@ export default function PlayerDetailScreen() {
     refetchCareer();
     refetchAwards();
   };
+
+  // Si fue traspasado hay dos filas de esa temporada: vale la de mas juego
+  const temporadaActiva = (career ?? [])
+    .filter((c) => c.season === activeSeason)
+    .sort((a, b) => (b.gamesPlayed ?? 0) - (a.gamesPlayed ?? 0))[0];
 
   const rows: ListRow[] =
     tab === 'games'
@@ -159,6 +175,15 @@ export default function PlayerDetailScreen() {
                   </View>
                 )}
               </View>
+
+              {careerSeasons.length > 0 && (
+                <View style={styles.seasonRow}>
+                  <SeasonButton
+                    season={activeSeason}
+                    onPress={() => setSeasonPickerOpen(true)}
+                  />
+                </View>
+              )}
             </View>
 
             {/* Botón Comparar. Vale también para retirados: la comparativa
@@ -184,18 +209,19 @@ export default function PlayerDetailScreen() {
             {/* Palmarés */}
             {awards && awards.length > 0 && <Palmares awards={awards} />}
 
-            {/* Medias de temporada */}
-            {seasonStats && seasonStats.gamesPlayed > 0 && (
+            {/* Medias de la temporada elegida. Salen de la carrera y no de
+                player_season_stats, que solo guarda la ultima cargada. */}
+            {temporadaActiva && (temporadaActiva.gamesPlayed ?? 0) > 0 && (
               <View style={styles.seasonCard}>
                 <Text style={styles.seasonTitle}>
-                  Medias temporada ({seasonStats.gamesPlayed} partidos)
+                  Medias {temporadaActiva.season} ({temporadaActiva.gamesPlayed} partidos)
                 </Text>
                 <View style={styles.seasonStatsRow}>
-                  <SeasonStat label="PTS" value={seasonStats.points} />
-                  <SeasonStat label="REB" value={seasonStats.rebounds} />
-                  <SeasonStat label="AST" value={seasonStats.assists} />
-                  <SeasonStat label="ROB" value={seasonStats.steals} />
-                  <SeasonStat label="TAP" value={seasonStats.blocks} />
+                  <SeasonStat label="PTS" value={temporadaActiva.points ?? 0} />
+                  <SeasonStat label="REB" value={temporadaActiva.rebounds ?? 0} />
+                  <SeasonStat label="AST" value={temporadaActiva.assists ?? 0} />
+                  <SeasonStat label="ROB" value={temporadaActiva.steals ?? 0} />
+                  <SeasonStat label="TAP" value={temporadaActiva.blocks ?? 0} />
                 </View>
               </View>
             )}
@@ -223,7 +249,7 @@ export default function PlayerDetailScreen() {
                 <EmptyState
                   icon="calendar-outline"
                   title="Sin partidos cargados"
-                  message="Este jugador aún no tiene partidos registrados en la base de datos."
+                  message={`No hay box scores de ${activeSeason ?? 'esta temporada'} en la base de datos. Su carrera y sus medias sí están disponibles.`}
                   compact
                 />
               )
@@ -249,6 +275,17 @@ export default function PlayerDetailScreen() {
             <CareerRow entry={item.career} />
           )
         }
+      />
+
+      <SeasonPicker
+        visible={seasonPickerOpen}
+        seasons={careerSeasons.map((s) => ({ season: s }))}
+        selected={activeSeason}
+        onSelect={(s) => {
+          setPickedSeason(s);
+          setSeasonPickerOpen(false);
+        }}
+        onClose={() => setSeasonPickerOpen(false)}
       />
     </>
   );
@@ -691,6 +728,12 @@ const styles = StyleSheet.create({
   },
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
+  },
+
+  seasonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.md,
   },
 
   // Palmarés

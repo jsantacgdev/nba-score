@@ -126,7 +126,7 @@ export default function TeamDetailScreen() {
               )}
             </View>
           }
-          renderItem={({ item }) => <RosterRow entry={item} />}
+          renderItem={({ item }) => <RosterRow entry={item} season={activeSeason} />}
         />
       ) : (
         <FlatList
@@ -302,7 +302,7 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
   );
 }
 
-function RosterRow({ entry }: { entry: TeamSeasonPlayer }) {
+function RosterRow({ entry, season }: { entry: TeamSeasonPlayer; season?: string }) {
   const hasStats = (entry.gamesPlayed ?? 0) > 0;
 
   return (
@@ -310,7 +310,7 @@ function RosterRow({ entry }: { entry: TeamSeasonPlayer }) {
       onPress={() =>
         router.push({
           pathname: '/player/[id]',
-          params: { id: entry.playerId },
+          params: { id: entry.playerId, season: season ?? '' },
         })
       }
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}

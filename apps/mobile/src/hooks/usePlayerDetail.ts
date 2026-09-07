@@ -28,10 +28,10 @@ export function usePlayerSeasonStats(playerId: string) {
  * @param enabled Los jugadores históricos no tienen box scores cargados,
  *                así que ni se pide.
  */
-export function usePlayerGameLog(playerId: string, enabled = true) {
+export function usePlayerGameLog(playerId: string, enabled = true, season?: string) {
   return useQuery({
-    queryKey: ['playerGameLog', playerId],
-    queryFn: () => fetchPlayerGameLog(playerId),
+    queryKey: ['playerGameLog', playerId, season],
+    queryFn: () => fetchPlayerGameLog(playerId, season),
     enabled: !!playerId && enabled,
   });
 }
