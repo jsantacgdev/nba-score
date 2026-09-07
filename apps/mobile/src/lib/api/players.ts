@@ -135,12 +135,21 @@ export async function fetchPlayerSeasonStats(playerId: string): Promise<PlayerSe
   return data ? mapSeasonStats(data) : null;
 }
 
-export async function fetchPlayerGameLog(playerId: string): Promise<PlayerGameLogEntry[]> {
-  const { data: logData, error: logError } = await supabase
+export async function fetchPlayerGameLog(
+  playerId: string,
+  season?: string,
+): Promise<PlayerGameLogEntry[]> {
+  let query = supabase
     .from('player_game_log')
     .select('*')
     .eq('player_id', playerId)
     .order('game_date', { ascending: false });
+
+  if (season) {
+    query = query.eq('season', season);
+  }
+
+  const { data: logData, error: logError } = await query;
 
   if (logError) throw logError;
   if (!logData || logData.length === 0) return [];
