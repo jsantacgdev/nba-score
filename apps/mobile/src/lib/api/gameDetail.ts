@@ -127,10 +127,10 @@ export async function fetchGameDetail(gameId: string): Promise<GameDetail | null
   // Separamos por equipo
   const homeRoster = allEntries
     .filter((e) => e.teamId === game.homeTeam.id)
-    .sort((a, b) => b.points - a.points);
+    .sort((a, b) => b.minutes - a.minutes);
   const awayRoster = allEntries
     .filter((e) => e.teamId === game.awayTeam.id)
-    .sort((a, b) => b.points - a.points);
+    .sort((a, b) => b.minutes - a.minutes);
 
   // MVP: el de mayor Game Score entre los que jugaron
   const playedEntries = allEntries.filter((e) => e.minutes > 0);
