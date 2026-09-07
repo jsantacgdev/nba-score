@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchPlayerById,
   fetchPlayerCareer,
+  fetchPlayerAwards,
   fetchPlayerCareerTotals,
   fetchPlayerGameLog,
   fetchPlayerSeasonStats,
@@ -49,6 +50,15 @@ export function usePlayerCareerTotals(playerId: string) {
   return useQuery({
     queryKey: ['playerCareerTotals', playerId],
     queryFn: () => fetchPlayerCareerTotals(playerId),
+    enabled: !!playerId,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function usePlayerAwards(playerId: string) {
+  return useQuery({
+    queryKey: ['playerAwards', playerId],
+    queryFn: () => fetchPlayerAwards(playerId),
     enabled: !!playerId,
     staleTime: 1000 * 60 * 60,
   });

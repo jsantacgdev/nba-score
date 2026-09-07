@@ -11,16 +11,22 @@ import {
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
+import { Trophy } from '@/components/ui/Trophy';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { GameCard } from '@/components/game/GameCard';
-import { useTeam, useTeamSeasonRoster, useTeamSeasons } from '@/hooks/useTeamRoster';
+import {
+  useTeam,
+  useTeamPalmares,
+  useTeamSeasonRoster,
+  useTeamSeasons,
+} from '@/hooks/useTeamRoster';
 import { useTeamGames } from '@/hooks/useTeamGames';
 import { getPositionName } from '@/constants/positions';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { Game, Team, TeamSeason, TeamSeasonPlayer } from '@/types/domain';
+import type { Game, Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
 
 type Tab = 'roster' | 'games';
 
@@ -33,6 +39,7 @@ export default function TeamDetailScreen() {
 
   const { data: team, refetch: refetchTeam } = useTeam(teamId);
   const { data: teamSeasons } = useTeamSeasons(teamId);
+  const { data: palmares } = useTeamPalmares(teamId);
 
   // Prioridad: lo que elijas aqui > la temporada con la que llegaste desde
   // la clasificacion > la mas reciente con plantilla registrada.
@@ -110,6 +117,7 @@ export default function TeamDetailScreen() {
                 seasons={teamSeasons}
                 onOpenPicker={() => setSeasonPickerOpen(true)}
               />
+              <TeamPalmares titles={palmares} />
               <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
               <Text style={styles.sectionTitle}>Plantilla {activeSeason ?? ''}</Text>
               {rosterRows.length === 0 && (
@@ -143,6 +151,7 @@ export default function TeamDetailScreen() {
                 seasons={teamSeasons}
                 onOpenPicker={() => setSeasonPickerOpen(true)}
               />
+              <TeamPalmares titles={palmares} />
               <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
 
               {gamesLoading && <LoadingState message="Cargando partidos..." compact />}
@@ -212,7 +221,7 @@ function TeamHeader({
         <Pressable onPress={onOpenPicker} style={styles.seasonSelector}>
           <Text style={styles.seasonSelectorText}>{season}</Text>
           {actual?.wonChampionship && (
-            <Ionicons name="trophy" size={14} color={colors.warning} />
+            <Trophy award="champion" season={season} size={20} interactive={false} />
           )}
           <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
         </Pressable>
@@ -225,6 +234,50 @@ function TeamHeader({
           </Text>
         </View>
         <FavoriteTeamButton teamId={team.id} size={28} />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Palmarés: un trofeo por competición con el número de títulos y los años.
+ * Se agrupa porque interesa leer "x3" de un vistazo, no tres trofeos iguales.
+ */
+function TeamPalmares({ titles }: { titles?: TeamTitle[] }) {
+  if (!titles || titles.length === 0) return null;
+
+  const porCompeticion = new Map<TeamTitle['competition'], TeamTitle[]>();
+  for (const t of titles) {
+    if (!porCompeticion.has(t.competition)) porCompeticion.set(t.competition, []);
+    porCompeticion.get(t.competition)!.push(t);
+  }
+
+  // La NBA primero: es el título que de verdad define a una franquicia
+  const orden: TeamTitle['competition'][] = ['nba', 'nba_cup'];
+  const grupos = orden
+    .map((comp) => [comp, porCompeticion.get(comp)] as const)
+    .filter((g): g is readonly [TeamTitle['competition'], TeamTitle[]] => !!g[1]);
+
+  return (
+    <View style={styles.palmaresCard}>
+      <Text style={styles.palmaresTitle}>Palmarés</Text>
+      <View style={styles.palmaresRow}>
+        {grupos.map(([competition, lista]) => {
+          const anios = lista.map((t) => t.year).sort((a, b) => a - b);
+          return (
+            <View key={competition} style={styles.palmaresGroup}>
+              <View style={styles.palmaresHead}>
+                <Trophy
+                  award={competition === 'nba' ? 'champion' : 'nba_cup'}
+                  season={lista[0]?.season ?? ''}
+                  size={44}
+                />
+                <Text style={styles.palmaresCount}>x{lista.length}</Text>
+              </View>
+              <Text style={styles.palmaresYears}>{anios.join(', ')}</Text>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -269,7 +322,12 @@ function SeasonPicker({
                   {item.season}
                 </Text>
                 {item.wonChampionship && (
-                  <Ionicons name="trophy" size={16} color={colors.warning} />
+                  <Trophy
+                    award="champion"
+                    season={item.season}
+                    size={22}
+                    interactive={false}
+                  />
                 )}
                 {item.season === selected && (
                   <Ionicons name="checkmark" size={18} color={colors.primary} />
@@ -334,9 +392,7 @@ function RosterRow({ entry }: { entry: TeamSeasonPlayer }) {
           {entry.position && (
             <Text style={styles.rowMetaText}>{getPositionName(entry.position)}</Text>
           )}
-          {entry.wonChampionship && (
-            <Ionicons name="trophy" size={12} color={colors.warning} />
-          )}
+          {entry.wonChampionship && <Trophy award="champion" season="" size={16} />}
         </View>
         {hasStats && (
           <View style={styles.statsInline}>
@@ -381,6 +437,45 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     fontFamily: fontFamily.displaySemibold,
+  },
+
+  // Palmarés
+  palmaresCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  palmaresTitle: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displayBold,
+    marginBottom: spacing.md,
+  },
+  palmaresRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+  },
+  palmaresGroup: {
+    flex: 1,
+  },
+  palmaresHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  palmaresCount: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontFamily: fontFamily.displayBold,
+  },
+  palmaresYears: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.medium,
+    marginTop: spacing.xs,
   },
 
   // Selector de temporada

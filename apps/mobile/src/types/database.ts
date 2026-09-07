@@ -155,6 +155,38 @@ export type Database = {
           },
         ]
       }
+      player_awards: {
+        Row: {
+          award: string
+          player_id: string
+          season: string
+          team_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          award: string
+          player_id: string
+          season: string
+          team_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          award?: string
+          player_id?: string
+          season?: string
+          team_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_awards_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_game_log: {
         Row: {
           assists: number | null
@@ -618,18 +650,21 @@ export type Database = {
       }
       season_champions: {
         Row: {
+          competition: string
           decided_at: string | null
           season: string
           team_id: string | null
           updated_at: string | null
         }
         Insert: {
+          competition?: string
           decided_at?: string | null
           season: string
           team_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          competition?: string
           decided_at?: string | null
           season?: string
           team_id?: string | null
@@ -757,6 +792,14 @@ export type Database = {
           turnovers: number
         }[]
       }
+      player_palmares: {
+        Args: { target_player_id: string }
+        Returns: {
+          award: string
+          season: string
+          team_name: string
+        }[]
+      }
       search_players: {
         Args: { max_results?: number; query: string }
         Returns: {
@@ -809,6 +852,14 @@ export type Database = {
         Returns: {
           games_count: number
           season: string
+        }[]
+      }
+      team_palmares: {
+        Args: { target_team_id: string }
+        Returns: {
+          competition: string
+          season: string
+          year: number
         }[]
       }
       team_season_roster: {

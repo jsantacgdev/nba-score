@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Team, TeamSeason, TeamSeasonPlayer } from '@/types/domain';
+import type { Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
 import type { Database } from '@/types/database';
 import type { Game } from '@/types/domain';
 
@@ -135,5 +135,20 @@ export async function fetchTeamSeasons(teamId: string): Promise<TeamSeason[]> {
     season: row.season ?? '',
     players: row.players ?? 0,
     wonChampionship: row.won_championship ?? false,
+  }));
+}
+
+/** Titulos de un equipo: campeonatos NBA y NBA Cup. */
+export async function fetchTeamPalmares(teamId: string): Promise<TeamTitle[]> {
+  const { data, error } = await supabase.rpc('team_palmares', {
+    target_team_id: teamId,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    competition: (row.competition ?? 'nba') as TeamTitle['competition'],
+    season: row.season ?? '',
+    year: row.year ?? 0,
   }));
 }

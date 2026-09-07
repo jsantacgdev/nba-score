@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
+import { Trophy } from '@/components/ui/Trophy';
 import { useStandings, useStandingsSeasons } from '@/hooks/useStandings';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
@@ -191,7 +191,7 @@ function StandingsRow({
       </View>
 
       <View style={styles.colTrophy}>
-        {standing.wonChampionship && <Ionicons name="trophy" size={13} color={colors.warning} />}
+        {standing.wonChampionship && <Trophy award="champion" season={season ?? ''} size={20} />}
       </View>
 
       <Text style={[styles.statText, styles.colStat]}>{standing.wins}</Text>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   // Columna fija aunque no haya trofeo, para que no bailen las cifras
   colTrophy: {
-    width: 18,
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import type {
+  AwardCode,
   Player,
+  PlayerAward,
   PlayerCareerEntry,
   PlayerCareerTotals,
   PlayerGameLogEntry,
@@ -255,4 +257,19 @@ export async function fetchPlayerCareerTotals(
     firstSeason: row.first_season ?? '',
     lastSeason: row.last_season ?? '',
   };
+}
+
+/** Palmares de un jugador, de mas reciente a mas antiguo. */
+export async function fetchPlayerAwards(playerId: string): Promise<PlayerAward[]> {
+  const { data, error } = await supabase.rpc('player_palmares', {
+    target_player_id: playerId,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    season: row.season ?? '',
+    award: row.award as AwardCode,
+    teamName: row.team_name ?? undefined,
+  }));
 }
