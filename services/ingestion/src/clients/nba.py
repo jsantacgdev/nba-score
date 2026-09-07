@@ -45,6 +45,9 @@ SEASON_TYPE_BY_PREFIX = {
     "003": "allstar",
     "004": "playoffs",
     "005": "playin",
+    # La final de la NBA Cup tiene prefijo propio y no cuenta para la
+    # clasificacion, aunque sus estadisticas si cuenten.
+    "006": "cup_final",
 }
 
 
@@ -394,6 +397,13 @@ def get_league_games(
             else:
                 juego["away_team_id"] = team_id
                 juego["score_away"] = pts
+
+        # Los cancelados vienen con marcador 0-0, y ningun partido jugado
+        # acaba asi. Pasa con el Celtics-Pacers del 16 de abril de 2013,
+        # suspendido por el atentado de Boston y nunca recuperado: los dos
+        # equipos cerraron esa temporada con 81 partidos.
+        if juego["score_home"] == 0 and juego["score_away"] == 0:
+            continue
 
         # Solo partidos con ambos equipos identificados
         if juego["home_team_id"] and juego["away_team_id"]:
