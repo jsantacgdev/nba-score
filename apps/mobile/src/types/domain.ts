@@ -32,6 +32,13 @@ export type Game = {
   scoreAway: number;
   period?: number;
   timeRemaining?: string;
+  seasonType?: 'preseason' | 'regular' | 'allstar' | 'playoffs' | 'playin';
+  /** Balance de la eliminatoria tras este partido. Solo en playoffs. */
+  seriesWins?: { home: number; away: number };
+  /** 1 primera ronda, 2 semifinales de conferencia, 3 finales, 4 Finales NBA. */
+  playoffRound?: number;
+  /** Este partido decidio el titulo de la NBA. */
+  titleDecider?: boolean;
 };
 
 export type PlayerGameStats = {

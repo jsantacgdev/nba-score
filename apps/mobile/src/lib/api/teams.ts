@@ -34,59 +34,57 @@ export async function fetchTeamById(teamId: string): Promise<Team | null> {
   return mapTeam(data);
 }
 
-export async function fetchTeamGames(teamId: string): Promise<Game[]> {
-  const { data, error } = await supabase
-    .from('games')
-    .select(
-      `
-      id,
-      starts_at,
-      score_home,
-      score_away,
-      status,
-      period,
-      time_remaining,
-      home_team:teams!home_team_id(id, name, full_name, city, abbreviation, conference, logo_url),
-      away_team:teams!away_team_id(id, name, full_name, city, abbreviation, conference, logo_url)
-    `,
-    )
-    .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-    .order('starts_at', { ascending: true });
+/**
+ * Partidos de un equipo en una temporada.
+ *
+ * Pasa por la funcion team_games en lugar de consultar la tabla porque
+ * necesita dos datos que no estan en el partido: el balance de la
+ * eliminatoria y si ese partido decidio el titulo.
+ */
+export async function fetchTeamGames(teamId: string, season?: string): Promise<Game[]> {
+  if (!season) return [];
+
+  const { data, error } = await supabase.rpc('team_games', {
+    target_team_id: teamId,
+    target_season: season,
+  });
 
   if (error) throw error;
 
-  return (data ?? []).map((row) => {
-    const home = Array.isArray(row.home_team) ? row.home_team[0] : row.home_team;
-    const away = Array.isArray(row.away_team) ? row.away_team[0] : row.away_team;
-
-    return {
-      id: row.id,
-      startsAt: new Date(row.starts_at),
-      status: row.status as Game['status'],
-      period: row.period ?? 0,
-      timeRemaining: row.time_remaining ?? undefined,
-      scoreHome: row.score_home ?? 0,
-      scoreAway: row.score_away ?? 0,
-      homeTeam: {
-        id: home?.id ?? '',
-        name: home?.name ?? '',
-        fullName: home?.full_name ?? '',
-        city: home?.city ?? '',
-        abbreviation: home?.abbreviation ?? '',
-        conference: (home?.conference ?? 'East') as 'East' | 'West',
-        logoUrl: home?.logo_url ?? undefined,
-      },
-      awayTeam: {
-        id: away?.id ?? '',
-        name: away?.name ?? '',
-        fullName: away?.full_name ?? '',
-        city: away?.city ?? '',
-        abbreviation: away?.abbreviation ?? '',
-        conference: (away?.conference ?? 'East') as 'East' | 'West',
-        logoUrl: away?.logo_url ?? undefined,
-      },
-    };
-  });
+  return (data ?? []).map((row) => ({
+    id: row.id ?? '',
+    startsAt: new Date(row.starts_at ?? ''),
+    status: row.status as Game['status'],
+    seasonType: (row.season_type ?? 'regular') as Game['seasonType'],
+    period: row.period ?? 0,
+    timeRemaining: row.time_remaining ?? undefined,
+    scoreHome: row.score_home ?? 0,
+    scoreAway: row.score_away ?? 0,
+    seriesWins:
+      row.series_wins_home !== null && row.series_wins_away !== null
+        ? { home: row.series_wins_home, away: row.series_wins_away }
+        : undefined,
+    playoffRound: row.playoff_round ?? undefined,
+    titleDecider: row.title_decider ?? false,
+    homeTeam: {
+      id: row.home_team_id ?? '',
+      name: row.home_name ?? '',
+      fullName: row.home_name ?? '',
+      city: '',
+      abbreviation: row.home_abbreviation ?? '',
+      conference: 'East' as const,
+      logoUrl: row.home_logo_url ?? undefined,
+    },
+    awayTeam: {
+      id: row.away_team_id ?? '',
+      name: row.away_name ?? '',
+      fullName: row.away_name ?? '',
+      city: '',
+      abbreviation: row.away_abbreviation ?? '',
+      conference: 'East' as const,
+      logoUrl: row.away_logo_url ?? undefined,
+    },
+  }));
 }
 
 function num(value: number | string | null): number | null {

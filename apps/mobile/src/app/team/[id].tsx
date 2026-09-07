@@ -15,7 +15,7 @@ import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { GameCard } from '@/components/game/GameCard';
+import { CompactGameRow } from '@/components/game/CompactGameRow';
 import {
   useTeam,
   useTeamPalmares,
@@ -57,7 +57,7 @@ export default function TeamDetailScreen() {
     isLoading: gamesLoading,
     refetch: refetchGames,
     isRefetching: refetchingGames,
-  } = useTeamGames(teamId);
+  } = useTeamGames(teamId, activeSeason);
 
   const isRefetching = refetchingRoster || refetchingGames;
 
@@ -162,8 +162,8 @@ export default function TeamDetailScreen() {
               {upcomingGames.length > 0 && (
                 <View style={styles.gamesSection}>
                   <Text style={styles.sectionTitle}>Próximos partidos</Text>
-                  {upcomingGames.map((g, i) => (
-                    <GameCard key={g.id} game={g} index={i} showDate />
+                  {upcomingGames.map((g) => (
+                    <CompactGameRow key={g.id} game={g} />
                   ))}
                 </View>
               )}
@@ -171,8 +171,8 @@ export default function TeamDetailScreen() {
               {pastGames.length > 0 && (
                 <View style={styles.gamesSection}>
                   <Text style={styles.sectionTitle}>Partidos anteriores</Text>
-                  {pastGames.map((g, i) => (
-                    <GameCard key={g.id} game={g} index={i} showDate />
+                  {pastGames.map((g) => (
+                    <CompactGameRow key={g.id} game={g} />
                   ))}
                 </View>
               )}
@@ -265,6 +265,7 @@ function TeamPalmares({ titles }: { titles?: TeamTitle[] }) {
                 <Trophy
                   award={competition === 'nba' ? 'champion' : 'nba_cup'}
                   season={lista[0]?.season ?? ''}
+                  seasons={anios.map(String)}
                   size={44}
                 />
                 <Text style={styles.palmaresCount}>x{lista.length}</Text>

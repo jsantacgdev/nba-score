@@ -858,6 +858,31 @@ export type Database = {
           season: string
         }[]
       }
+      team_games: {
+        Args: { target_season: string; target_team_id: string }
+        Returns: {
+          away_abbreviation: string
+          away_logo_url: string
+          away_name: string
+          away_team_id: string
+          home_abbreviation: string
+          home_logo_url: string
+          home_name: string
+          home_team_id: string
+          id: string
+          period: number
+          playoff_round: number
+          score_away: number
+          score_home: number
+          season_type: string
+          series_wins_away: number
+          series_wins_home: number
+          starts_at: string
+          status: string
+          time_remaining: string
+          title_decider: boolean
+        }[]
+      }
       team_palmares: {
         Args: { target_team_id: string }
         Returns: {
