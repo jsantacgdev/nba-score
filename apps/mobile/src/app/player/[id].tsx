@@ -25,7 +25,7 @@ import {
   usePlayerSeasonStats,
 } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
-import { formatDateDMY } from '@/lib/format';
+import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { PlayerAward, PlayerCareerEntry, PlayerGameLogEntry } from '@/types/domain';
 
@@ -478,12 +478,11 @@ function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
         )}
 
         <View style={styles.playerStatsRow}>
-          <StatPill label="MIN" value={entry.minutes.toFixed(0)} />
+          {/* El tiempo va sin etiqueta: se reconoce por el formato de reloj */}
+          <StatPill value={formatMinutes(entry.minutes)} />
           <StatPill label="PTS" value={String(entry.points)} highlight />
           <StatPill label="REB" value={String(entry.rebounds)} />
           <StatPill label="AST" value={String(entry.assists)} />
-          <StatPill label="ROB" value={String(entry.steals)} />
-          <StatPill label="TAP" value={String(entry.blocks)} />
         </View>
       </View>
     </Pressable>
@@ -495,14 +494,15 @@ function StatPill({
   value,
   highlight,
 }: {
-  label: string;
+  /** Sin etiqueta el valor queda solo, alineado con los demás. */
+  label?: string;
   value: string;
   highlight?: boolean;
 }) {
   return (
     <View style={styles.statPill}>
       <Text style={[styles.statPillValue, highlight && styles.statPillHighlight]}>{value}</Text>
-      <Text style={styles.statPillLabel}>{label}</Text>
+      {label && <Text style={styles.statPillLabel}>{label}</Text>}
     </View>
   );
 }

@@ -4,7 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useGameDetail } from '@/hooks/useGameDetail';
-import { formatDateDMY } from '@/lib/format';
+import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -225,7 +225,7 @@ function TeamBoxScore({
             </Text>
           </View>
           <Text style={[styles.statValue, styles.colStat]}>
-            {p.minutes > 0 ? p.minutes.toFixed(0) : '-'}
+            {p.minutes > 0 ? formatMinutes(p.minutes) : '-'}
           </Text>
           <Text style={[styles.statValue, styles.colStat]}>{p.points}</Text>
           <Text style={[styles.statValue, styles.colStat]}>{p.rebounds}</Text>

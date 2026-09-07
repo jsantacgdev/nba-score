@@ -54,3 +54,17 @@ export function formatShortDate(date: Date): string {
     month: 'short',
   });
 }
+
+/**
+ * Minutos decimales a MM:SS.
+ *
+ * La NBA los publica como "39:10" y los guardamos como 39.2, redondeando
+ * al décimo de minuto. Un décimo son 6 segundos, así que al reconstruir
+ * el reloj el error máximo es de 3 segundos.
+ */
+export function formatMinutes(minutes: number): string {
+  const total = Math.round(minutes * 60);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
