@@ -32,22 +32,22 @@ def get_all_final_game_ids(
     client,
     exclude_preseason: bool = True,
     season: str | None = CURRENT_SEASON,
-) -> list[str]:
+) -> list[dict]:
     """
-    Lista los game_ids con status='final', con paginación completa.
+    Lista los partidos finalizados con su temporada, paginando entero.
 
     Por defecto se limita a la temporada actual. La tabla guarda 26
     temporadas de histórico y recorrerlas todas son ~32.000 partidos, o
     sea unas 13 horas: eso hay que pedirlo a propósito, no por descuido.
     """
-    ids: list[str] = []
+    ids: list[dict] = []
     page_size = 1000
     offset = 0
 
     while True:
         query = (
             client.table("games")
-            .select("id")
+            .select("id, season")
             .eq("status", "final")
         )
         if season:
@@ -67,7 +67,7 @@ def get_all_final_game_ids(
                 continue
             if game_id.startswith("bdl_"):
                 continue
-            ids.append(game_id)
+            ids.append({"id": game_id, "season": row["season"]})
         if len(result.data) < page_size:
             break
         offset += page_size
@@ -130,11 +130,11 @@ def sync_box_scores(
           + (" (excluyendo pretemporada)" if exclude_preseason else ""))
 
     # 2. Filtrar los que ya tienen box score
-    pending_ids: list[str]
+    pending_ids: list[dict]
     if skip_existing:
         loaded = get_games_with_box_scores(client)
         print(f"   {len(loaded)} partidos ya tienen box score cargado")
-        pending_ids = [gid for gid in all_game_ids if gid not in loaded]
+        pending_ids = [g for g in all_game_ids if g["id"] not in loaded]
     else:
         pending_ids = all_game_ids
 
@@ -154,7 +154,8 @@ def sync_box_scores(
     total_skipped = 0
     errors = 0
 
-    for i, game_id in enumerate(pending_ids, start=1):
+    for i, juego in enumerate(pending_ids, start=1):
+        game_id = juego["id"]
         print(f"   [{i}/{len(pending_ids)}] Partido {game_id}...")
         try:
             entries = get_box_score(game_id)
@@ -163,6 +164,11 @@ def sync_box_scores(
                 if i < len(pending_ids):
                     time.sleep(REQUEST_DELAY)
                 continue
+
+            # El endpoint de box score no devuelve la temporada, asi que
+            # la sella el job: sin ella las lineas se caen de los filtros
+            for e in entries:
+                e["season"] = juego["season"]
 
             # Filtrar jugadores que no existen en la tabla players
             valid_entries = [e for e in entries if e["player_id"] in valid_player_ids]
