@@ -4,6 +4,7 @@ from nba_api.stats.endpoints import leaguedashplayerstats
 from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguegamefinder
+from nba_api.stats.endpoints import leaguegamelog
 from nba_api.stats.endpoints import scoreboardv2
 from nba_api.stats.endpoints import boxscoretraditionalv2
 from datetime import date, datetime
@@ -291,6 +292,28 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
 
     return games
 
+def _locales_en_campo_neutral(fechas: set[str]) -> dict[str, str]:
+    """
+    Devuelve el equipo local de los partidos de esas fechas.
+
+    Solo se usa para los partidos en campo neutral, que son pocos: las
+    eliminatorias de la NBA Cup en Las Vegas y los partidos
+    internacionales. Una llamada por fecha.
+    """
+    locales: dict[str, str] = {}
+    for fecha in sorted(fechas):
+        try:
+            y, m, d = fecha[:10].split("-")
+            board = scoreboardv2.ScoreboardV2(game_date=f"{m}/{d}/{y}", timeout=60)
+            for _, row in board.game_header.get_data_frame().iterrows():
+                locales[_id(row["GAME_ID"])] = _id(row["HOME_TEAM_ID"])
+        except Exception:
+            # Sin local no se puede insertar el partido, pero un fallo aqui
+            # no debe tumbar la sincronizacion entera.
+            continue
+        time.sleep(0.6)
+    return locales
+
 def get_league_games(
     season: str = CURRENT_SEASON,
     date_from: date | None = None,
@@ -301,52 +324,82 @@ def get_league_games(
 
     Ojo: este endpoint solo devuelve partidos YA JUGADOS. El calendario
     futuro no aparece aqui, lo trae sync_upcoming_games via balldontlie.
+
+    Usa LeagueGameLog y no LeagueGameFinder porque el segundo se deja
+    partidos: en 2025-26 devolvia 1225 de los 1230 de liga regular. A
+    cambio hay que preguntar una vez por tipo, porque no los mezcla.
     """
-    finder = leaguegamefinder.LeagueGameFinder(
-        season_nullable=season,
-        league_id_nullable="00",  # 00 = NBA
-        date_from_nullable=date_from.strftime("%m/%d/%Y") if date_from else "",
-        date_to_nullable=date_to.strftime("%m/%d/%Y") if date_to else "",
-        timeout=60,
-    )
-    df = finder.get_data_frames()[0]
+    # game_id -> fecha y la lista de (equipo, puntos, es_local)
+    crudos: dict[str, dict] = {}
 
-    # Cada partido aparece una fila por equipo. Agrupamos por GAME_ID.
-    games_by_id: dict[str, dict] = {}
+    for season_type in ("Regular Season", "Pre Season", "Playoffs", "PlayIn"):
+        log = leaguegamelog.LeagueGameLog(
+            season=season,
+            season_type_all_star=season_type,
+            player_or_team_abbreviation="T",
+            date_from_nullable=date_from.strftime("%m/%d/%Y") if date_from else "",
+            date_to_nullable=date_to.strftime("%m/%d/%Y") if date_to else "",
+            timeout=60,
+        )
 
-    for _, row in df.iterrows():
-        game_id = _id(row["GAME_ID"])
-        matchup = str(row["MATCHUP"])
-        is_home = "vs." in matchup
-        team_id = _id(row["TEAM_ID"])
-        pts = int(row["PTS"]) if row.get("PTS") is not None else 0
+        # Cada partido trae una fila por equipo
+        for _, row in log.get_data_frames()[0].iterrows():
+            game_id = _id(row["GAME_ID"])
+            entrada = crudos.setdefault(
+                game_id, {"starts_at": str(row["GAME_DATE"]), "equipos": []}
+            )
+            entrada["equipos"].append(
+                (
+                    _id(row["TEAM_ID"]),
+                    int(row["PTS"]) if row.get("PTS") is not None else 0,
+                    "vs." in str(row["MATCHUP"]),
+                )
+            )
 
-        if game_id not in games_by_id:
-            games_by_id[game_id] = {
-                "id": game_id,
-                "starts_at": str(row["GAME_DATE"]),
-                "season": season,
-                "home_team_id": None,
-                "away_team_id": None,
-                "score_home": 0,
-                "score_away": 0,
-                "status": "final",
-                "season_type": season_type_from_id(game_id),
-            }
+    # En campo neutral la NBA marca las dos filas con "@" y ninguna sale
+    # local. Pasa en las eliminatorias de la NBA Cup y en los partidos
+    # internacionales: son cinco en 2025-26, y entre ellos las dos
+    # semifinales, que si cuentan para la clasificacion.
+    neutrales = {
+        gid: c["starts_at"]
+        for gid, c in crudos.items()
+        if len(c["equipos"]) == 2 and not any(es_local for _, _, es_local in c["equipos"])
+    }
+    locales = _locales_en_campo_neutral(set(neutrales.values())) if neutrales else {}
 
-        entry = games_by_id[game_id]
-        if is_home:
-            entry["home_team_id"] = team_id
-            entry["score_home"] = pts
-        else:
-            entry["away_team_id"] = team_id
-            entry["score_away"] = pts
+    partidos = []
+    for game_id, c in crudos.items():
+        equipos = c["equipos"]
+        if len(equipos) != 2:
+            continue
 
-    # Solo partidos con ambos equipos identificados
-    return [
-        g for g in games_by_id.values()
-        if g["home_team_id"] and g["away_team_id"]
-    ]
+        local_id = locales.get(game_id) if game_id in neutrales else None
+
+        juego = {
+            "id": game_id,
+            "starts_at": c["starts_at"],
+            "season": season,
+            "home_team_id": None,
+            "away_team_id": None,
+            "score_home": 0,
+            "score_away": 0,
+            "status": "final",
+            "season_type": season_type_from_id(game_id),
+        }
+
+        for team_id, pts, es_local in equipos:
+            if es_local or (local_id is not None and team_id == local_id):
+                juego["home_team_id"] = team_id
+                juego["score_home"] = pts
+            else:
+                juego["away_team_id"] = team_id
+                juego["score_away"] = pts
+
+        # Solo partidos con ambos equipos identificados
+        if juego["home_team_id"] and juego["away_team_id"]:
+            partidos.append(juego)
+
+    return partidos
 
 def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> list[dict]:
     """Obtiene los partidos programados para una fecha concreta."""
