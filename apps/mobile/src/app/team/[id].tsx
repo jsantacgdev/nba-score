@@ -458,12 +458,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xl,
   },
+  // El trofeo con su recuento y los años son un solo bloque centrado
   palmaresGroup: {
     flex: 1,
+    alignItems: 'center',
   },
   palmaresHead: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
   },
   palmaresCount: {
@@ -475,6 +478,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: fontSize.xs,
     fontFamily: fontFamily.medium,
+    textAlign: 'center',
     marginTop: spacing.xs,
   },
 
