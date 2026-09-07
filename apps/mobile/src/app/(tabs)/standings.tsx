@@ -28,6 +28,7 @@ export default function StandingsScreen() {
   const { data: seasons } = useStandingsSeasons();
   // Sin elección explícita, la temporada más reciente disponible
   const season = pickedSeason ?? seasons?.[0]?.season;
+  const seasonInfo = seasons?.find((s) => s.season === season);
 
   const { data: standings, isLoading, error, refetch, isRefetching } = useStandings(season);
 
@@ -53,7 +54,11 @@ export default function StandingsScreen() {
       </View>
 
       <View style={styles.seasonRow}>
-        <SeasonButton season={season} onPress={() => setPickerOpen(true)} />
+        <SeasonButton
+          season={season}
+          onPress={() => setPickerOpen(true)}
+          champion={seasonInfo?.champion}
+        />
       </View>
 
       {isLoading && <LoadingState message="Cargando clasificación..." />}
@@ -249,6 +254,7 @@ const styles = StyleSheet.create({
   },
   seasonRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },

@@ -25,16 +25,33 @@ export function SeasonButton({
   season,
   onPress,
   wonChampionship,
+  champion,
 }: {
   season?: string;
   onPress: () => void;
   wonChampionship?: boolean;
+  /** Campeon de esa temporada. Dentro de un equipo sobra: ya se sabe cual es. */
+  champion?: SeasonOption['champion'];
 }) {
   if (!season) return null;
 
   return (
     <Pressable onPress={onPress} style={styles.button}>
       <Text style={styles.buttonText}>{season}</Text>
+
+      {champion && (
+        <>
+          <TeamLogo
+            logoUrl={champion.logoUrl}
+            abbreviation={champion.abbreviation}
+            size={22}
+          />
+          <Text style={styles.buttonChampion} numberOfLines={1}>
+            {champion.name}
+          </Text>
+        </>
+      )}
+
       {wonChampionship && (
         <Trophy award="champion" season={season} size={20} interactive={false} />
       )}
@@ -136,6 +153,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     fontFamily: fontFamily.displaySemibold,
+  },
+  buttonChampion: {
+    flexShrink: 1,
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.medium,
   },
   backdrop: {
     flex: 1,
