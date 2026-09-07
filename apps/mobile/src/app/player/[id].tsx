@@ -284,7 +284,12 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
             return (
               <View key={award} style={styles.palmaresItem}>
                 <View style={styles.palmaresArt}>
-                  <Trophy award={primero.award} season={ultima} size={52} />
+                  <Trophy
+                    award={primero.award}
+                    season={ultima}
+                    seasons={temporadas}
+                    size={52}
+                  />
                   {lista.length > 1 && (
                     <View style={styles.palmaresBadge}>
                       <Text style={styles.palmaresBadgeText}>{lista.length}</Text>
