@@ -47,7 +47,7 @@ def get_all_final_game_ids(
     while True:
         query = (
             client.table("games")
-            .select("id, season")
+            .select("id, season, starts_at")
             .eq("status", "final")
         )
         if season:
@@ -67,7 +67,11 @@ def get_all_final_game_ids(
                 continue
             if game_id.startswith("bdl_"):
                 continue
-            ids.append({"id": game_id, "season": row["season"]})
+            ids.append({
+                "id": game_id,
+                "season": row["season"],
+                "starts_at": row["starts_at"],
+            })
         if len(result.data) < page_size:
             break
         offset += page_size
@@ -165,10 +169,12 @@ def sync_box_scores(
                     time.sleep(REQUEST_DELAY)
                 continue
 
-            # El endpoint de box score no devuelve la temporada, asi que
-            # la sella el job: sin ella las lineas se caen de los filtros
+            # El endpoint de box score no devuelve ni la temporada ni la
+            # fecha. Las sella el job: sin la temporada las lineas se caen
+            # de los filtros, y sin la fecha el historial no se puede ordenar.
             for e in entries:
                 e["season"] = juego["season"]
+                e["game_date"] = juego["starts_at"]
 
             # Filtrar jugadores que no existen en la tabla players
             valid_entries = [e for e in entries if e["player_id"] in valid_player_ids]
