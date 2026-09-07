@@ -143,7 +143,9 @@ export async function fetchPlayerGameLog(
     .from('player_game_log')
     .select('*')
     .eq('player_id', playerId)
-    .order('game_date', { ascending: false });
+    // nullsFirst false: en PostgreSQL los nulos van primero en orden
+    // descendente, asi que una fila sin fecha encabezaria el historial
+    .order('game_date', { ascending: false, nullsFirst: false });
 
   if (season) {
     query = query.eq('season', season);
