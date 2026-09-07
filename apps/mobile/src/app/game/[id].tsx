@@ -198,7 +198,7 @@ function TeamBoxScore({
       {/* Cabecera de columnas */}
       <View style={styles.statsHeader}>
         <Text style={[styles.statsHeaderText, styles.colPlayer]}>Jugador</Text>
-        <Text style={[styles.statsHeaderText, styles.colStat]}>MIN</Text>
+        <View style={styles.colStat} />
         <Text style={[styles.statsHeaderText, styles.colStat]}>PTS</Text>
         <Text style={[styles.statsHeaderText, styles.colStat]}>REB</Text>
         <Text style={[styles.statsHeaderText, styles.colStat]}>AST</Text>
