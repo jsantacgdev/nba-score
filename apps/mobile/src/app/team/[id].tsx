@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   FlatList,
-  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -9,9 +8,9 @@ import {
   View,
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
+import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -217,15 +216,11 @@ function TeamHeader({
       <Text style={styles.teamCity}>{team.city}</Text>
       <Text style={styles.teamName}>{team.name}</Text>
 
-      {season && (
-        <Pressable onPress={onOpenPicker} style={styles.seasonSelector}>
-          <Text style={styles.seasonSelectorText}>{season}</Text>
-          {actual?.wonChampionship && (
-            <Trophy award="champion" season={season} size={20} interactive={false} />
-          )}
-          <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
-        </Pressable>
-      )}
+      <SeasonButton
+        season={season}
+        onPress={onOpenPicker}
+        wonChampionship={actual?.wonChampionship}
+      />
 
       <View style={styles.headerMeta}>
         <View style={styles.conferenceBadge}>
@@ -280,64 +275,6 @@ function TeamPalmares({ titles }: { titles?: TeamTitle[] }) {
         })}
       </View>
     </View>
-  );
-}
-
-function SeasonPicker({
-  visible,
-  seasons,
-  selected,
-  onSelect,
-  onClose,
-}: {
-  visible: boolean;
-  seasons: TeamSeason[];
-  selected?: string;
-  onSelect: (season: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Temporada</Text>
-          <FlatList
-            data={seasons}
-            keyExtractor={(s) => s.season}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => onSelect(item.season)}
-                style={[
-                  styles.modalRow,
-                  item.season === selected && styles.modalRowActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.modalRowText,
-                    item.season === selected && styles.modalRowTextActive,
-                  ]}
-                >
-                  {item.season}
-                </Text>
-                {item.wonChampionship && (
-                  <Trophy
-                    award="champion"
-                    season={item.season}
-                    size={22}
-                    interactive={false}
-                  />
-                )}
-                {item.season === selected && (
-                  <Ionicons name="checkmark" size={18} color={colors.primary} />
-                )}
-              </Pressable>
-            )}
-          />
-        </Pressable>
-      </Pressable>
-    </Modal>
   );
 }
 
@@ -420,24 +357,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
-  seasonSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    minHeight: 42,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  seasonSelectorText: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontFamily: fontFamily.displaySemibold,
-  },
 
   // Palmarés
   palmaresCard: {
@@ -482,56 +401,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  // Selector de temporada
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    maxHeight: '70%',
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xl,
-  },
-  modalHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.borderStrong,
-    marginBottom: spacing.md,
-  },
-  modalTitle: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontFamily: fontFamily.displayBold,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  modalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalRowActive: {
-    backgroundColor: colors.surfaceLight,
-  },
-  modalRowText: {
-    flex: 1,
-    color: colors.textSecondary,
-    fontSize: fontSize.md,
-    fontFamily: fontFamily.displaySemibold,
-  },
-  modalRowTextActive: {
-    color: colors.text,
-  },
   teamCity: {
     color: colors.textSecondary,
     fontSize: fontSize.md,

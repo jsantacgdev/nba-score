@@ -3,7 +3,6 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
+import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { useStandings, useStandingsSeasons } from '@/hooks/useStandings';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { LeagueStanding } from '@/types/domain';
@@ -23,6 +23,7 @@ type ConferenceFilter = 'East' | 'West';
 export default function StandingsScreen() {
   const [conference, setConference] = useState<ConferenceFilter>('East');
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { data: seasons } = useStandingsSeasons();
   // Sin elección explícita, la temporada más reciente disponible
@@ -51,28 +52,9 @@ export default function StandingsScreen() {
         />
       </View>
 
-      {seasons && seasons.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.seasonsScroll}
-          contentContainerStyle={styles.seasonsRow}
-        >
-          {seasons.map((s) => (
-            <Pressable
-              key={s.season}
-              onPress={() => setPickedSeason(s.season)}
-              style={[styles.seasonPill, s.season === season && styles.seasonPillActive]}
-            >
-              <Text
-                style={[styles.seasonPillText, s.season === season && styles.seasonPillTextActive]}
-              >
-                {s.season}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      )}
+      <View style={styles.seasonRow}>
+        <SeasonButton season={season} onPress={() => setPickerOpen(true)} />
+      </View>
 
       {isLoading && <LoadingState message="Cargando clasificación..." />}
 
@@ -102,6 +84,17 @@ export default function StandingsScreen() {
           )}
         />
       )}
+
+      <SeasonPicker
+        visible={pickerOpen}
+        seasons={seasons ?? []}
+        selected={season}
+        onSelect={(s) => {
+          setPickedSeason(s);
+          setPickerOpen(false);
+        }}
+        onClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -254,39 +247,10 @@ const styles = StyleSheet.create({
   confTabTextActive: {
     color: colors.text,
   },
-  // flexGrow 0: sin esto el ScrollView horizontal se estira dentro de la
-  // columna y se come el espacio de la tabla
-  seasonsScroll: {
-    flexGrow: 0,
-    marginBottom: spacing.md,
-  },
-  seasonsRow: {
+  seasonRow: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  seasonPill: {
-    minHeight: 54,
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
-    // borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  seasonPillActive: {
-    backgroundColor: colors.surfaceLight,
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  seasonPillText: {
-    color: colors.textSecondary,
-    fontSize: fontSize.lg,
-    fontFamily: fontFamily.displaySemibold,
-  },
-  seasonPillTextActive: {
-    color: colors.text,
+    paddingBottom: spacing.md,
   },
   listContent: {
     paddingHorizontal: spacing.md,
