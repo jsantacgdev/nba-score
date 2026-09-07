@@ -850,6 +850,10 @@ export type Database = {
       standings_seasons: {
         Args: never
         Returns: {
+          champion_abbreviation: string
+          champion_logo_url: string
+          champion_name: string
+          champion_team_id: string
           games_count: number
           season: string
         }[]
