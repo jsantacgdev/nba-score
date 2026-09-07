@@ -1,0 +1,670 @@
+{
+  "campeonatos_nba": [
+    {
+      "season": "1946-47",
+      "year": 1947,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Philadelphia Warriors",
+      "origen": "manual"
+    },
+    {
+      "season": "1947-48",
+      "year": 1948,
+      "team_id": null,
+      "franquicia_actual": null,
+      "nombre_cuando_gano": "Baltimore Bullets",
+      "origen": "manual"
+    },
+    {
+      "season": "1948-49",
+      "year": 1949,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Minneapolis Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1949-50",
+      "year": 1950,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Minneapolis Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1950-51",
+      "year": 1951,
+      "team_id": "1610612758",
+      "franquicia_actual": "Sacramento Kings",
+      "nombre_cuando_gano": "Rochester Royals",
+      "origen": "manual"
+    },
+    {
+      "season": "1951-52",
+      "year": 1952,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Minneapolis Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1952-53",
+      "year": 1953,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Minneapolis Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1953-54",
+      "year": 1954,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Minneapolis Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1954-55",
+      "year": 1955,
+      "team_id": "1610612755",
+      "franquicia_actual": "Philadelphia 76ers",
+      "nombre_cuando_gano": "Syracuse Nationals",
+      "origen": "manual"
+    },
+    {
+      "season": "1955-56",
+      "year": 1956,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Philadelphia Warriors",
+      "origen": "manual"
+    },
+    {
+      "season": "1956-57",
+      "year": 1957,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1957-58",
+      "year": 1958,
+      "team_id": "1610612737",
+      "franquicia_actual": "Atlanta Hawks",
+      "nombre_cuando_gano": "St. Louis Hawks",
+      "origen": "manual"
+    },
+    {
+      "season": "1958-59",
+      "year": 1959,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1959-60",
+      "year": 1960,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1960-61",
+      "year": 1961,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1961-62",
+      "year": 1962,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1962-63",
+      "year": 1963,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1963-64",
+      "year": 1964,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1964-65",
+      "year": 1965,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1965-66",
+      "year": 1966,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1966-67",
+      "year": 1967,
+      "team_id": "1610612755",
+      "franquicia_actual": "Philadelphia 76ers",
+      "nombre_cuando_gano": "Philadelphia 76ers",
+      "origen": "manual"
+    },
+    {
+      "season": "1967-68",
+      "year": 1968,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1968-69",
+      "year": 1969,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1969-70",
+      "year": 1970,
+      "team_id": "1610612752",
+      "franquicia_actual": "New York Knicks",
+      "nombre_cuando_gano": "New York Knicks",
+      "origen": "manual"
+    },
+    {
+      "season": "1970-71",
+      "year": 1971,
+      "team_id": "1610612749",
+      "franquicia_actual": "Milwaukee Bucks",
+      "nombre_cuando_gano": "Milwaukee Bucks",
+      "origen": "manual"
+    },
+    {
+      "season": "1971-72",
+      "year": 1972,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1972-73",
+      "year": 1973,
+      "team_id": "1610612752",
+      "franquicia_actual": "New York Knicks",
+      "nombre_cuando_gano": "New York Knicks",
+      "origen": "manual"
+    },
+    {
+      "season": "1973-74",
+      "year": 1974,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1974-75",
+      "year": 1975,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Golden State Warriors",
+      "origen": "manual"
+    },
+    {
+      "season": "1975-76",
+      "year": 1976,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1976-77",
+      "year": 1977,
+      "team_id": "1610612757",
+      "franquicia_actual": "Portland Trail Blazers",
+      "nombre_cuando_gano": "Portland Trail Blazers",
+      "origen": "manual"
+    },
+    {
+      "season": "1977-78",
+      "year": 1978,
+      "team_id": "1610612764",
+      "franquicia_actual": "Washington Wizards",
+      "nombre_cuando_gano": "Washington Bullets",
+      "origen": "manual"
+    },
+    {
+      "season": "1978-79",
+      "year": 1979,
+      "team_id": "1610612760",
+      "franquicia_actual": "Oklahoma City Thunder",
+      "nombre_cuando_gano": "Seattle SuperSonics",
+      "origen": "manual"
+    },
+    {
+      "season": "1979-80",
+      "year": 1980,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1980-81",
+      "year": 1981,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "manual"
+    },
+    {
+      "season": "1981-82",
+      "year": 1982,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "1982-83",
+      "year": 1983,
+      "team_id": "1610612755",
+      "franquicia_actual": "Philadelphia 76ers",
+      "nombre_cuando_gano": "Philadelphia 76ers",
+      "origen": "manual"
+    },
+    {
+      "season": "1983-84",
+      "year": 1984,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "api"
+    },
+    {
+      "season": "1984-85",
+      "year": 1985,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "1985-86",
+      "year": 1986,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "api"
+    },
+    {
+      "season": "1986-87",
+      "year": 1987,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "1987-88",
+      "year": 1988,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "1988-89",
+      "year": 1989,
+      "team_id": "1610612765",
+      "franquicia_actual": "Detroit Pistons",
+      "nombre_cuando_gano": "Detroit Pistons",
+      "origen": "api"
+    },
+    {
+      "season": "1989-90",
+      "year": 1990,
+      "team_id": "1610612765",
+      "franquicia_actual": "Detroit Pistons",
+      "nombre_cuando_gano": "Detroit Pistons",
+      "origen": "api"
+    },
+    {
+      "season": "1990-91",
+      "year": 1991,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1991-92",
+      "year": 1992,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1992-93",
+      "year": 1993,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1993-94",
+      "year": 1994,
+      "team_id": "1610612745",
+      "franquicia_actual": "Houston Rockets",
+      "nombre_cuando_gano": "Houston Rockets",
+      "origen": "api"
+    },
+    {
+      "season": "1994-95",
+      "year": 1995,
+      "team_id": "1610612745",
+      "franquicia_actual": "Houston Rockets",
+      "nombre_cuando_gano": "Houston Rockets",
+      "origen": "api"
+    },
+    {
+      "season": "1995-96",
+      "year": 1996,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1996-97",
+      "year": 1997,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1997-98",
+      "year": 1998,
+      "team_id": "1610612741",
+      "franquicia_actual": "Chicago Bulls",
+      "nombre_cuando_gano": "Chicago Bulls",
+      "origen": "api"
+    },
+    {
+      "season": "1998-99",
+      "year": 1999,
+      "team_id": "1610612759",
+      "franquicia_actual": "San Antonio Spurs",
+      "nombre_cuando_gano": "San Antonio Spurs",
+      "origen": "api"
+    },
+    {
+      "season": "1999-00",
+      "year": 2000,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2000-01",
+      "year": 2001,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2001-02",
+      "year": 2002,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2002-03",
+      "year": 2003,
+      "team_id": "1610612759",
+      "franquicia_actual": "San Antonio Spurs",
+      "nombre_cuando_gano": "San Antonio Spurs",
+      "origen": "api"
+    },
+    {
+      "season": "2003-04",
+      "year": 2004,
+      "team_id": "1610612765",
+      "franquicia_actual": "Detroit Pistons",
+      "nombre_cuando_gano": "Detroit Pistons",
+      "origen": "api"
+    },
+    {
+      "season": "2004-05",
+      "year": 2005,
+      "team_id": "1610612759",
+      "franquicia_actual": "San Antonio Spurs",
+      "nombre_cuando_gano": "San Antonio Spurs",
+      "origen": "api"
+    },
+    {
+      "season": "2005-06",
+      "year": 2006,
+      "team_id": "1610612748",
+      "franquicia_actual": "Miami Heat",
+      "nombre_cuando_gano": "Miami Heat",
+      "origen": "api"
+    },
+    {
+      "season": "2006-07",
+      "year": 2007,
+      "team_id": "1610612759",
+      "franquicia_actual": "San Antonio Spurs",
+      "nombre_cuando_gano": "San Antonio Spurs",
+      "origen": "api"
+    },
+    {
+      "season": "2007-08",
+      "year": 2008,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "api"
+    },
+    {
+      "season": "2008-09",
+      "year": 2009,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2009-10",
+      "year": 2010,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2010-11",
+      "year": 2011,
+      "team_id": "1610612742",
+      "franquicia_actual": "Dallas Mavericks",
+      "nombre_cuando_gano": "Dallas Mavericks",
+      "origen": "api"
+    },
+    {
+      "season": "2011-12",
+      "year": 2012,
+      "team_id": "1610612748",
+      "franquicia_actual": "Miami Heat",
+      "nombre_cuando_gano": "Miami Heat",
+      "origen": "api"
+    },
+    {
+      "season": "2012-13",
+      "year": 2013,
+      "team_id": "1610612748",
+      "franquicia_actual": "Miami Heat",
+      "nombre_cuando_gano": "Miami Heat",
+      "origen": "api"
+    },
+    {
+      "season": "2013-14",
+      "year": 2014,
+      "team_id": "1610612759",
+      "franquicia_actual": "San Antonio Spurs",
+      "nombre_cuando_gano": "San Antonio Spurs",
+      "origen": "api"
+    },
+    {
+      "season": "2014-15",
+      "year": 2015,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Golden State Warriors",
+      "origen": "api"
+    },
+    {
+      "season": "2015-16",
+      "year": 2016,
+      "team_id": "1610612739",
+      "franquicia_actual": "Cleveland Cavaliers",
+      "nombre_cuando_gano": "Cleveland Cavaliers",
+      "origen": "api"
+    },
+    {
+      "season": "2016-17",
+      "year": 2017,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Golden State Warriors",
+      "origen": "api"
+    },
+    {
+      "season": "2017-18",
+      "year": 2018,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Golden State Warriors",
+      "origen": "api"
+    },
+    {
+      "season": "2018-19",
+      "year": 2019,
+      "team_id": "1610612761",
+      "franquicia_actual": "Toronto Raptors",
+      "nombre_cuando_gano": "Toronto Raptors",
+      "origen": "api"
+    },
+    {
+      "season": "2019-20",
+      "year": 2020,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "api"
+    },
+    {
+      "season": "2020-21",
+      "year": 2021,
+      "team_id": "1610612749",
+      "franquicia_actual": "Milwaukee Bucks",
+      "nombre_cuando_gano": "Milwaukee Bucks",
+      "origen": "api"
+    },
+    {
+      "season": "2021-22",
+      "year": 2022,
+      "team_id": "1610612744",
+      "franquicia_actual": "Golden State Warriors",
+      "nombre_cuando_gano": "Golden State Warriors",
+      "origen": "api"
+    },
+    {
+      "season": "2022-23",
+      "year": 2023,
+      "team_id": "1610612743",
+      "franquicia_actual": "Denver Nuggets",
+      "nombre_cuando_gano": "Denver Nuggets",
+      "origen": "api"
+    },
+    {
+      "season": "2023-24",
+      "year": 2024,
+      "team_id": "1610612738",
+      "franquicia_actual": "Boston Celtics",
+      "nombre_cuando_gano": "Boston Celtics",
+      "origen": "api"
+    },
+    {
+      "season": "2024-25",
+      "year": 2025,
+      "team_id": "1610612760",
+      "franquicia_actual": "Oklahoma City Thunder",
+      "nombre_cuando_gano": "Oklahoma City Thunder",
+      "origen": "api"
+    },
+    {
+      "season": "2025-26",
+      "year": 2026,
+      "team_id": "1610612752",
+      "franquicia_actual": "New York Knicks",
+      "nombre_cuando_gano": "New York Knicks",
+      "origen": "api"
+    }
+  ],
+  "nba_cup": [
+    {
+      "season": "2023-24",
+      "year": 2024,
+      "team_id": "1610612747",
+      "franquicia_actual": "Los Angeles Lakers",
+      "nombre_cuando_gano": "Los Angeles Lakers",
+      "origen": "manual"
+    },
+    {
+      "season": "2024-25",
+      "year": 2025,
+      "team_id": "1610612749",
+      "franquicia_actual": "Milwaukee Bucks",
+      "nombre_cuando_gano": "Milwaukee Bucks",
+      "origen": "manual"
+    },
+    {
+      "season": "2025-26",
+      "year": 2026,
+      "team_id": "1610612752",
+      "franquicia_actual": "New York Knicks",
+      "nombre_cuando_gano": "New York Knicks",
+      "origen": "manual"
+    }
+  ]
+}
