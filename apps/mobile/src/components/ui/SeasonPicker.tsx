@@ -1,5 +1,6 @@
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
@@ -18,7 +19,20 @@ export type SeasonOption = {
     abbreviation: string;
     logoUrl?: string;
   };
+  /**
+   * Jugadores destacados del año. Lo usa el draft con sus Rookies del Año,
+   * que pueden ser dos cuando el premio se compartio.
+   */
+  featuredPlayers?: {
+    name: string;
+    photoUrl?: string;
+  }[];
 };
+
+function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/);
+  return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
+}
 
 /** Botón que abre el selector y muestra la temporada activa. */
 export function SeasonButton({
@@ -114,6 +128,19 @@ export function SeasonPicker({
                       </Text>
                     </>
                   )}
+                  {item.featuredPlayers?.map((p, i) => (
+                    <View key={p.name} style={styles.playerChip}>
+                      {i > 0 && <Text style={styles.ampersand}>&</Text>}
+                      <PlayerAvatar
+                        photoUrl={p.photoUrl}
+                        initials={iniciales(p.name)}
+                        size={24}
+                      />
+                      <Text style={styles.championName} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
 
                 {item.wonChampionship && (
@@ -211,6 +238,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  playerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 1,
+  },
+  ampersand: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginRight: 2,
   },
   championName: {
     flexShrink: 1,
