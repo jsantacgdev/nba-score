@@ -1,8 +1,16 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from src.clients.balldontlie import get_games_for_date_range
-from src.clients.nba import CURRENT_SEASON, season_date_range
+from src.clients.nba import CURRENT_SEASON, get_season_schedule
 from src.clients.supabase import get_supabase_client
+from src.jobs.sync_games import cleanup_balldontlie_duplicates
+
+
+def _fecha(valor: str) -> datetime | None:
+    """La NBA publica el inicio en UTC con Z final."""
+    try:
+        return datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
 
 
 def sync_upcoming_games(
@@ -11,63 +19,73 @@ def sync_upcoming_games(
     full_season: bool = False,
 ) -> None:
     """
-    Carga partidos recientes y futuros usando balldontlie.
+    Carga partidos recientes y futuros desde el calendario de la NBA.
 
-    Es el unico job que trae calendario futuro: nba_api solo devuelve partidos
-    ya jugados, asi que sin esto la app no tiene proximos partidos que mostrar.
+    Es el unico job que trae calendario futuro: LeagueGameLog solo devuelve
+    partidos ya jugados, asi que sin esto la app no tiene proximos partidos
+    que mostrar.
+
+    Antes tiraba de balldontlie, que numera los partidos a su manera
+    ('bdl_21717855'). Eso obligaba a mantener dos numeraciones en la misma
+    tabla y a borrar duplicados cuando el partido se jugaba y llegaba por
+    nba_api con su identificador real. Con ScheduleLeagueV2 el identificador
+    ya es el definitivo desde que el partido se anuncia, asi que la fila se
+    actualiza sola al jugarse.
 
     Args:
         days_ahead: Dias hacia adelante desde hoy.
         days_back: Dias hacia atras, para refrescar marcadores recientes.
         full_season: Si True, ignora los dos anteriores y trae la temporada entera.
     """
-    if full_season:
-        start, end = season_date_range(CURRENT_SEASON)
-        start_date = datetime.combine(start, datetime.min.time())
-        end_date = datetime.combine(end, datetime.min.time())
-        print(f"Sincronizando la temporada {CURRENT_SEASON} completa, "
-              f"de {start} a {end}...")
-    else:
-        today = datetime.now()
-        start_date = today - timedelta(days=days_back)
-        end_date = today + timedelta(days=days_ahead)
-        print(f"Sincronizando partidos de {start_date.date()} a {end_date.date()} "
-              f"(-{days_back}/+{days_ahead} dias)...")
-
     client = get_supabase_client()
-    teams = client.table("teams").select("id").execute()
-    valid_ids = {row["id"] for row in teams.data}
+    valid_ids = {row["id"] for row in client.table("teams").select("id").execute().data}
 
     try:
-        games = get_games_for_date_range(start_date, end_date, CURRENT_SEASON)
+        partidos = get_season_schedule(CURRENT_SEASON)
     except Exception as e:
         print(f"Error: {e}")
         return
 
-    print(f"   {len(games)} partidos obtenidos")
+    if full_season:
+        print(f"Sincronizando la temporada {CURRENT_SEASON} completa...")
+    else:
+        ahora = datetime.now(timezone.utc)
+        desde = ahora - timedelta(days=days_back)
+        hasta = ahora + timedelta(days=days_ahead)
+        print(f"Sincronizando partidos de {desde.date()} a {hasta.date()} "
+              f"(-{days_back}/+{days_ahead} dias)...")
+        partidos = [
+            g for g in partidos
+            if (f := _fecha(g["starts_at"])) is not None and desde <= f <= hasta
+        ]
 
-    filtered = [
-        g for g in games
+    print(f"   {len(partidos)} partidos obtenidos")
+
+    filtrados = [
+        g for g in partidos
         if g["home_team_id"] in valid_ids and g["away_team_id"] in valid_ids
     ]
-
-    if not filtered:
+    if not filtrados:
         print("Sin partidos para insertar.")
         return
 
-    by_status: dict[str, int] = {}
-    for g in filtered:
-        by_status[g["status"]] = by_status.get(g["status"], 0) + 1
-    print(f"   Desglose: {by_status}")
+    por_estado: dict[str, int] = {}
+    for g in filtrados:
+        por_estado[g["status"]] = por_estado.get(g["status"], 0) + 1
+    print(f"   Desglose: {por_estado}")
 
-    batch_size = 500
     total = 0
-    for i in range(0, len(filtered), batch_size):
-        batch = filtered[i : i + batch_size]
-        result = client.table("games").upsert(batch).execute()
+    for i in range(0, len(filtrados), 500):
+        result = client.table("games").upsert(filtrados[i : i + 500]).execute()
         total += len(result.data)
 
+    # Los que quedaban de balldontlie ya tienen su equivalente con
+    # identificador de la NBA, asi que sobran.
+    borrados = cleanup_balldontlie_duplicates(client, filtrados, CURRENT_SEASON)
+
     print(f"\n{total} partidos sincronizados")
+    if borrados:
+        print(f"   {borrados} duplicados de balldontlie eliminados")
 
 
 if __name__ == "__main__":
