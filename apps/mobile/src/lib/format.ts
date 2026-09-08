@@ -65,6 +65,15 @@ export function formatTime(date: Date): string {
   return `${String(e.getUTCHours()).padStart(2, '0')}:${String(e.getUTCMinutes()).padStart(2, '0')}`;
 }
 
+/** Dia y mes del dia español, "08/09". */
+export function formatDayMonth(date: Date): string {
+  const e = enEspana(date);
+  return (
+    `${String(e.getUTCDate()).padStart(2, '0')}/` +
+    `${String(e.getUTCMonth() + 1).padStart(2, '0')}`
+  );
+}
+
 export function formatDateDMY(date: Date): string {
   const e = enEspana(date);
   const day = String(e.getUTCDate()).padStart(2, '0');
