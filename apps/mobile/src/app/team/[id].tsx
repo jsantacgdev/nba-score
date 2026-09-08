@@ -16,6 +16,10 @@ import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CompactGameRow } from '@/components/game/CompactGameRow';
+import { useTeamMovements } from '@/hooks/useMovements';
+import { Ionicons } from '@expo/vector-icons';
+import { formatDateDMY } from '@/lib/format';
+import type { TeamMovement } from '@/types/domain';
 import {
   useTeam,
   useTeamPalmares,
@@ -27,12 +31,13 @@ import { getPositionName } from '@/constants/positions';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { Game, Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
 
-type Tab = 'roster' | 'games';
+type Tab = 'roster' | 'games' | 'movements';
 
 export default function TeamDetailScreen() {
   const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
   const teamId = id ?? '';
   const [activeTab, setActiveTab] = useState<Tab>('roster');
+  const { data: movimientos, isLoading: movimientosLoading } = useTeamMovements(teamId);
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
   const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
 
@@ -181,6 +186,44 @@ export default function TeamDetailScreen() {
         />
       )}
 
+      {activeTab === 'movements' && (
+        <FlatList
+          style={styles.container}
+          data={movimientos ?? []}
+          keyExtractor={(m) => m.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          ListHeaderComponent={
+            <View>
+              <TeamHeader
+                team={team}
+                season={activeSeason}
+                seasons={teamSeasons}
+                onOpenPicker={() => setSeasonPickerOpen(true)}
+              />
+              <TeamPalmares titles={palmares} />
+              <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
+
+              {movimientosLoading && <LoadingState message="Cargando movimientos..." compact />}
+
+              {!movimientosLoading && (movimientos ?? []).length === 0 && (
+                <Text style={styles.emptyText}>
+                  No hay movimientos registrados. El histórico empieza en julio de 2015.
+                </Text>
+              )}
+            </View>
+          }
+          renderItem={({ item }) => <TeamMovementRow entry={item} />}
+        />
+      )}
+
       <SeasonPicker
         visible={seasonPickerOpen}
         seasons={teamSeasons ?? []}
@@ -298,7 +341,99 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
           Partidos
         </Text>
       </Pressable>
+      <Pressable
+        onPress={() => onChange('movements')}
+        style={[styles.tabButton, activeTab === 'movements' && styles.tabButtonActive]}
+      >
+        <Text
+          style={[styles.tabButtonText, activeTab === 'movements' && styles.tabButtonTextActive]}
+          numberOfLines={1}
+        >
+          Traspasos
+        </Text>
+      </Pressable>
     </View>
+  );
+}
+
+/** Etiqueta en castellano del tipo de movimiento. */
+function tipoMovimiento(tipo: string): string {
+  if (tipo === 'Trade') return 'Traspaso';
+  if (tipo === 'Signing') return 'Agencia libre';
+  if (tipo === 'Waive') return 'Corte';
+  if (tipo === 'AwardOnWaivers') return 'Reclamado';
+  if (tipo === 'ContractConverted') return 'Contrato convertido';
+  return tipo;
+}
+
+function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/);
+  return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
+}
+
+/**
+ * Un movimiento visto desde el equipo: quien entra y quien sale.
+ *
+ * Las elecciones de draft no tienen jugador detras, asi que se muestran
+ * como tales.
+ */
+function TeamMovementRow({ entry }: { entry: TeamMovement }) {
+  const entra = entry.direction === 'in';
+  const abrible = !!entry.dealId && entry.type === 'Trade';
+  const esDraft = !entry.playerId;
+
+  return (
+    <Pressable
+      disabled={!abrible}
+      onPress={() =>
+        entry.dealId && router.push({ pathname: '/deal/[id]', params: { id: entry.dealId } })
+      }
+      style={({ pressed }) => [styles.movRow, pressed && abrible && styles.movRowPressed]}
+    >
+      <View style={[styles.movFlecha, entra ? styles.movEntra : styles.movSale]}>
+        <Ionicons
+          name={entra ? 'arrow-down' : 'arrow-up'}
+          size={14}
+          color={entra ? colors.success : colors.danger}
+        />
+      </View>
+
+      {esDraft ? (
+        <View style={styles.movDraft}>
+          <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
+        </View>
+      ) : (
+        <PlayerAvatar
+          photoUrl={entry.photoUrl}
+          initials={iniciales(entry.playerName ?? '?')}
+          size={32}
+        />
+      )}
+
+      <View style={styles.movInfo}>
+        <Text style={styles.movNombre} numberOfLines={1}>
+          {esDraft ? 'Elección de draft' : entry.playerName}
+        </Text>
+        <View style={styles.movMeta}>
+          <Text style={styles.movMetaTexto}>
+            {formatDateDMY(entry.date)} · {tipoMovimiento(entry.type)}
+          </Text>
+        </View>
+      </View>
+
+      {entry.otherTeam && (
+        <View style={styles.movOtro}>
+          <Text style={styles.movOtroTexto}>{entra ? 'de' : 'a'}</Text>
+          <TeamLogo
+            logoUrl={entry.otherTeam.logoUrl}
+            abbreviation={entry.otherTeam.abbreviation}
+            size={22}
+          />
+        </View>
+      )}
+
+      {abrible && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+    </Pressable>
   );
 }
 
@@ -433,6 +568,55 @@ const styles = StyleSheet.create({
   },
 
   // Tab switcher
+  movRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  movRowPressed: { backgroundColor: colors.surface },
+  movFlecha: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  movEntra: { backgroundColor: 'rgba(90, 180, 120, 0.15)' },
+  movSale: { backgroundColor: 'rgba(209, 100, 100, 0.15)' },
+  movDraft: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceLight,
+  },
+  movInfo: { flex: 1 },
+  movNombre: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  movMeta: { flexDirection: 'row', marginTop: 1 },
+  movMetaTexto: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+  },
+  movOtro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  movOtroTexto: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+  },
+
   tabSwitcher: {
     flexDirection: 'row',
     marginTop: spacing.lg,

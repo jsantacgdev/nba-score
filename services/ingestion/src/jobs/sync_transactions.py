@@ -32,16 +32,39 @@ def sync_transactions() -> None:
     # Los equipos si tienen clave foranea implicita en la app, asi que se
     # descartan los que no reconocemos (franquicias antiguas o ligas de
     # desarrollo que aparecen sueltas en el feed).
-    equipos = {t["id"] for t in client.table("teams").select("id").execute().data}
+    filas_equipos = client.table("teams").select("id, full_name").execute().data
+    equipos = {t["id"] for t in filas_equipos}
+    por_nombre = {t["full_name"]: t["id"] for t in filas_equipos}
+
     limpios = []
     sin_equipo = 0
+    sin_origen = 0
     for m in movimientos:
-        if m["team_id"] and m["team_id"] not in equipos:
+        fila = dict(m)
+
+        # El nombre del equipo que cede se resuelve aqui, que es donde se
+        # conoce la tabla de equipos
+        nombre_origen = fila.pop("from_team_id_nombre", None)
+        fila["from_team_id"] = por_nombre.get(nombre_origen) if nombre_origen else None
+        if nombre_origen and not fila["from_team_id"]:
+            sin_origen += 1
+
+        if fila["team_id"] and fila["team_id"] not in equipos:
             sin_equipo += 1
-            m = {**m, "team_id": None}
-        limpios.append(m)
+            fila["team_id"] = None
+
+        limpios.append(fila)
+
     if sin_equipo:
         print(f"   {sin_equipo} con un equipo desconocido, se guardan sin equipo")
+    if sin_origen:
+        print(f"   {sin_origen} con un equipo de origen no reconocido")
+
+    traspasos = [m for m in limpios if m["transaction_type"] == "Trade"]
+    con_origen = sum(1 for m in traspasos if m["from_team_id"])
+    operaciones = len({m["deal_id"] for m in traspasos if m["from_team_id"]})
+    print(f"   traspasos con equipo de origen: {con_origen}/{len(traspasos)}")
+    print(f"   agrupados en {operaciones} operaciones distintas")
 
     total = 0
     for i in range(0, len(limpios), BATCH_SIZE):

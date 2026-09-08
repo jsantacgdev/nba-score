@@ -63,6 +63,14 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
+              name="deal/[id]"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+              }}
+            />
+            <Stack.Screen
               name="compare/[ids]"
               options={{
                 title: 'Comparativa',

@@ -413,6 +413,82 @@ export type Database = {
           },
         ]
       }
+      player_injuries: {
+        Row: {
+          espn_athlete_id: string | null
+          first_seen_at: string | null
+          id: string
+          injury_type: string | null
+          is_current: boolean
+          last_seen_at: string | null
+          long_comment: string | null
+          player_id: string | null
+          player_name: string
+          reported_at: string | null
+          return_date: string | null
+          short_comment: string | null
+          side: string | null
+          status: string | null
+          team_id: string | null
+        }
+        Insert: {
+          espn_athlete_id?: string | null
+          first_seen_at?: string | null
+          id: string
+          injury_type?: string | null
+          is_current?: boolean
+          last_seen_at?: string | null
+          long_comment?: string | null
+          player_id?: string | null
+          player_name: string
+          reported_at?: string | null
+          return_date?: string | null
+          short_comment?: string | null
+          side?: string | null
+          status?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          espn_athlete_id?: string | null
+          first_seen_at?: string | null
+          id?: string
+          injury_type?: string | null
+          is_current?: boolean
+          last_seen_at?: string | null
+          long_comment?: string | null
+          player_id?: string | null
+          player_name?: string
+          reported_at?: string | null
+          return_date?: string | null
+          short_comment?: string | null
+          side?: string | null
+          status?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_injuries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_injuries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_season_history: {
         Row: {
           assists: number | null
@@ -633,6 +709,48 @@ export type Database = {
           },
         ]
       }
+      player_transactions: {
+        Row: {
+          deal_id: string | null
+          description: string
+          from_team_id: string | null
+          id: string
+          player_id: string | null
+          player_slug: string | null
+          team_id: string | null
+          team_slug: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          deal_id?: string | null
+          description: string
+          from_team_id?: string | null
+          id: string
+          player_id?: string | null
+          player_slug?: string | null
+          team_id?: string | null
+          team_slug?: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          deal_id?: string | null
+          description?: string
+          from_team_id?: string | null
+          id?: string
+          player_id?: string | null
+          player_slug?: string | null
+          team_id?: string | null
+          team_slug?: string | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           created_at: string | null
@@ -794,6 +912,26 @@ export type Database = {
           temporadas_rellenadas: number
         }[]
       }
+      deal_detail: {
+        Args: { target_deal_id: string }
+        Returns: {
+          description: string
+          from_abbreviation: string
+          from_logo_url: string
+          from_name: string
+          from_team_id: string
+          id: string
+          is_draft_pick: boolean
+          photo_url: string
+          player_id: string
+          player_name: string
+          to_abbreviation: string
+          to_logo_url: string
+          to_name: string
+          to_team_id: string
+          transaction_date: string
+        }[]
+      }
       draft_class: {
         Args: { target_year: number }
         Returns: {
@@ -869,6 +1007,41 @@ export type Database = {
           steals: number
           three_point_pct: number
           turnovers: number
+        }[]
+      }
+      player_injury_history: {
+        Args: { target_player_id: string }
+        Returns: {
+          first_seen_at: string
+          id: string
+          injury_type: string
+          is_current: boolean
+          last_seen_at: string
+          long_comment: string
+          reported_at: string
+          return_date: string
+          short_comment: string
+          side: string
+          status: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+        }[]
+      }
+      player_movements: {
+        Args: { target_player_id: string }
+        Returns: {
+          deal_id: string
+          description: string
+          from_abbreviation: string
+          from_logo_url: string
+          from_team_id: string
+          id: string
+          to_abbreviation: string
+          to_logo_url: string
+          to_team_id: string
+          transaction_date: string
+          transaction_type: string
         }[]
       }
       player_palmares: {
@@ -983,6 +1156,23 @@ export type Database = {
           status: string
           time_remaining: string
           title_decider: boolean
+        }[]
+      }
+      team_movements: {
+        Args: { target_team_id: string }
+        Returns: {
+          deal_id: string
+          description: string
+          direction: string
+          id: string
+          other_abbreviation: string
+          other_logo_url: string
+          other_team_id: string
+          photo_url: string
+          player_id: string
+          player_name: string
+          transaction_date: string
+          transaction_type: string
         }[]
       }
       team_palmares: {
