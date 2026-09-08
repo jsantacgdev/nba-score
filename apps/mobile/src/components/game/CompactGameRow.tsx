@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
-import { formatShortDate } from '@/lib/format';
+import { formatShortDate, formatTime } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { Game } from '@/types/domain';
 
@@ -32,10 +32,7 @@ export function CompactGameRow({ game }: { game: Game }) {
   const ganaLocal = game.scoreHome > game.scoreAway;
   const ganaVisitante = game.scoreAway > game.scoreHome;
 
-  const hora = game.startsAt.toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const hora = formatTime(game.startsAt);
 
   const ronda = roundLabel(game);
   const serie = game.seriesWins;

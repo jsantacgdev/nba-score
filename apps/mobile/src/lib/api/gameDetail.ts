@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { calculateGameScore } from '@/lib/gameScore';
-import type { Game, GameBoxScoreEntry, GameDetail } from '@/types/domain';
+import type { Game, GameBoxScoreEntry, GameDetail, GameLineupPlayer } from '@/types/domain';
 import type { Database } from '@/types/database';
 
 type GameLogRow = Database['public']['Tables']['player_game_log']['Row'];
@@ -101,8 +101,48 @@ export async function fetchGameDetail(gameId: string): Promise<GameDetail | null
     .eq('game_id', gameId);
 
   if (logsError) throw logsError;
+
+  // Sin box score el partido no se ha jugado, asi que se enseña quien esta
+  // convocado: la plantilla actual de cada equipo, sin numeros.
   if (!logs || logs.length === 0) {
-    return { game, homeRoster: [], awayRoster: [], mvp: null };
+    const { data: plantillas, error: plantillaError } = await supabase
+      .from('players')
+      .select('id, first_name, last_name, photo_url, team_id, position, jersey_number')
+      .in('team_id', [game.homeTeam.id, game.awayTeam.id])
+      .eq('is_active', true);
+
+    if (plantillaError) throw plantillaError;
+
+    const mapear = (teamId: string): GameLineupPlayer[] =>
+      (plantillas ?? [])
+        .filter((p) => p.team_id === teamId)
+        .map((p) => ({
+          playerId: p.id,
+          firstName: p.first_name,
+          lastName: p.last_name,
+          photoUrl: p.photo_url ?? undefined,
+          teamId: p.team_id ?? teamId,
+          position: p.position ?? undefined,
+          jerseyNumber: p.jersey_number ?? undefined,
+        }))
+        .sort((a, b) => {
+          const na = Number(a.jerseyNumber);
+          const nb = Number(b.jerseyNumber);
+          // Por dorsal, y los que no tienen al final
+          if (Number.isNaN(na) && Number.isNaN(nb)) return a.lastName.localeCompare(b.lastName);
+          if (Number.isNaN(na)) return 1;
+          if (Number.isNaN(nb)) return -1;
+          return na - nb;
+        });
+
+    return {
+      game,
+      homeRoster: [],
+      awayRoster: [],
+      mvp: null,
+      homeLineup: mapear(game.homeTeam.id),
+      awayLineup: mapear(game.awayTeam.id),
+    };
   }
 
   // Traemos datos de los jugadores en una sola query
@@ -139,5 +179,5 @@ export async function fetchGameDetail(gameId: string): Promise<GameDetail | null
       ? playedEntries.reduce((best, e) => (e.gameScore > best.gameScore ? e : best))
       : null;
 
-  return { game, homeRoster, awayRoster, mvp };
+  return { game, homeRoster, awayRoster, mvp, homeLineup: [], awayLineup: [] };
 }
