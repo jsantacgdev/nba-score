@@ -907,6 +907,29 @@ export type Database = {
           name: string
         }[]
       }
+      season_leaders: {
+        Args: {
+          target_limit?: number
+          target_season: string
+          target_stat?: string
+        }
+        Returns: {
+          assists: number
+          blocks: number
+          games_played: number
+          minutes: number
+          photo_url: string
+          player_id: string
+          player_name: string
+          points: number
+          puesto: number
+          rebounds: number
+          steals: number
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+        }[]
+      }
       season_standings: {
         Args: { target_season: string }
         Returns: {
