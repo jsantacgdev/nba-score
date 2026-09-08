@@ -6,6 +6,7 @@ from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import leaguegamelog
 from nba_api.stats.endpoints import scoreboardv2
+from nba_api.stats.endpoints import scheduleleaguev2
 from nba_api.stats.endpoints import boxscoretraditionalv3
 from datetime import date, datetime
 import time
@@ -410,6 +411,55 @@ def get_league_games(
             partidos.append(juego)
 
     return partidos
+
+ESTADO_POR_CODIGO = {1: "scheduled", 2: "live", 3: "final"}
+
+
+def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
+    """
+    Calendario completo de la temporada, jugado y por jugar.
+
+    Es la unica fuente de la NBA que da partidos futuros: LeagueGameLog solo
+    devuelve los ya jugados. Sustituye a balldontlie para el calendario, y
+    con eso todos los partidos de la base llevan identificador de la NBA en
+    lugar de convivir dos numeraciones.
+
+    Las eliminatorias de la NBA Cup aparecen con los equipos aun sin
+    decidir; esas filas se descartan hasta que haya rival.
+    """
+    df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=60).get_data_frames()[0]
+
+    partidos = []
+    for _, row in df.iterrows():
+        game_id = _id(row["gameId"])
+        home_id = _id(row["homeTeam_teamId"])
+        away_id = _id(row["awayTeam_teamId"])
+
+        # Rival por decidir: el identificador viene a cero
+        if not home_id or not away_id or home_id == "0" or away_id == "0":
+            continue
+
+        try:
+            codigo = int(row["gameStatus"])
+        except (TypeError, ValueError):
+            codigo = 1
+
+        partidos.append(
+            {
+                "id": game_id,
+                "starts_at": str(row["gameDateTimeUTC"]),
+                "season": season,
+                "home_team_id": home_id,
+                "away_team_id": away_id,
+                "score_home": _whole(row, "homeTeam_score") or 0,
+                "score_away": _whole(row, "awayTeam_score") or 0,
+                "status": ESTADO_POR_CODIGO.get(codigo, "scheduled"),
+                "season_type": season_type_from_id(game_id),
+            }
+        )
+
+    return partidos
+
 
 def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> list[dict]:
     """Obtiene los partidos programados para una fecha concreta."""

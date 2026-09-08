@@ -32,19 +32,33 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -
     horarias distintas (ET vs UTC) y el mismo partido puede caer en dias
     "calendario" diferentes segun la fuente.
     """
-    existing = (
-        client.table("games")
-        .select("id, home_team_id, away_team_id, starts_at")
-        .like("id", "bdl_%")
-        .eq("season", season)
-        .execute()
-    )
-    if not existing.data:
+    # Paginado: PostgREST corta en 1000 filas, y una temporada entera de
+    # calendario pasa de 1200. Sin esto quedaban 200 sin borrar.
+    filas: list[dict] = []
+    offset = 0
+    while True:
+        pagina = (
+            client.table("games")
+            .select("id, home_team_id, away_team_id, starts_at")
+            .like("id", "bdl_%")
+            .eq("season", season)
+            .order("id")
+            .range(offset, offset + 999)
+            .execute()
+        )
+        if not pagina.data:
+            break
+        filas.extend(pagina.data)
+        if len(pagina.data) < 1000:
+            break
+        offset += 1000
+
+    if not filas:
         return 0
 
     # Indice (local, visitante, dia) -> ids de balldontlie
     index: dict[tuple, list[str]] = {}
-    for row in existing.data:
+    for row in filas:
         day = _day(row["starts_at"])
         if day is None:
             continue
