@@ -8,6 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
@@ -22,6 +24,7 @@ import {
   usePlayer,
   usePlayerAwards,
   usePlayerCareer,
+  usePlayerCareerTotals,
   usePlayerGameLog,
   usePlayerSeasonStats,
 } from '@/hooks/usePlayerDetail';
@@ -69,10 +72,12 @@ export default function PlayerDetailScreen() {
   } = usePlayerCareer(playerId);
 
   const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
+  const { data: carrera } = usePlayerCareerTotals(playerId);
   const { data: draft } = usePlayerDraft(playerId);
 
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
   const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
+  const [mediasAbiertas, setMediasAbiertas] = useState(false);
 
   // Las temporadas seleccionables son las de su carrera, sin repetir: un
   // traspasado tiene dos filas del mismo año, una por equipo.
@@ -101,11 +106,6 @@ export default function PlayerDetailScreen() {
     refetchCareer();
     refetchAwards();
   };
-
-  // Si fue traspasado hay dos filas de esa temporada: vale la de mas juego
-  const temporadaActiva = (career ?? [])
-    .filter((c) => c.season === activeSeason)
-    .sort((a, b) => (b.gamesPlayed ?? 0) - (a.gamesPlayed ?? 0))[0];
 
   const rows: ListRow[] =
     tab === 'games'
@@ -232,21 +232,56 @@ export default function PlayerDetailScreen() {
             {/* Palmarés */}
             {awards && awards.length > 0 && <Palmares awards={awards} />}
 
-            {/* Medias de la temporada elegida. Salen de la carrera y no de
-                player_season_stats, que solo guarda la ultima cargada. */}
-            {temporadaActiva && (temporadaActiva.gamesPlayed ?? 0) > 0 && (
-              <View style={styles.seasonCard}>
-                <Text style={styles.seasonTitle}>
-                  Medias {temporadaActiva.season} ({temporadaActiva.gamesPlayed} partidos)
-                </Text>
+            {/* Medias de toda la carrera. Las de cada temporada estan en
+                la pestaña Carrera, que las desglosa una por una.
+
+                Plegado deja a la vista lo que se mira siempre (puntos,
+                rebotes, asistencias) y guarda los minutos y los
+                porcentajes de tiro para quien los busque. */}
+            {carrera && carrera.gamesPlayed > 0 && (
+              <Animated.View
+                style={styles.careerCard}
+                layout={LinearTransition.duration(250)}
+              >
+                <Pressable
+                  onPress={() => setMediasAbiertas(!mediasAbiertas)}
+                  style={({ pressed }) => [styles.careerCardHeader, pressed && styles.careerCardPressed]}
+                >
+                  <Text style={styles.seasonTitle}>
+                    Medias de su carrera ({carrera.seasons}{' '}
+                    {carrera.seasons === 1 ? 'temporada' : 'temporadas'}
+                    {', '}
+                    {carrera.gamesPlayed} partidos)
+                  </Text>
+                  <Animated.View
+                    style={{ transform: [{ rotate: mediasAbiertas ? '180deg' : '0deg' }] }}
+                  >
+                    <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+                  </Animated.View>
+                </Pressable>
+
                 <View style={styles.seasonStatsRow}>
-                  <SeasonStat label="PTS" value={temporadaActiva.points ?? 0} />
-                  <SeasonStat label="REB" value={temporadaActiva.rebounds ?? 0} />
-                  <SeasonStat label="AST" value={temporadaActiva.assists ?? 0} />
-                  <SeasonStat label="ROB" value={temporadaActiva.steals ?? 0} />
-                  <SeasonStat label="TAP" value={temporadaActiva.blocks ?? 0} />
+                  <SeasonStat label="PTS" value={carrera.points} />
+                  <SeasonStat label="REB" value={carrera.rebounds} />
+                  <SeasonStat label="AST" value={carrera.assists} />
+                  <SeasonStat label="ROB" value={carrera.steals} />
+                  <SeasonStat label="TAP" value={carrera.blocks} />
                 </View>
-              </View>
+
+                {mediasAbiertas && (
+                  <Animated.View
+                    entering={FadeIn.duration(200)}
+                    exiting={FadeOut.duration(150)}
+                    style={styles.careerSecondRow}
+                  >
+                    <SeasonStat label="MIN" value={carrera.minutes} />
+                    <SeasonStat label="TC%" value={carrera.fieldGoalPct * 100} />
+                    <SeasonStat label="T3%" value={carrera.threePointPct * 100} />
+                    <SeasonStat label="TL%" value={carrera.freeThrowPct * 100} />
+                    <SeasonStat label="PÉR" value={carrera.turnovers} />
+                  </Animated.View>
+                )}
+              </Animated.View>
             )}
 
             {/* Pestañas. Un retirado va directo a Carrera. */}
@@ -601,6 +636,32 @@ const styles = StyleSheet.create({
   },
 
   // Medias de temporada
+  careerCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    // Separada del Palmares: son dos bloques distintos
+    marginTop: spacing.lg,
+  },
+  careerCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  careerCardPressed: {
+    opacity: 0.7,
+  },
+  careerSecondRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   seasonCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

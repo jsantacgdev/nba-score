@@ -1,3 +1,4 @@
+import { addDays, claveDia, startOfDay } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import type { Game } from '@/types/domain';
 import type { Database } from '@/types/database';
@@ -58,16 +59,17 @@ const SELECT_WITH_TEAMS = `
 `;
 
 export async function fetchGamesByDate(date: Date): Promise<Game[]> {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  // El dia va de medianoche a medianoche en España, no en la zona del
+  // dispositivo: un partido de la NBA que empieza a las 03:00 aqui
+  // pertenece a ese dia español, no al americano.
+  const inicio = startOfDay(date);
+  const fin = new Date(addDays(inicio, 1).getTime() - 1);
 
   const { data, error } = await supabase
     .from('games')
     .select(SELECT_WITH_TEAMS)
-    .gte('starts_at', startOfDay.toISOString())
-    .lte('starts_at', endOfDay.toISOString())
+    .gte('starts_at', inicio.toISOString())
+    .lte('starts_at', fin.toISOString())
     .order('starts_at');
 
   if (error) throw error;
@@ -111,7 +113,7 @@ export async function fetchRecentGameDays(
 
   const byDay = new Map<string, Game[]>();
   for (const g of mapped) {
-    const key = g.startsAt.toISOString().slice(0, 10);
+    const key = claveDia(g.startsAt);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(g);
   }
@@ -152,7 +154,7 @@ export async function fetchUpcomingGameDays(
 
   const byDay = new Map<string, Game[]>();
   for (const g of mapped) {
-    const key = g.startsAt.toISOString().slice(0, 10);
+    const key = claveDia(g.startsAt);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(g);
   }
@@ -188,8 +190,8 @@ export async function fetchGameCountsByDateRange(
   const counts = new Map<string, number>();
   for (const row of data ?? []) {
     const date = new Date(row.starts_at);
-    // Clave: YYYY-MM-DD en hora local (no UTC)
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    // Clave: YYYY-MM-DD del dia español
+    const key = claveDia(date);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 

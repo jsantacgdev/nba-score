@@ -6,10 +6,11 @@ import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
-import type { GameBoxScoreEntry } from '@/types/domain';
+import type { GameBoxScoreEntry, GameLineupPlayer } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,9 +35,14 @@ export default function GameDetailScreen() {
     );
   }
 
+  // La caché de React Query dura una hora, asi que puede venir de una
+  // version anterior al cambio y no traer las plantillas.
   const { game, homeRoster, awayRoster, mvp } = data;
-  const homeWinning = game.scoreHome > game.scoreAway;
-  const awayWinning = game.scoreAway > game.scoreHome;
+  const homeLineup = data.homeLineup ?? [];
+  const awayLineup = data.awayLineup ?? [];
+  const jugado = game.status === 'final' || game.status === 'live';
+  const homeWinning = jugado && game.scoreHome > game.scoreAway;
+  const awayWinning = jugado && game.scoreAway > game.scoreHome;
 
   const title = `${game.homeTeam.name} vs ${game.awayTeam.name}`;
 
@@ -59,12 +65,14 @@ export default function GameDetailScreen() {
             />
 
             <View style={styles.scoresCenter}>
+              {/* Sin jugar no hay marcador: un 0-0 se lee como empate */}
               <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
-                {game.scoreHome}
+                {jugado ? game.scoreHome : '-'}
               </Text>
-              <Text style={styles.scoreSeparator}>-</Text>
+              {/* El separador sobra sin marcador: quedarian tres guiones */}
+              {jugado && <Text style={styles.scoreSeparator}>-</Text>}
               <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
-                {game.scoreAway}
+                {jugado ? game.scoreAway : '-'}
               </Text>
             </View>
 
@@ -93,17 +101,32 @@ export default function GameDetailScreen() {
           />
         </View>
 
+        {/* Jugado: box score. Sin jugar: la plantilla convocada. */}
         {selectedTeam === 'home' ? (
-          <TeamBoxScore
-            title={game.homeTeam.fullName}
-            logoUrl={game.homeTeam.logoUrl}
-            roster={homeRoster}
-          />
-        ) : (
+          jugado ? (
+            <TeamBoxScore
+              title={game.homeTeam.fullName}
+              logoUrl={game.homeTeam.logoUrl}
+              roster={homeRoster}
+            />
+          ) : (
+            <TeamLineup
+              title={game.homeTeam.fullName}
+              logoUrl={game.homeTeam.logoUrl}
+              lineup={homeLineup}
+            />
+          )
+        ) : jugado ? (
           <TeamBoxScore
             title={game.awayTeam.fullName}
             logoUrl={game.awayTeam.logoUrl}
             roster={awayRoster}
+          />
+        ) : (
+          <TeamLineup
+            title={game.awayTeam.fullName}
+            logoUrl={game.awayTeam.logoUrl}
+            lineup={awayLineup}
           />
         )}
       </ScrollView>
@@ -131,6 +154,67 @@ function TeamBlock({
         )}
       </Pressable>
       <Text style={styles.teamAbbr}>{abbreviation}</Text>
+    </View>
+  );
+}
+
+/**
+ * Plantilla de un equipo en un partido que aun no se ha jugado.
+ *
+ * Misma estructura que el box score para que la pantalla no cambie de
+ * forma al pasar de un partido programado a uno terminado, pero con dorsal
+ * y posicion en lugar de estadisticas, que todavia no existen.
+ */
+function TeamLineup({
+  title,
+  logoUrl,
+  lineup,
+}: {
+  title: string;
+  logoUrl?: string;
+  lineup?: GameLineupPlayer[];
+}) {
+  if (!lineup || lineup.length === 0) {
+    return (
+      <EmptyState
+        icon="people-outline"
+        title="Sin plantilla"
+        message="Todavia no hay jugadores registrados para este equipo."
+        compact
+      />
+    );
+  }
+
+  return (
+    <View style={styles.boxScoreSection}>
+      <View style={styles.boxScoreHeader}>
+        {logoUrl && (
+          <Image source={{ uri: logoUrl }} style={styles.boxScoreLogo} contentFit="contain" />
+        )}
+        <Text style={styles.boxScoreTitle}>{title}</Text>
+        <Text style={styles.lineupCount}>{lineup.length}</Text>
+      </View>
+
+      {lineup.map((p) => (
+        <Pressable
+          key={p.playerId}
+          onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
+          style={({ pressed }) => [styles.playerRow, pressed && styles.playerRowPressed]}
+        >
+          <Text style={styles.lineupJersey}>{p.jerseyNumber ?? '-'}</Text>
+          <View style={[styles.colPlayer, styles.playerCol]}>
+            <PlayerAvatar
+              photoUrl={p.photoUrl}
+              initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
+              size={32}
+            />
+            <Text style={styles.playerName} numberOfLines={1}>
+              {p.firstName[0]}. {p.lastName}
+            </Text>
+          </View>
+          {p.position && <Text style={styles.lineupPosition}>{p.position}</Text>}
+        </Pressable>
+      ))}
     </View>
   );
 }
@@ -388,6 +472,26 @@ const styles = StyleSheet.create({
   },
 
   // Box score
+  lineupCount: {
+    marginLeft: 'auto',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  lineupJersey: {
+    width: 32,
+    textAlign: 'center',
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
+  },
+  lineupPosition: {
+    width: 44,
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
   boxScoreSection: {
     marginBottom: spacing.lg,
   },

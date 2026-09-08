@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
+import { formatShortDate, formatTime } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
@@ -61,11 +62,7 @@ export function GameCard({ game, index = 0, showDate = false }: Props) {
         <View style={styles.header}>
           {showDate && (
             <Text style={styles.dateLabel}>
-              {game.startsAt.toLocaleDateString('es-ES', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-              })}
+              {formatShortDate(game.startsAt)}
             </Text>
           )}
           {isLive && (
@@ -77,10 +74,7 @@ export function GameCard({ game, index = 0, showDate = false }: Props) {
           {isFinal && <Text style={styles.statusText}>FINAL</Text>}
           {isScheduled && (
             <Text style={styles.statusText}>
-              {game.startsAt.toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatTime(game.startsAt)}
             </Text>
           )}
           {isLive && game.timeRemaining && (

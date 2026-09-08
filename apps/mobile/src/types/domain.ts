@@ -125,11 +125,28 @@ export type GameBoxScoreEntry = {
   gameScore: number;
 };
 
+/**
+ * Jugador en un partido aun sin jugar: no hay estadisticas todavia, solo
+ * quien esta en la plantilla.
+ */
+export type GameLineupPlayer = {
+  playerId: string;
+  firstName: string;
+  lastName: string;
+  photoUrl?: string;
+  teamId: string;
+  position?: string;
+  jerseyNumber?: string;
+};
+
 export type GameDetail = {
   game: Game;
   homeRoster: GameBoxScoreEntry[];
   awayRoster: GameBoxScoreEntry[];
   mvp: GameBoxScoreEntry | null;
+  /** Solo en partidos sin jugar; vacias cuando ya hay box score. */
+  homeLineup: GameLineupPlayer[];
+  awayLineup: GameLineupPlayer[];
 };
 
 export type LeagueStanding = {
