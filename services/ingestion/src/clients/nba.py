@@ -6,7 +6,7 @@ from nba_api.stats.endpoints import playercareerstats
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import leaguegamelog
 from nba_api.stats.endpoints import scoreboardv2
-from nba_api.stats.endpoints import boxscoretraditionalv2
+from nba_api.stats.endpoints import boxscoretraditionalv3
 from datetime import date, datetime
 import time
 from nba_api.stats.library.http import NBAStatsHTTP
@@ -458,8 +458,12 @@ def get_box_score(game_id: str) -> list[dict]:
     """
     Obtiene el box score de un partido: stats por jugador de ambos equipos.
     Una sola llamada trae los ~25-30 jugadores que participaron.
+
+    Usa la V3 porque la V2 esta obsoleta y ya devuelve vacio en algunos
+    partidos: los seis del play-in de 2024-25 salian sin datos con la V2 y
+    completos con la V3.
     """
-    box = boxscoretraditionalv2.BoxScoreTraditionalV2(
+    box = boxscoretraditionalv3.BoxScoreTraditionalV3(
         game_id=game_id,
         timeout=30,
     )
@@ -467,40 +471,37 @@ def get_box_score(game_id: str) -> list[dict]:
 
     entries = []
     for _, row in df.iterrows():
-        # Si el jugador no jugó (DNP), MIN viene como None
-        min_str = row.get("MIN")
-        if not min_str or str(min_str).strip() in ("", "nan", "None"):
+        # Los minutos vienen como "33:57", y vacios si el jugador no jugo
+        crudo = str(row.get("minutes") or "").strip()
+        if not crudo or crudo in ("nan", "None"):
             minutes = 0.0
+        elif ":" in crudo:
+            mm, _, ss = crudo.partition(":")
+            minutes = float(mm) + float(ss) / 60
         else:
-            # MIN viene como "MM:SS" o "MM"; convertimos a float decimal
-            min_str = str(min_str)
-            if ":" in min_str:
-                parts = min_str.split(":")
-                minutes = float(parts[0]) + float(parts[1]) / 60
-            else:
-                minutes = float(min_str)
+            minutes = float(crudo)
 
         def _int(field: str) -> int:
             val = row.get(field)
             return int(val) if val is not None and str(val) != "nan" else 0
 
         entries.append({
-            "player_id": _id(row["PLAYER_ID"]),
+            "player_id": _id(row["personId"]),
             "game_id": str(game_id),
             "minutes": round(minutes, 1),
-            "points": _int("PTS"),
-            "rebounds": _int("REB"),
-            "assists": _int("AST"),
-            "steals": _int("STL"),
-            "blocks": _int("BLK"),
-            "turnovers": _int("TO"),
-            "fg_made": _int("FGM"),
-            "fg_attempted": _int("FGA"),
-            "fg3_made": _int("FG3M"),
-            "fg3_attempted": _int("FG3A"),
-            "ft_made": _int("FTM"),
-            "ft_attempted": _int("FTA"),
-            "plus_minus": _int("PLUS_MINUS"),
+            "points": _int("points"),
+            "rebounds": _int("reboundsTotal"),
+            "assists": _int("assists"),
+            "steals": _int("steals"),
+            "blocks": _int("blocks"),
+            "turnovers": _int("turnovers"),
+            "fg_made": _int("fieldGoalsMade"),
+            "fg_attempted": _int("fieldGoalsAttempted"),
+            "fg3_made": _int("threePointersMade"),
+            "fg3_attempted": _int("threePointersAttempted"),
+            "ft_made": _int("freeThrowsMade"),
+            "ft_attempted": _int("freeThrowsAttempted"),
+            "plus_minus": _int("plusMinusPoints"),
         })
 
     return entries
