@@ -17,6 +17,7 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy, awardLabel } from '@/components/ui/Trophy';
 import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { usePlayerDraft } from '@/hooks/useDraft';
+import { usePlayerInjuries, usePlayerMovements } from '@/hooks/useMovements';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -31,14 +32,22 @@ import {
 import { getPositionName } from '@/constants/positions';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { PlayerAward, PlayerCareerEntry, PlayerGameLogEntry } from '@/types/domain';
+import type {
+  PlayerAward,
+  PlayerCareerEntry,
+  PlayerGameLogEntry,
+  PlayerInjury,
+  PlayerMovement,
+} from '@/types/domain';
 
-type TabKey = 'games' | 'career';
+type TabKey = 'games' | 'career' | 'movements' | 'injuries';
 
 /** La lista es una sola FlatList y cambia de contenido segun la pestaña. */
 type ListRow =
   | { kind: 'game'; game: PlayerGameLogEntry }
-  | { kind: 'career'; career: PlayerCareerEntry };
+  | { kind: 'career'; career: PlayerCareerEntry }
+  | { kind: 'movement'; movement: PlayerMovement }
+  | { kind: 'injury'; injury: PlayerInjury };
 
 /** Los nulos son reales: temporada con plantilla cargada pero sin jugar. */
 function stat(value: number | null, decimals = 1): string {
@@ -73,6 +82,11 @@ export default function PlayerDetailScreen() {
 
   const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
   const { data: carrera } = usePlayerCareerTotals(playerId);
+  const { data: movimientos } = usePlayerMovements(playerId);
+  const { data: lesiones } = usePlayerInjuries(playerId);
+
+  // Basta una lesion vigente para marcar al jugador
+  const lesionado = (lesiones ?? []).some((l) => l.isCurrent);
   const { data: draft } = usePlayerDraft(playerId);
 
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
@@ -107,10 +121,16 @@ export default function PlayerDetailScreen() {
     refetchAwards();
   };
 
-  const rows: ListRow[] =
-    tab === 'games'
-      ? (gameLog ?? []).map((game) => ({ kind: 'game', game }) as ListRow)
-      : (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
+  let rows: ListRow[];
+  if (tab === 'games') {
+    rows = (gameLog ?? []).map((game) => ({ kind: 'game', game }) as ListRow);
+  } else if (tab === 'career') {
+    rows = (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
+  } else if (tab === 'movements') {
+    rows = (movimientos ?? []).map((m) => ({ kind: 'movement', movement: m }) as ListRow);
+  } else {
+    rows = (lesiones ?? []).map((i) => ({ kind: 'injury', injury: i }) as ListRow);
+  }
 
   if (isLoading) {
     return <LoadingState message="Cargando jugador..." />;
@@ -136,11 +156,12 @@ export default function PlayerDetailScreen() {
       <FlatList
         style={styles.container}
         data={rows}
-        keyExtractor={(item) =>
-          item.kind === 'game'
-            ? item.game.gameId
-            : `${item.career.season}-${item.career.teamId}`
-        }
+        keyExtractor={(item) => {
+          if (item.kind === 'game') return item.game.gameId;
+          if (item.kind === 'career') return `${item.career.season}-${item.career.teamId}`;
+          if (item.kind === 'movement') return item.movement.id;
+          return item.injury.id;
+        }}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -159,9 +180,15 @@ export default function PlayerDetailScreen() {
                 initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
                 size={120}
               />
-              <Text style={styles.playerName}>
-                {player.firstName} {player.lastName}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.playerName}>
+                  {player.firstName} {player.lastName}
+                </Text>
+                {/* Lesionado ahora mismo segun el parte diario */}
+                {lesionado && (
+                  <Ionicons name="medkit" size={22} color={colors.danger} />
+                )}
+              </View>
               <View style={styles.headerMeta}>
                 {player.jerseyNumber && (
                   <View style={styles.metaBadge}>
@@ -299,6 +326,16 @@ export default function PlayerDetailScreen() {
                   active={tab === 'career'}
                   onPress={() => setSelectedTab('career')}
                 />
+                <DetailTab
+                  label="Traspasos"
+                  active={tab === 'movements'}
+                  onPress={() => setSelectedTab('movements')}
+                />
+                <DetailTab
+                  label="Lesiones"
+                  active={tab === 'injuries'}
+                  onPress={() => setSelectedTab('injuries')}
+                />
               </View>
             )}
 
@@ -311,7 +348,7 @@ export default function PlayerDetailScreen() {
                   compact
                 />
               )
-            ) : (
+            ) : tab === 'career' ? (
               <>
                 {career && career.length > 0 && <CareerHeaderRow />}
                 {(!career || career.length === 0) && (
@@ -323,16 +360,33 @@ export default function PlayerDetailScreen() {
                   />
                 )}
               </>
+            ) : tab === 'movements' ? (
+              (!movimientos || movimientos.length === 0) && (
+                <EmptyState
+                  icon="swap-horizontal-outline"
+                  title="Sin movimientos"
+                  message="El registro de traspasos y fichajes empieza en julio de 2015."
+                  compact
+                />
+              )
+            ) : (
+              (!lesiones || lesiones.length === 0) && (
+                <EmptyState
+                  icon="medkit-outline"
+                  title="Sin lesiones"
+                  message="No consta ninguna lesión activa. Solo se registran las vigentes en el parte diario."
+                  compact
+                />
+              )
             )}
           </View>
         }
-        renderItem={({ item }) =>
-          item.kind === 'game' ? (
-            <GameLogRow entry={item.game} />
-          ) : (
-            <CareerRow entry={item.career} />
-          )
-        }
+        renderItem={({ item }) => {
+          if (item.kind === 'game') return <GameLogRow entry={item.game} />;
+          if (item.kind === 'career') return <CareerRow entry={item.career} />;
+          if (item.kind === 'movement') return <MovementRow entry={item.movement} />;
+          return <InjuryRow entry={item.injury} />;
+        }}
       />
 
       <SeasonPicker
@@ -406,6 +460,110 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
   );
 }
 
+/** Etiqueta en castellano del tipo de movimiento. */
+function tipoMovimiento(tipo: string): string {
+  if (tipo === 'Trade') return 'Traspaso';
+  if (tipo === 'Signing') return 'Agencia libre';
+  if (tipo === 'Waive') return 'Corte';
+  if (tipo === 'AwardOnWaivers') return 'Reclamado';
+  if (tipo === 'ContractConverted') return 'Contrato convertido';
+  return tipo;
+}
+
+function MovementRow({ entry }: { entry: PlayerMovement }) {
+  // Solo los traspasos tienen operacion detras que abrir
+  const abrible = !!entry.dealId && entry.type === 'Trade';
+
+  return (
+    <Pressable
+      disabled={!abrible}
+      onPress={() =>
+        entry.dealId && router.push({ pathname: '/deal/[id]', params: { id: entry.dealId } })
+      }
+      style={({ pressed }) => [styles.movementRow, pressed && abrible && styles.movementRowPressed]}
+    >
+      <View style={styles.movementTop}>
+        <Text style={styles.movementDate}>{formatDateDMY(entry.date)}</Text>
+        <View
+          style={[
+            styles.movementBadge,
+            entry.type === 'Trade' && styles.movementBadgeTrade,
+          ]}
+        >
+          <Text style={styles.movementBadgeText}>{tipoMovimiento(entry.type)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.movementTeams}>
+        {entry.fromTeam ? (
+          <View style={styles.movementTeam}>
+            <TeamLogo
+              logoUrl={entry.fromTeam.logoUrl}
+              abbreviation={entry.fromTeam.abbreviation}
+              size={24}
+            />
+            <Text style={styles.movementTeamText}>{entry.fromTeam.abbreviation}</Text>
+          </View>
+        ) : (
+          // Un fichaje no tiene equipo de origen
+          <Text style={styles.movementSinOrigen}>—</Text>
+        )}
+
+        <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+
+        {entry.toTeam && (
+          <View style={styles.movementTeam}>
+            <TeamLogo
+              logoUrl={entry.toTeam.logoUrl}
+              abbreviation={entry.toTeam.abbreviation}
+              size={24}
+            />
+            <Text style={styles.movementTeamText}>{entry.toTeam.abbreviation}</Text>
+          </View>
+        )}
+
+        {abrible && (
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={colors.textMuted}
+            style={styles.movementChevron}
+          />
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+function InjuryRow({ entry }: { entry: PlayerInjury }) {
+  const partes = [entry.injuryType, entry.side].filter(Boolean).join(' · ');
+
+  return (
+    <View style={styles.injuryRow}>
+      <View style={styles.injuryTop}>
+        <Ionicons name="medkit" size={16} color={colors.danger} />
+        <Text style={styles.injuryTitle}>{partes || 'Lesión'}</Text>
+        {entry.status && (
+          <View style={[styles.injuryBadge, entry.isCurrent && styles.injuryBadgeCurrent]}>
+            <Text style={styles.injuryBadgeText}>{entry.status}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.injuryDates}>
+        {entry.reportedAt && (
+          <Text style={styles.injuryDate}>Desde {formatDateDMY(entry.reportedAt)}</Text>
+        )}
+        {entry.returnDate && (
+          <Text style={styles.injuryDate}>Vuelta prevista {formatDateDMY(entry.returnDate)}</Text>
+        )}
+      </View>
+
+      {entry.longComment && <Text style={styles.injuryComment}>{entry.longComment}</Text>}
+    </View>
+  );
+}
+
 function DetailTab({
   label,
   active,
@@ -417,7 +575,14 @@ function DetailTab({
 }) {
   return (
     <Pressable onPress={onPress} style={[styles.detailTab, active && styles.detailTabActive]}>
-      <Text style={[styles.detailTabText, active && styles.detailTabTextActive]}>{label}</Text>
+      <Text
+        style={[styles.detailTabText, active && styles.detailTabTextActive]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -574,6 +739,119 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.lg,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  movementRow: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  movementRowPressed: { opacity: 0.7 },
+  movementTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  movementDate: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  movementBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  // El traspaso se distingue porque es el unico que abre detalle
+  movementBadgeTrade: { borderColor: colors.primary },
+  movementBadgeText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  movementTeams: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  movementTeam: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  movementTeamText: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  movementSinOrigen: {
+    color: colors.textMuted,
+    fontSize: fontSize.md,
+    width: 32,
+    textAlign: 'center',
+  },
+  movementChevron: { marginLeft: 'auto' },
+
+  injuryRow: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  injuryTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  injuryTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  injuryBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  injuryBadgeCurrent: { borderColor: colors.danger },
+  injuryBadgeText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  injuryDates: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  injuryDate: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+  },
+  injuryComment: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.regular,
+    lineHeight: 19,
+    marginTop: spacing.sm,
+  },
+
   playerName: {
     color: colors.text,
     fontSize: fontSize.xxl,
@@ -893,16 +1171,18 @@ const styles = StyleSheet.create({
   // Pestañas Partidos / Carrera
   detailTabs: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
   detailTab: {
     flex: 1,
     paddingVertical: spacing.sm,
+    paddingHorizontal: 2,
     backgroundColor: colors.surface,
     borderRadius: radius.full,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },

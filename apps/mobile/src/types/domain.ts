@@ -362,3 +362,79 @@ export type LeaderEntry = {
   steals: number;
   blocks: number;
 };
+
+/** Un equipo reducido a lo que hace falta para pintarlo en una fila. */
+type TeamRef = {
+  id: string;
+  abbreviation: string;
+  name?: string;
+  logoUrl?: string;
+};
+
+/**
+ * Tipos de movimiento tal y como los publica la NBA.
+ *
+ * 'Trade' es traspaso y 'Signing' es agencia libre; los tres restantes son
+ * corte, corte reclamado por otro equipo y conversion de contrato.
+ */
+export type MovementType =
+  | 'Trade'
+  | 'Signing'
+  | 'Waive'
+  | 'AwardOnWaivers'
+  | 'ContractConverted'
+  | string;
+
+export type PlayerMovement = {
+  id: string;
+  /** Agrupa las filas de una misma operacion. Solo lo llevan los traspasos. */
+  dealId?: string;
+  type: MovementType;
+  date: Date;
+  description: string;
+  fromTeam?: TeamRef;
+  toTeam?: TeamRef;
+};
+
+export type TeamMovement = {
+  id: string;
+  dealId?: string;
+  type: MovementType;
+  date: Date;
+  description: string;
+  /** 'in' si el equipo recibe, 'out' si cede. */
+  direction: 'in' | 'out';
+  playerId?: string;
+  playerName?: string;
+  photoUrl?: string;
+  otherTeam?: TeamRef;
+};
+
+export type DealEntry = {
+  id: string;
+  date: Date;
+  description: string;
+  playerId?: string;
+  playerName?: string;
+  photoUrl?: string;
+  /** Sin jugador: lo que cambia de manos es una eleccion de draft. */
+  isDraftPick: boolean;
+  fromTeam?: TeamRef;
+  toTeam?: TeamRef;
+};
+
+export type PlayerInjury = {
+  id: string;
+  status?: string;
+  injuryType?: string;
+  side?: string;
+  returnDate?: Date;
+  shortComment?: string;
+  longComment?: string;
+  reportedAt?: Date;
+  firstSeenAt?: Date;
+  isCurrent: boolean;
+  teamId?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+};
