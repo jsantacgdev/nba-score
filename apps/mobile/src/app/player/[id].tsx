@@ -30,6 +30,7 @@ import {
   usePlayerSeasonStats,
 } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
+import { estadoLesion, tituloLesion } from '@/constants/injuries';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
@@ -536,16 +537,14 @@ function MovementRow({ entry }: { entry: PlayerMovement }) {
 }
 
 function InjuryRow({ entry }: { entry: PlayerInjury }) {
-  const partes = [entry.injuryType, entry.side].filter(Boolean).join(' · ');
-
   return (
     <View style={styles.injuryRow}>
       <View style={styles.injuryTop}>
         <Ionicons name="medkit" size={16} color={colors.danger} />
-        <Text style={styles.injuryTitle}>{partes || 'Lesión'}</Text>
+        <Text style={styles.injuryTitle}>{tituloLesion(entry.injuryType, entry.side)}</Text>
         {entry.status && (
           <View style={[styles.injuryBadge, entry.isCurrent && styles.injuryBadgeCurrent]}>
-            <Text style={styles.injuryBadgeText}>{entry.status}</Text>
+            <Text style={styles.injuryBadgeText}>{estadoLesion(entry.status)}</Text>
           </View>
         )}
       </View>
@@ -559,7 +558,12 @@ function InjuryRow({ entry }: { entry: PlayerInjury }) {
         )}
       </View>
 
-      {entry.longComment && <Text style={styles.injuryComment}>{entry.longComment}</Text>}
+      {entry.longComment && (
+        <>
+          <Text style={styles.injuryFuente}>Parte de ESPN, en inglés</Text>
+          <Text style={styles.injuryComment}>{entry.longComment}</Text>
+        </>
+      )}
     </View>
   );
 }
@@ -843,6 +847,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
     fontFamily: fontFamily.regular,
+  },
+  injuryFuente: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: spacing.sm,
   },
   injuryComment: {
     color: colors.textSecondary,
