@@ -336,3 +336,29 @@ export type DraftYear = {
     season: string;
   }[];
 };
+
+/**
+ * Medias por las que se puede ordenar la liga.
+ *
+ * No estan los porcentajes de tiro: player_season_history guarda el
+ * porcentaje ya calculado y no los intentos, asi que ordenar por el
+ * pondria arriba a quien tiro tres veces.
+ */
+export type LeaderStat = 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks' | 'minutes';
+
+export type LeaderEntry = {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  photoUrl?: string;
+  teamId?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+  gamesPlayed: number;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+};

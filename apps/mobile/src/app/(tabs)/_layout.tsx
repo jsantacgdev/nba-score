@@ -41,12 +41,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="favorites"
+        name="leaders"
         options={{
-          title: 'Favoritos',
-          tabBarIcon: ({ color, size }) => <Ionicons name="star" size={size} color={color} />,
+          title: 'Líderes',
+          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />,
         }}
       />
+      {/* Favoritos deja de ser pestaña: con 30 equipos aporta poco ahi, y
+          su sitio es avisar de los partidos del equipo que sigues. La
+          pantalla se conserva accesible por ruta. */}
+      <Tabs.Screen name="favorites" options={{ href: null }} />
       <Tabs.Screen
         name="standings"
         options={{
