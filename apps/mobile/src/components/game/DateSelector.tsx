@@ -1,7 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { addDays, getWeekdayLabel, isSameDay, startOfDay } from '@/lib/format';
+import {
+  addDays,
+  claveDia,
+  formatDayMonth,
+  getWeekdayLabel,
+  isSameDay,
+  startOfDay,
+} from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
@@ -15,9 +22,9 @@ type Props = {
 const DAY_ITEM_WIDTH = 64;
 const DAY_ITEM_GAP = 8;
 
-function toDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
+// La clave tiene que ser la del dia español, la misma que usa la consulta
+// que cuenta los partidos; si no, los contadores salen todos a cero.
+const toDateKey = claveDia;
 
 export function DateSelector({
   selectedDate,
@@ -72,8 +79,7 @@ export function DateSelector({
                 {getWeekdayLabel(day)}
               </Text>
               <Text style={[styles.dayNumber, isSelected && styles.dayTextSelected]}>
-                {String(day.getDate()).padStart(2, '0')}/
-                {String(day.getMonth() + 1).padStart(2, '0')}
+                {formatDayMonth(day)}
               </Text>
               {count >= 0 && (
                 <Text style={[styles.dayCount, isSelected && styles.dayCountSelected]}>
