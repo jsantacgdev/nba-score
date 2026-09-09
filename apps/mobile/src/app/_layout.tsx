@@ -8,7 +8,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { Sora_500Medium, Sora_600SemiBold, Sora_700Bold } from '@expo-google-fonts/sora';
 
-import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { router, Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,7 +19,33 @@ import { View } from 'react-native';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/constants/theme';
 
+/**
+ * Que hacer cuando llega un aviso con la app abierta.
+ *
+ * Por defecto expo-notifications no muestra nada en primer plano, asi que
+ * un aviso que salta mientras usas la app pasaria desapercibido.
+ */
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export default function RootLayout() {
+  // Al tocar el aviso se abre el partido que lo genero
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((respuesta) => {
+      const gameId = respuesta.notification.request.content.data?.gameId;
+      if (typeof gameId === 'string' && gameId) {
+        router.push({ pathname: '/game/[id]', params: { id: gameId } });
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
