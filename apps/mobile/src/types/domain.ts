@@ -438,3 +438,87 @@ export type PlayerInjury = {
   teamAbbreviation?: string;
   teamLogoUrl?: string;
 };
+
+/**
+ * Datos en vivo desde la CDN de la NBA.
+ *
+ * Conviven con Game y GameDetail en lugar de sustituirlos: nuestra base
+ * tiene el historico desde 1984 y la CDN solo el presente, asi que uno
+ * completa al otro mientras el partido esta en juego.
+ */
+export type LiveScoreboardGame = {
+  gameId: string;
+  status: 'scheduled' | 'live' | 'final';
+  /** Texto tal cual lo publica la NBA: "Q3 4:12", "Final", "7:30 pm ET". */
+  statusText: string;
+  period: number;
+  /** Reloj del periodo, ya legible. Ausente si esta parado. */
+  clock?: string;
+  homeAbbr: string;
+  awayAbbr: string;
+  homeScore: number;
+  awayScore: number;
+};
+
+export type LivePlayer = {
+  playerId: string;
+  name: string;
+  jerseyNumber?: string;
+  starter: boolean;
+  /** En pista en este momento. */
+  onCourt: boolean;
+  played: boolean;
+  minutes: string;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  plusMinus: number;
+};
+
+export type LiveTeam = {
+  abbreviation: string;
+  score: number;
+  /** Puntos de cada cuarto, incluidas las prorrogas. */
+  periods: number[];
+  players: LivePlayer[];
+};
+
+export type LiveGame = {
+  gameId: string;
+  status: 'scheduled' | 'live' | 'final';
+  statusText: string;
+  period: number;
+  clock?: string;
+  arena?: string;
+  attendance?: number;
+  home: LiveTeam;
+  away: LiveTeam;
+};
+
+/**
+ * Un titular del quinteto inicial.
+ *
+ * Las estadisticas son opcionales: vienen del box score de ese partido, y
+ * puede no estar cargado.
+ */
+export type StartingLineupPlayer = {
+  playerId: string;
+  name: string;
+  jerseyNumber?: string;
+  photoUrl?: string;
+  /** F, C o G tal y como lo lista la NBA. Decorativo. */
+  courtPosition?: string;
+  minutes?: number;
+  points?: number;
+  rebounds?: number;
+  assists?: number;
+};
+
+export type StartingLineup = {
+  teamId: string;
+  teamAbbreviation: string;
+  teamLogoUrl?: string;
+  players: StartingLineupPlayer[];
+};
