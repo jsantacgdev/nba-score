@@ -9,6 +9,9 @@ import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme
 import type { GameBoxScoreEntry, GameLineupPlayer } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { GameDetailSkeleton } from '@/components/ui/Skeleton';
+import { CourtLineup } from '@/components/game/CourtLineup';
+import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
+import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -16,6 +19,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
+  const [vista, setVista] = useState<'stats' | 'court'>('stats');
+  // Dos fuentes distintas segun el estado del partido. En vivo hace falta
+  // el feed de la NBA, que es el unico que sabe quien esta en pista ahora
+  // mismo. Terminado basta la base, y ademas es la unica via: la CDN exige
+  // la cabecera 'Referer', que fetch no deja fijar, y responde 403 desde
+  // el movil.
+  const enJuego = data?.game.status === 'live';
+  const { data: enPista } = useLiveLineup(id, enJuego);
+  const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
@@ -53,6 +65,48 @@ export default function GameDetailScreen() {
   const awayWinning = jugado && game.scoreAway > game.scoreHome;
 
   const title = `${game.homeTeam.name} vs ${game.awayTeam.name}`;
+
+  /**
+   * Los que no salieron de inicio.
+   *
+   * Se deduce restando el quinteto al box score, que ya esta cargado, en
+   * lugar de pedir nada nuevo. Ordenados por minutos, que es como se lee
+   * un banquillo: primero los que mas pesaron.
+   */
+  function suplentesDe(lado: 'home' | 'away'): GameBoxScoreEntry[] {
+    const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
+    const plantel = lado === 'home' ? homeRoster : awayRoster;
+    const titulares = new Set(
+      ((quintetos ?? []).find((q) => q.teamId === teamId)?.players ?? []).map((p) => p.playerId),
+    );
+    return plantel.filter((p) => !titulares.has(p.playerId));
+  }
+
+  /** Los cinco a pintar, de la fuente que corresponda. */
+  function quintetoDe(lado: 'home' | 'away'): JugadorEnPista[] {
+    const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
+
+    if (enJuego) {
+      const equipo = lado === 'home' ? enPista?.home : enPista?.away;
+      return (equipo?.players ?? [])
+        .filter((p) => p.onCourt)
+        .map((p) => ({
+          playerId: p.playerId,
+          name: p.name,
+          jerseyNumber: p.jerseyNumber,
+          points: p.points,
+        }));
+    }
+
+    const guardado = (quintetos ?? []).find((q) => q.teamId === teamId);
+    return (guardado?.players ?? []).map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      jerseyNumber: p.jerseyNumber,
+      photoUrl: p.photoUrl,
+      points: p.points,
+    }));
+  }
 
   return (
     <>
@@ -95,6 +149,20 @@ export default function GameDetailScreen() {
         {/* MVP */}
         {mvp && <MVPCard mvp={mvp} />}
 
+        {/* Estadisticas o pista */}
+        <View style={styles.vistaRow}>
+          <VistaTab
+            label="Estadísticas"
+            active={vista === 'stats'}
+            onPress={() => setVista('stats')}
+          />
+          <VistaTab
+            label="Alineación"
+            active={vista === 'court'}
+            onPress={() => setVista('court')}
+          />
+        </View>
+
         {/* Toggle entre equipos */}
         <View style={styles.teamToggleRow}>
           <TeamToggle
@@ -109,8 +177,20 @@ export default function GameDetailScreen() {
           />
         </View>
 
-        {/* Jugado: box score. Sin jugar: la plantilla convocada. */}
-        {selectedTeam === 'home' ? (
+        {vista === 'court' ? (
+          <>
+            <CourtLineup
+              players={quintetoDe(selectedTeam)}
+              vacioTexto={
+                enJuego
+                  ? 'Todavía no hay nadie en pista.'
+                  : 'No consta el quinteto inicial de este partido.'
+              }
+            />
+            <Banquillo jugadores={suplentesDe(selectedTeam)} />
+          </>
+        ) : /* Jugado: box score. Sin jugar: la plantilla convocada. */
+        selectedTeam === 'home' ? (
           jugado ? (
             <TeamBoxScore
               title={game.homeTeam.fullName}
@@ -325,6 +405,74 @@ function TeamBoxScore({
         </Pressable>
       ))}
     </View>
+  );
+}
+
+/**
+ * El resto de la convocatoria, bajo la pista.
+ *
+ * Los que no llegaron a jugar salen atenuados y sin estadisticas: en el
+ * box score aparecen con cero, y ensenarlo confundiria con un mal partido.
+ */
+function Banquillo({ jugadores }: { jugadores: GameBoxScoreEntry[] }) {
+  if (jugadores.length === 0) return null;
+
+  return (
+    <View style={styles.banquillo}>
+      <Text style={styles.banquilloTitulo}>Suplentes</Text>
+
+      {jugadores.map((p) => {
+        const jugo = p.minutes > 0;
+        return (
+          <Pressable
+            key={p.playerId}
+            onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
+            style={({ pressed }) => [
+              styles.suplenteRow,
+              pressed && styles.playerRowPressed,
+              !jugo && styles.playerRowDnp,
+            ]}
+          >
+            <PlayerAvatar
+              photoUrl={p.photoUrl}
+              initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
+              size={30}
+            />
+            <Text style={styles.suplenteNombre} numberOfLines={1}>
+              {p.firstName[0]}. {p.lastName}
+            </Text>
+
+            {jugo ? (
+              <>
+                <Text style={styles.suplenteMin}>{formatMinutes(p.minutes)}</Text>
+                <Text style={styles.suplenteStat}>{p.points}</Text>
+                <Text style={styles.suplenteStat}>{p.rebounds}</Text>
+                <Text style={styles.suplenteStat}>{p.assists}</Text>
+              </>
+            ) : (
+              <Text style={styles.suplenteDnp}>No jugó</Text>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Conmutador entre la tabla de estadisticas y la pista. */
+function VistaTab({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.vistaTab, active && styles.vistaTabActive]}>
+      <Text style={[styles.vistaTabText, active && styles.vistaTabTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -584,6 +732,73 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
   },
+  banquillo: {
+    marginTop: spacing.lg,
+  },
+  banquilloTitulo: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+    marginBottom: spacing.sm,
+  },
+  suplenteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suplenteNombre: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  suplenteMin: {
+    width: 48,
+    textAlign: 'right',
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.regular,
+  },
+  suplenteStat: {
+    width: 30,
+    textAlign: 'right',
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  suplenteDnp: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+  },
+  vistaRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  vistaTab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  vistaTabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  vistaTabText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  vistaTabTextActive: { color: colors.background },
+
   teamToggleRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing.md,

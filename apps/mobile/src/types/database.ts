@@ -117,6 +117,62 @@ export type Database = {
           },
         ]
       }
+      game_starters: {
+        Row: {
+          game_id: string
+          player_id: string
+          position: string | null
+          spot: number
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          game_id: string
+          player_id: string
+          position?: string | null
+          spot: number
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          game_id?: string
+          player_id?: string
+          position?: string | null
+          spot?: number
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_starters_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_starters_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_starters_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "game_starters_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           away_team_id: string
@@ -963,6 +1019,24 @@ export type Database = {
           roy2_player_id: string
           roy2_player_name: string
           roy2_season: string
+        }[]
+      }
+      game_starting_lineups: {
+        Args: { target_game_id: string }
+        Returns: {
+          assists: number
+          court_position: string
+          jersey_number: string
+          minutes: number
+          photo_url: string
+          player_id: string
+          player_name: string
+          points: number
+          rebounds: number
+          spot: number
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
         }[]
       }
       player_career: {
