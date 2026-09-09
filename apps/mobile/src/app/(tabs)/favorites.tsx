@@ -1,4 +1,14 @@
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { GameCard } from '@/components/game/GameCard';
@@ -8,6 +18,13 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useFavoriteTeamIds } from '@/hooks/useFavorites';
 import { useFavoritesTimeline } from '@/hooks/useFavoritesTimeline';
+import {
+  useNotificationsEnabled,
+  useRescheduleNotifications,
+  useScheduledCount,
+  useToggleNotifications,
+} from '@/hooks/useNotifications';
+import { MINUTOS_ANTES } from '@/lib/notifications';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 
 export default function FavoritesScreen() {
@@ -21,6 +38,22 @@ export default function FavoritesScreen() {
   } = useFavoritesTimeline();
 
   const isLoading = loadingIds || loadingGames;
+
+  const { data: avisosActivos = false } = useNotificationsEnabled();
+  const { data: avisosPuestos = 0 } = useScheduledCount();
+  const alternarAvisos = useToggleNotifications();
+  const reprogramar = useRescheduleNotifications();
+
+  // Al cambiar de equipos hay que rehacer los avisos: los del equipo que
+  // se deja de seguir sobran y los del nuevo no existen todavia.
+  const clave = [...favoriteIds].sort().join(',');
+  useEffect(() => {
+    if (avisosActivos && favoriteIds.length > 0) {
+      reprogramar.mutate(favoriteIds);
+    }
+    // reprogramar cambia en cada render y no debe disparar el efecto
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clave, avisosActivos]);
 
   // Separar partidos en próximos y pasados
   const now = new Date();
@@ -37,6 +70,37 @@ export default function FavoritesScreen() {
         <Text style={styles.title}>Favoritos</Text>
         <SearchButton />
       </View>
+
+      {favoriteIds.length > 0 && (
+        <View style={styles.avisoCard}>
+          <Ionicons
+            name={avisosActivos ? 'notifications' : 'notifications-off-outline'}
+            size={22}
+            color={avisosActivos ? colors.primary : colors.textMuted}
+          />
+          <View style={styles.avisoTexto}>
+            <Text style={styles.avisoTitulo}>Avisos de partido</Text>
+            <Text style={styles.avisoDetalle}>
+              {avisosActivos
+                ? `${avisosPuestos} programados · ${MINUTOS_ANTES} min antes`
+                : `Te avisamos ${MINUTOS_ANTES} minutos antes de cada partido`}
+            </Text>
+          </View>
+          <Switch
+            value={avisosActivos}
+            onValueChange={(v) => alternarAvisos.mutate(v)}
+            disabled={alternarAvisos.isPending}
+            trackColor={{ false: colors.surfaceLight, true: colors.primaryDark }}
+            thumbColor={avisosActivos ? colors.primary : colors.textMuted}
+          />
+        </View>
+      )}
+
+      {alternarAvisos.data?.denegado && (
+        <Text style={styles.avisoDenegado}>
+          Android ha bloqueado los avisos. Actívalos en los ajustes del sistema.
+        </Text>
+      )}
 
       {/* Estado: cargando */}
       {isLoading && favoriteIds.length > 0 && <LoadingState message="Cargando partidos..." />}
@@ -135,6 +199,37 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  avisoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  avisoTexto: { flex: 1 },
+  avisoTitulo: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  avisoDetalle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    marginTop: 2,
+  },
+  avisoDenegado: {
+    color: colors.danger,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -5,6 +5,7 @@ import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { router } from 'expo-router';
 import { FavoriteTeamButton } from '@/components/ui/FavoriteButton';
+import { Ionicons } from '@expo/vector-icons';
 import { SearchButton } from '@/components/ui/SearchButton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -44,7 +45,17 @@ export default function TeamsScreen() {
           <View style={styles.content}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>Equipos</Text>
-              <SearchButton />
+              <View style={styles.titleActions}>
+                {/* Unico acceso a favoritos desde que dejo de ser pestaña */}
+                <Pressable
+                  onPress={() => router.push('/(tabs)/favorites')}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.favAcceso, pressed && styles.favAccesoPressed]}
+                >
+                  <Ionicons name="star" size={20} color={colors.primary} />
+                </Pressable>
+                <SearchButton />
+              </View>
             </View>
 
             <View style={styles.section}>
@@ -153,6 +164,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontFamily: fontFamily.displaySemibold,
   },
+  titleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  favAcceso: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  favAccesoPressed: { opacity: 0.7 },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
