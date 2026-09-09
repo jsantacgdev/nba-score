@@ -19,6 +19,7 @@ import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { usePlayerDraft } from '@/hooks/useDraft';
 import { usePlayerInjuries, usePlayerMovements } from '@/hooks/useMovements';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { PlayerDetailSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
@@ -31,7 +32,7 @@ import {
 } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { estadoLesion, tituloLesion } from '@/constants/injuries';
-import { formatDateDMY, formatMinutes } from '@/lib/format';
+import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
   PlayerAward,
@@ -122,6 +123,13 @@ export default function PlayerDetailScreen() {
     refetchAwards();
   };
 
+  // player_game_log no guarda el equipo del jugador, y sus columnas
+  // matchup y win_loss estan vacias en casi todas las filas porque vienen
+  // del box score. El equipo se deduce de la carrera, que ya esta cargada.
+  const equiposEnTemporada = new Set(
+    (career ?? []).filter((c) => c.season === activeSeason).map((c) => c.teamId),
+  );
+
   let rows: ListRow[];
   if (tab === 'games') {
     rows = (gameLog ?? []).map((game) => ({ kind: 'game', game }) as ListRow);
@@ -134,16 +142,26 @@ export default function PlayerDetailScreen() {
   }
 
   if (isLoading) {
-    return <LoadingState message="Cargando jugador..." />;
+    return (
+      <>
+        {/* Sin titulo explicito, expo-router escribe el nombre de la ruta
+            en la cabecera y se veia "player/[id]" mientras cargaba */}
+        <Stack.Screen options={{ title: '' }} />
+        <PlayerDetailSkeleton />
+      </>
+    );
   }
 
   if (!player) {
     return (
-      <ErrorState
-        icon="person-remove-outline"
-        title="Jugador no encontrado"
-        message="Es posible que este jugador haya sido retirado o que su ID no sea válido."
-      />
+      <>
+        <Stack.Screen options={{ title: '' }} />
+        <ErrorState
+          icon="person-remove-outline"
+          title="Jugador no encontrado"
+          message="Es posible que este jugador haya sido retirado o que su ID no sea válido."
+        />
+      </>
     );
   }
 
@@ -341,7 +359,9 @@ export default function PlayerDetailScreen() {
             )}
 
             {tab === 'games' ? (
-              (!gameLog || gameLog.length === 0) && (
+              gameLog && gameLog.length > 0 ? (
+                <GameLogHeaderRow />
+              ) : (
                 <EmptyState
                   icon="calendar-outline"
                   title="Sin partidos cargados"
@@ -383,7 +403,7 @@ export default function PlayerDetailScreen() {
           </View>
         }
         renderItem={({ item }) => {
-          if (item.kind === 'game') return <GameLogRow entry={item.game} />;
+          if (item.kind === 'game') return <GameLogRow entry={item.game} equipos={equiposEnTemporada} />;
           if (item.kind === 'career') return <CareerRow entry={item.career} />;
           if (item.kind === 'movement') return <MovementRow entry={item.movement} />;
           return <InjuryRow entry={item.injury} />;
@@ -641,98 +661,141 @@ function SeasonStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function GameLogRow({ entry }: { entry: PlayerGameLogEntry }) {
+/** Escudo y abreviatura, que es lo minimo para reconocer un equipo. */
+function TeamChip({ abbr, logo }: { abbr: string; logo?: string }) {
+  return (
+    <View style={styles.gameLogTeam}>
+      {logo && (
+        <Image
+          source={{ uri: logo }}
+          style={styles.gameLogLogo}
+          contentFit="contain"
+          transition={150}
+        />
+      )}
+      <Text style={styles.gameLogTeamText} numberOfLines={1}>
+        {abbr}
+      </Text>
+    </View>
+  );
+}
+
+function GameLogHeaderRow() {
+  return (
+    <View style={styles.gameLogHeader}>
+      <Text style={[styles.gameLogHeaderText, styles.colGameDate]}>FECHA</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameMatch]}>PARTIDO</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameResult]}>RES.</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameMin]}>MIN</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameStat]}>PTS</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameStat]}>REB</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameStat]}>AST</Text>
+    </View>
+  );
+}
+
+/**
+ * Un partido del jugador, en una fila de tabla.
+ *
+ * Misma estructura que la pestaña Carrera para que las dos listas de la
+ * ficha se lean igual. Antes era una tarjeta de tres bloques y ocupaba
+ * casi cuatro veces mas alto, lo que hacia interminable una temporada de
+ * 82 partidos.
+ */
+function GameLogRow({
+  entry,
+  equipos,
+}: {
+  entry: PlayerGameLogEntry;
+  /** Equipos del jugador esa temporada, para saber cual es el rival. */
+  equipos: Set<string>;
+}) {
   const game = entry.game;
+  const jugo = entry.minutes > 0;
+
+  // Si el jugador es local, el rival es el visitante y al reves. Cuando no
+  // se puede determinar (traspasado y sus dos equipos enfrentados, o sin
+  // datos del partido) se cae a lo que traiga la propia fila.
+  const esLocal = game
+    ? equipos.has(game.homeTeamId) && !equipos.has(game.awayTeamId)
+      ? true
+      : equipos.has(game.awayTeamId) && !equipos.has(game.homeTeamId)
+        ? false
+        : entry.isHome
+    : entry.isHome;
+
+  // El equipo del jugador va primero, para que el marcador se lea desde
+  // el. Si no se sabe cual es, se deja el orden natural local-visitante.
+  const local = game
+    ? { abbr: game.homeTeamAbbr, logo: game.homeTeamLogo }
+    : { abbr: '', logo: undefined };
+  const visitante = game
+    ? { abbr: game.awayTeamAbbr, logo: game.awayTeamLogo }
+    : { abbr: '', logo: undefined };
+  const primero = esLocal === false ? visitante : local;
+  const segundo = esLocal === false ? local : visitante;
+
+  // El marcador se lee desde el jugador: primero los suyos
+  const propios = game ? (esLocal === false ? game.scoreAway : game.scoreHome) : 0;
+  const ajenos = game ? (esLocal === false ? game.scoreHome : game.scoreAway) : 0;
+  const gano = entry.winLoss ? entry.winLoss === 'W' : game ? propios > ajenos : false;
+  const marcador = game && esLocal !== undefined ? `${propios}-${ajenos}` : null;
+  const hayResultado = !!game && esLocal !== undefined;
 
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/game/[id]', params: { id: entry.gameId } })}
-      style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
+      style={({ pressed }) => [
+        styles.gameLogRow,
+        pressed && styles.gameLogRowPressed,
+        !jugo && styles.gameLogRowDnp,
+      ]}
     >
-      <View style={styles.gameCard}>
-        <View style={styles.gameCardHeader}>
-          {entry.gameDate && <Text style={styles.gameDate}>{formatDateDMY(entry.gameDate)}</Text>}
-          {entry.winLoss && (
-            <View
-              style={[
-                styles.resultBadge,
-                entry.winLoss === 'W' ? styles.winBadge : styles.lossBadge,
-              ]}
-            >
-              <Text style={styles.resultBadgeText}>
-                {entry.winLoss === 'W' ? 'VICTORIA' : 'DERROTA'}
-              </Text>
-            </View>
-          )}
-        </View>
+      <Text style={[styles.gameLogDate, styles.colGameDate]}>
+        {entry.gameDate ? formatDayMonth(entry.gameDate) : '--'}
+      </Text>
 
+      <View style={[styles.colGameMatch, styles.gameLogMatchCell]}>
         {game ? (
-          <View style={styles.scoreboardRow}>
-            <View style={[styles.scoreTeam, styles.scoreTeamHome]}>
-              {game.homeTeamLogo && (
-                <Image
-                  source={{ uri: game.homeTeamLogo }}
-                  style={styles.scoreLogo}
-                  contentFit="contain"
-                  transition={150}
-                />
-              )}
-              <Text style={styles.scoreAbbr}>{game.homeTeamAbbr}</Text>
-            </View>
-
-            <View style={styles.scoreCenter}>
-              <Text style={styles.scoreText}>
-                {game.scoreHome} - {game.scoreAway}
-              </Text>
-            </View>
-
-            <View style={[styles.scoreTeam, styles.scoreTeamAway]}>
-              <Text style={styles.scoreAbbr}>{game.awayTeamAbbr}</Text>
-              {game.awayTeamLogo && (
-                <Image
-                  source={{ uri: game.awayTeamLogo }}
-                  style={styles.scoreLogo}
-                  contentFit="contain"
-                  transition={150}
-                />
-              )}
-            </View>
-          </View>
+          <>
+            <TeamChip abbr={primero.abbr} logo={primero.logo} />
+            <Text style={styles.gameLogVs}>vs</Text>
+            <TeamChip abbr={segundo.abbr} logo={segundo.logo} />
+          </>
         ) : (
-          <Text style={styles.gameMatchupFallback}>
-            {entry.isHome ? 'vs' : '@'} {entry.opponentAbbreviation ?? '???'}
+          <Text style={styles.gameLogTeamText} numberOfLines={1}>
+            {entry.opponentAbbreviation ?? '--'}
           </Text>
         )}
-
-        <View style={styles.playerStatsRow}>
-          {/* El tiempo va sin etiqueta: se reconoce por el formato de reloj */}
-          <StatPill value={formatMinutes(entry.minutes)} />
-          <StatPill label="PTS" value={String(entry.points)} highlight />
-          <StatPill label="REB" value={String(entry.rebounds)} />
-          <StatPill label="AST" value={String(entry.assists)} />
-        </View>
       </View>
+
+      <View style={styles.colGameResult}>
+        {hayResultado && (
+          <Text style={[styles.gameLogResult, gano ? styles.gameLogWin : styles.gameLogLoss]}>
+            {gano ? 'V' : 'D'}
+            {marcador ? ` ${marcador}` : ''}
+          </Text>
+        )}
+      </View>
+
+      {jugo ? (
+        <>
+          <Text style={[styles.gameLogStat, styles.colGameMin]}>{formatMinutes(entry.minutes)}</Text>
+          <Text style={[styles.gameLogStat, styles.gameLogPoints, styles.colGameStat]}>
+            {entry.points}
+          </Text>
+          <Text style={[styles.gameLogStat, styles.colGameStat]}>{entry.rebounds}</Text>
+          <Text style={[styles.gameLogStat, styles.colGameStat]}>{entry.assists}</Text>
+        </>
+      ) : (
+        // Sin minutos no hay estadisticas que enseñar, y cuatro ceros se
+        // leen como una mala actuacion en vez de como una ausencia
+        <Text style={styles.gameLogDnp}>no jugó</Text>
+      )}
     </Pressable>
   );
 }
 
-function StatPill({
-  label,
-  value,
-  highlight,
-}: {
-  /** Sin etiqueta el valor queda solo, alineado con los demás. */
-  label?: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <View style={styles.statPill}>
-      <Text style={[styles.statPillValue, highlight && styles.statPillHighlight]}>{value}</Text>
-      {label && <Text style={styles.statPillLabel}>{label}</Text>}
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -745,9 +808,97 @@ const styles = StyleSheet.create({
   },
   nameRow: {
     flexDirection: 'row',
+    // El margen va aqui y no en el texto: si lo lleva el texto, su caja
+    // queda mas alta que las letras y el icono se centra respecto a la
+    // caja, no respecto al nombre
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
+  gameLogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  gameLogHeaderText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    letterSpacing: 0.5,
+  },
+  gameLogRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // Cada fila abre el detalle del partido, asi que es un objetivo
+    // tactil: 52 queda por encima de los 48 que se recomiendan como
+    // minimo y sigue cabiendo el triple de partidos que con la tarjeta
+    minHeight: 52,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  gameLogRowPressed: { backgroundColor: colors.surface },
+  // Sin minutos, la fila se atenua entera
+  gameLogRowDnp: { opacity: 0.45 },
+
+  // La fecha necesita algo mas que su contenido: el rotulo FECHA de la
+  // cabecera es mas ancho que un 13/06 y se pegaba al de al lado
+  colGameDate: { width: 48 },
+  colGameMatch: { flex: 1, minWidth: 96 },
+  colGameResult: { width: 60 },
+  colGameMin: { width: 40, textAlign: 'center' },
+  colGameStat: { width: 28, textAlign: 'center' },
+
+  gameLogDate: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  gameLogMatchCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  gameLogTeam: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  gameLogLogo: { width: 15, height: 15 },
+  gameLogTeamText: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  gameLogVs: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fontFamily.regular,
+  },
+  gameLogResult: {
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  gameLogWin: { color: colors.success },
+  gameLogLoss: { color: colors.danger },
+  gameLogStat: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  gameLogPoints: { color: colors.primary },
+  gameLogDnp: {
+    flex: 1,
+    textAlign: 'right',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    fontStyle: 'italic',
+  },
+
   movementRow: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -866,7 +1017,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.xxl,
     fontFamily: fontFamily.displayBold,
-    marginTop: spacing.md,
     textAlign: 'center',
   },
   headerMeta: {
@@ -950,13 +1100,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  seasonCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   seasonTitle: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
@@ -990,114 +1133,6 @@ const styles = StyleSheet.create({
   },
 
   // Tarjeta de partido en el historial
-  gameCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  gameCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  gameDate: {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontFamily: fontFamily.semibold,
-  },
-  resultBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  winBadge: {
-    backgroundColor: 'rgba(93, 171, 133, 0.15)',
-  },
-  lossBadge: {
-    backgroundColor: 'rgba(209, 100, 100, 0.15)',
-  },
-  resultBadgeText: {
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.bold,
-    letterSpacing: 0.5,
-    color: colors.text,
-  },
-  scoreboardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-  },
-  scoreTeam: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flex: 1,
-  },
-  scoreTeamHome: {
-    justifyContent: 'flex-start',
-  },
-  scoreTeamAway: {
-    justifyContent: 'flex-end',
-  },
-  scoreLogo: {
-    width: 32,
-    height: 32,
-  },
-  scoreAbbr: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontFamily: fontFamily.bold,
-  },
-  scoreCenter: {
-    paddingHorizontal: spacing.md,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  scoreText: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontFamily: fontFamily.displayBold,
-  },
-  gameMatchupFallback: {
-    color: colors.textSecondary,
-    fontSize: fontSize.md,
-    fontFamily: fontFamily.semibold,
-    paddingVertical: spacing.sm,
-  },
-  playerStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  statPill: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statPillValue: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    fontFamily: fontFamily.bold,
-  },
-  statPillHighlight: {
-    color: colors.primary,
-  },
-  statPillLabel: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.medium,
-    marginTop: 2,
-  },
-  gameCardPressed: {
-    opacity: 0.7,
-  },
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
   },

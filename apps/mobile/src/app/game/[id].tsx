@@ -8,6 +8,7 @@ import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry, GameLineupPlayer } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { GameDetailSkeleton } from '@/components/ui/Skeleton';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -19,7 +20,14 @@ export default function GameDetailScreen() {
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
   if (isLoading) {
-    return <LoadingState message="Cargando partido..." />;
+    return (
+      <>
+        {/* Sin titulo explicito, expo-router escribe el nombre de la ruta
+            y se veia "game/[id]" mientras cargaba */}
+        <Stack.Screen options={{ title: '' }} />
+        <GameDetailSkeleton />
+      </>
+    );
   }
   if (error) {
     return <ErrorState title="No se puede cargar el partido" onRetry={refetch} />;
