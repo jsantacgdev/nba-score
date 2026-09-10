@@ -68,6 +68,7 @@ export type PlayerGameLogEntry = {
   gameId: string;
   gameDate: Date | null;
   season?: string;
+  seasonType?: string;
   matchup?: string;
   isHome?: boolean;
   opponentAbbreviation?: string;
@@ -458,4 +459,14 @@ export type StartingLineup = {
   teamAbbreviation: string;
   teamLogoUrl?: string;
   players: StartingLineupPlayer[];
+};
+
+export type CareerHigh = {
+  stat: 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks';
+  value: number;
+  gameId?: string;
+  date?: Date;
+  season?: string;
+  opponentAbbreviation?: string;
+  seasonType?: string;
 };

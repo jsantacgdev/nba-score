@@ -158,7 +158,7 @@ export async function fetchPlayerGameLog(
   const { data: gamesData, error: gamesError } = await supabase
     .from('games')
     .select(
-      `id, starts_at, score_home, score_away,
+      `id, starts_at, score_home, score_away, season_type,
        home_team:teams!home_team_id(id, abbreviation, logo_url),
        away_team:teams!away_team_id(id, abbreviation, logo_url)`,
     )
@@ -173,6 +173,7 @@ export async function fetchPlayerGameLog(
     const entry = mapGameLog(row, game?.starts_at);
 
     if (game) {
+      entry.seasonType = game.season_type ?? undefined;
       const home = Array.isArray(game.home_team) ? game.home_team[0] : game.home_team;
       const away = Array.isArray(game.away_team) ? game.away_team[0] : game.away_team;
 

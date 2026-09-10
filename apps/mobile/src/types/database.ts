@@ -1062,6 +1062,18 @@ export type Database = {
           won_championship: boolean
         }[]
       }
+      player_career_highs: {
+        Args: { target_player_id: string }
+        Returns: {
+          game_date: string
+          game_id: string
+          opponent_abbreviation: string
+          season: string
+          season_type: string
+          stat: string
+          valor: number
+        }[]
+      }
       player_career_totals: {
         Args: { target_player_id: string }
         Returns: {
