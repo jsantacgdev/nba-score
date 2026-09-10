@@ -22,8 +22,6 @@ type Props = {
 const DAY_ITEM_WIDTH = 64;
 const DAY_ITEM_GAP = 8;
 
-// La clave tiene que ser la del dia español, la misma que usa la consulta
-// que cuenta los partidos; si no, los contadores salen todos a cero.
 const toDateKey = claveDia;
 
 export function DateSelector({

@@ -1,18 +1,8 @@
-"""
-Carga el historico del draft.
-
-DraftHistory devuelve las 8434 selecciones desde 1947 en una sola
-llamada, con el identificador de jugador ya incluido, asi que no hace
-falta recorrer nada ni cruzar por nombre.
-
-Es idempotente: hace upsert sobre (jugador, año).
-"""
 
 from src.clients.nba import _id, _whole
 from src.clients.supabase import get_supabase_client
 
 BATCH_SIZE = 500
-
 
 def get_draft_history() -> list[dict]:
     from nba_api.stats.endpoints import drafthistory
@@ -28,8 +18,6 @@ def get_draft_history() -> list[dict]:
         except (TypeError, ValueError):
             continue
 
-        # 136 jugadores fueron elegidos dos veces, pero siempre en años
-        # distintos: la clave (jugador, año) no se repite.
         if (player_id, year) in vistos:
             continue
         vistos.add((player_id, year))
@@ -53,7 +41,6 @@ def get_draft_history() -> list[dict]:
 
     return filas
 
-
 def sync_draft() -> None:
     print("Sincronizando historico del draft...")
 
@@ -74,7 +61,6 @@ def sync_draft() -> None:
 
     print(f"\n✅ {total} selecciones guardadas")
 
-    # Cuantos de nuestros jugadores quedan enlazados
     conocidos: set[str] = set()
     offset = 0
     while True:
@@ -89,7 +75,6 @@ def sync_draft() -> None:
     drafteados = {f["player_id"] for f in filas}
     print(f"   {len(conocidos & drafteados)} de nuestros {len(conocidos)} jugadores tienen draft")
     print(f"   {len(conocidos - drafteados)} llegaron sin ser elegidos")
-
 
 if __name__ == "__main__":
     sync_draft()

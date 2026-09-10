@@ -1,18 +1,3 @@
-"""
-Rellena player_season_history desde PlayerCareerStats.
-
-sync_history saca las medias de LeagueDashPlayerStats, que es una sola
-llamada por temporada y va perfecto... hasta 1996-97. Para temporadas
-anteriores ese endpoint devuelve cero jugadores, asi que las plantillas de
-los 80 y primeros 90 se cargaron sin ninguna estadistica.
-
-PlayerCareerStats si llega hasta 1984 y devuelve la carrera entera de un
-jugador en una sola llamada, asi que aqui se recorre por jugador en vez de
-por temporada.
-
-Rellena los huecos: cualquier (jugador, temporada) que tenga ficha de
-plantilla pero no medias. Es reanudable y no toca lo ya cargado.
-"""
 
 import time
 
@@ -34,7 +19,6 @@ STAT_FIELDS = (
     "free_throw_pct",
 )
 
-
 def _fetch_all(client, table: str, columns: str) -> list[dict]:
     rows: list[dict] = []
     offset = 0
@@ -48,7 +32,6 @@ def _fetch_all(client, table: str, columns: str) -> list[dict]:
         offset += 1000
     return rows
 
-
 def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
     total = 0
     for i in range(0, len(rows), BATCH_SIZE):
@@ -56,20 +39,12 @@ def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
         total += len(result.data)
     return total
 
-
 def _weighted(rows: list[dict], field: str, total_games: int) -> float:
-    """
-    Media de temporada a partir de las etapas en cada equipo.
-
-    Es lo mismo que la fila 'TOT' que publica la NBA: cada etapa pesa por
-    los partidos jugados en ella.
-    """
     if not total_games:
         return 0.0
     acumulado = sum((r[field] or 0) * (r["games_played"] or 0) for r in rows)
     decimales = 3 if field.endswith("_pct") else 1
     return round(acumulado / total_games, decimales)
-
 
 def sync_career_history(force: bool = False) -> None:
     client = get_supabase_client()
@@ -88,7 +63,6 @@ def sync_career_history(force: bool = False) -> None:
         for r in _fetch_all(client, "season_champions", "season,team_id")
     }
 
-    # Quien estaba en la plantilla del campeon de cada temporada
     champion_squads: set[tuple[str, str]] = set()
     rosters_by_player: dict[str, set[str]] = {}
     for row in roster_rows:
@@ -96,7 +70,6 @@ def sync_career_history(force: bool = False) -> None:
         if champions.get(row["season"]) == row["team_id"]:
             champion_squads.add((row["player_id"], row["season"]))
 
-    # Huecos: ficha de plantilla sin medias
     gaps: dict[str, set[str]] = {}
     for row in roster_rows:
         key = (row["player_id"], row["season"])
@@ -130,7 +103,6 @@ def sync_career_history(force: bool = False) -> None:
             time.sleep(REQUEST_DELAY)
             continue
 
-        # Agrupamos las etapas por temporada
         por_temporada: dict[str, list[dict]] = {}
         for s in splits:
             if s["team_id"] in valid_team_ids:
@@ -158,7 +130,6 @@ def sync_career_history(force: bool = False) -> None:
                 fila[field] = _weighted(etapas, field, partidos)
             filas_historia.append(fila)
 
-            # De paso, el desglose por equipo de esa temporada
             filas_equipos.extend(etapas)
 
         if filas_historia:
@@ -181,7 +152,6 @@ def sync_career_history(force: bool = False) -> None:
         print(f"   Jugadores sin ficha de carrera en la API: {sin_datos}")
     if errores:
         print(f"   Errores: {errores} (puedes reejecutar para reintentar)")
-
 
 if __name__ == "__main__":
     import sys

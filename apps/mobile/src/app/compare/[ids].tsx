@@ -17,8 +17,6 @@ export default function CompareScreen() {
 
   const { data: p1, isLoading: l1 } = usePlayer(id1);
   const { data: p2, isLoading: l2 } = usePlayer(id2);
-  // Medias de carrera, no de temporada: es lo unico que permite comparar
-  // a un retirado con un jugador en activo.
   const { data: s1, isLoading: ls1 } = usePlayerCareerTotals(id1);
   const { data: s2, isLoading: ls2 } = usePlayerCareerTotals(id2);
 

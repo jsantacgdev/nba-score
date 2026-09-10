@@ -34,13 +34,6 @@ export async function fetchTeamById(teamId: string): Promise<Team | null> {
   return mapTeam(data);
 }
 
-/**
- * Partidos de un equipo en una temporada.
- *
- * Pasa por la funcion team_games en lugar de consultar la tabla porque
- * necesita dos datos que no estan en el partido: el balance de la
- * eliminatoria y si ese partido decidio el titulo.
- */
 export async function fetchTeamGames(teamId: string, season?: string): Promise<Game[]> {
   if (!season) return [];
 
@@ -91,7 +84,6 @@ function num(value: number | string | null): number | null {
   return value === null || value === undefined ? null : Number(value);
 }
 
-/** Plantilla de un equipo en una temporada concreta, con las medias de ese año. */
 export async function fetchTeamSeasonRoster(
   teamId: string,
   season: string,
@@ -121,7 +113,6 @@ export async function fetchTeamSeasonRoster(
   }));
 }
 
-/** Temporadas con plantilla registrada de un equipo, marcando sus anillos. */
 export async function fetchTeamSeasons(teamId: string): Promise<TeamSeason[]> {
   const { data, error } = await supabase.rpc('team_seasons', {
     target_team_id: teamId,
@@ -136,7 +127,6 @@ export async function fetchTeamSeasons(teamId: string): Promise<TeamSeason[]> {
   }));
 }
 
-/** Titulos de un equipo: campeonatos NBA y NBA Cup. */
 export async function fetchTeamPalmares(teamId: string): Promise<TeamTitle[]> {
   const { data, error } = await supabase.rpc('team_palmares', {
     target_team_id: teamId,

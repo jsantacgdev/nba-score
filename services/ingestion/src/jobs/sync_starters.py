@@ -1,10 +1,3 @@
-"""
-Carga el quinteto inicial de cada partido.
-
-Una llamada por partido, asi que es lento: unos 1,5 segundos por partido,
-que para una temporada completa son cerca de media hora. Por eso admite
---season y se salta lo ya cargado.
-"""
 
 import sys
 import time
@@ -15,7 +8,6 @@ from src.clients.supabase import get_supabase_client
 REQUEST_DELAY = 0.6
 BATCH_SIZE = 500
 PAGE_SIZE = 1000
-
 
 def _paginar(client, tabla: str, campos: str, orden: str, filtros=None):
     filas, offset = [], 0
@@ -32,7 +24,6 @@ def _paginar(client, tabla: str, campos: str, orden: str, filtros=None):
         offset += PAGE_SIZE
     return filas
 
-
 def sync_starters(season: str | None = None, rehacer: bool = False) -> None:
     client = get_supabase_client()
 
@@ -41,7 +32,6 @@ def sync_starters(season: str | None = None, rehacer: bool = False) -> None:
         filtros["season"] = season
     juegos = _paginar(client, "games", "id, season", "id", filtros)
 
-    # Los partidos de balldontlie no existen en el box score de la NBA
     juegos = [j for j in juegos if not j["id"].startswith("bdl_")]
 
     if not rehacer:
@@ -55,8 +45,6 @@ def sync_starters(season: str | None = None, rehacer: bool = False) -> None:
         print("Nada que hacer.")
         return
 
-    # Los jugadores tienen clave foranea, asi que hay que descartar a los
-    # que no estan dados de alta
     conocidos = {p["id"] for p in _paginar(client, "players", "id", "id")}
 
     pendientes: list[dict] = []
@@ -97,7 +85,6 @@ def sync_starters(season: str | None = None, rehacer: bool = False) -> None:
         print(f"   Sin box score: {sin_datos}")
     if descartados:
         print(f"   Jugadores no dados de alta: {descartados}")
-
 
 if __name__ == "__main__":
     temporada = None

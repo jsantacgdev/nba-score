@@ -8,10 +8,7 @@ from src.config import config
 
 BASE_URL = "https://api.balldontlie.io/v1"
 
-# El plan gratuito permite 5 peticiones/minuto. Al paginar una temporada
-# entera nos pasamos de largo, asi que respetamos las cabeceras de cuota.
 MAX_RETRIES = 5
-
 
 # Mapeo de IDs de balldontlie a los IDs de nba_api en nuestra BD
 BDL_TO_NBA_TEAM_ID: dict[int, str] = {
@@ -47,7 +44,6 @@ BDL_TO_NBA_TEAM_ID: dict[int, str] = {
     30: "1610612764",  # Washington Wizards
 }
 
-
 def _get_headers() -> dict:
     if not config.BALLDONTLIE_API_KEY:
         raise RuntimeError(
@@ -56,9 +52,7 @@ def _get_headers() -> dict:
         )
     return {"Authorization": config.BALLDONTLIE_API_KEY}
 
-
 def _get(url: str, headers: dict, params: dict) -> httpx.Response:
-    """GET que respeta el rate limit: reintenta los 429 y frena antes de agotar la cuota."""
     for attempt in range(1, MAX_RETRIES + 1):
         response = httpx.get(url, headers=headers, params=params, timeout=30)
 
@@ -73,7 +67,6 @@ def _get(url: str, headers: dict, params: dict) -> httpx.Response:
 
         response.raise_for_status()
 
-        # Si esta peticion agoto la cuota, esperamos al reset antes de seguir
         if response.headers.get("x-ratelimit-remaining") == "0":
             reset = response.headers.get("x-ratelimit-reset", "")
             wait = 60
@@ -86,7 +79,6 @@ def _get(url: str, headers: dict, params: dict) -> httpx.Response:
         return response
 
     raise RuntimeError("Rate limit de balldontlie: agotados todos los reintentos")
-
 
 def _map_game_to_internal(game: dict, season: str) -> Optional[dict]:
     """Convierte un partido de balldontlie al formato de nuestra BD."""
@@ -116,10 +108,8 @@ def _map_game_to_internal(game: dict, season: str) -> Optional[dict]:
         "status": status,
         "score_home": game.get("home_team_score") or 0,
         "score_away": game.get("visitor_team_score") or 0,
-        # balldontlie no publica pretemporada, solo marca los de playoffs
         "season_type": "playoffs" if game.get("postseason") else "regular",
     }
-
 
 def get_games_for_date_range(
     start_date: datetime, end_date: datetime, season: str

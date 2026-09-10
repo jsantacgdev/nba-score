@@ -3,9 +3,7 @@ from datetime import date, datetime, timedelta
 from src.clients.nba import CURRENT_SEASON, get_league_games, season_date_range
 from src.clients.supabase import get_supabase_client
 
-
 def _day(value) -> date | None:
-    """Fecha de un partido, venga como timestamptz de Supabase o como texto."""
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):
@@ -20,7 +18,6 @@ def _day(value) -> date | None:
         except ValueError:
             return None
 
-
 def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -> int:
     """
     Borra los partidos 'bdl_*' que duplican a uno traido de nba_api.
@@ -32,8 +29,6 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -
     horarias distintas (ET vs UTC) y el mismo partido puede caer en dias
     "calendario" diferentes segun la fuente.
     """
-    # Paginado: PostgREST corta en 1000 filas, y una temporada entera de
-    # calendario pasa de 1200. Sin esto quedaban 200 sin borrar.
     filas: list[dict] = []
     offset = 0
     while True:
@@ -56,7 +51,6 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -
     if not filas:
         return 0
 
-    # Indice (local, visitante, dia) -> ids de balldontlie
     index: dict[tuple, list[str]] = {}
     for row in filas:
         day = _day(row["starts_at"])
@@ -87,17 +81,7 @@ def cleanup_balldontlie_duplicates(client, nba_games: list[dict], season: str) -
 
     return len(ids)
 
-
 def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> None:
-    """
-    Sincroniza los partidos ya jugados de una temporada.
-
-    Args:
-        days_back: Si se indica, sincroniza solo los ultimos N dias en lugar
-                   de la temporada completa. Util para el sync diario.
-        season: Temporada a sincronizar. Por defecto la actual, pero admite
-                temporadas pasadas para tapar huecos ('2025-26').
-    """
     if days_back is not None:
         date_to = date.today()
         date_from = date_to - timedelta(days=days_back)
@@ -132,7 +116,6 @@ def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> No
     if deleted > 0:
         print(f"   {deleted} duplicados de balldontlie eliminados")
 
-    # Upsert por lotes de 500 para no exceder limites
     batch_size = 500
     total = 0
     for i in range(0, len(filtered), batch_size):
@@ -142,9 +125,7 @@ def sync_games(days_back: int | None = None, season: str = CURRENT_SEASON) -> No
 
     print(f"✅ {total} partidos sincronizados en {season}")
 
-
 def sync_seasons(first: str, last: str = CURRENT_SEASON) -> None:
-    """Recorre un rango de temporadas. Los upserts hacen que sea reejecutable."""
     from src.clients.nba import season_range
 
     seasons = season_range(first, last)
@@ -160,16 +141,12 @@ def sync_seasons(first: str, last: str = CURRENT_SEASON) -> None:
 
     print("Completado.")
 
-
 if __name__ == "__main__":
     import sys
 
     def _flag(name: str, default=None):
         return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
 
-    # --from X    recorre desde esa temporada hasta la actual
-    # --season X  solo esa temporada
-    # --days N    solo los ultimos N dias de la temporada actual
     desde = _flag("--from")
     if desde:
         sync_seasons(desde, _flag("--to", CURRENT_SEASON))

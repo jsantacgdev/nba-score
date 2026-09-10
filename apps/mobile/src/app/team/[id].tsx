@@ -45,8 +45,6 @@ export default function TeamDetailScreen() {
   const { data: teamSeasons } = useTeamSeasons(teamId);
   const { data: palmares } = useTeamPalmares(teamId);
 
-  // Prioridad: lo que elijas aqui > la temporada con la que llegaste desde
-  // la clasificacion > la mas reciente con plantilla registrada.
   const activeSeason =
     pickedSeason ?? (season && season.length > 0 ? season : teamSeasons?.[0]?.season);
 
@@ -277,10 +275,6 @@ function TeamHeader({
   );
 }
 
-/**
- * Palmarés: un trofeo por competición con el número de títulos y los años.
- * Se agrupa porque interesa leer "x3" de un vistazo, no tres trofeos iguales.
- */
 function TeamPalmares({ titles }: { titles?: TeamTitle[] }) {
   if (!titles || titles.length === 0) return null;
 
@@ -290,7 +284,6 @@ function TeamPalmares({ titles }: { titles?: TeamTitle[] }) {
     porCompeticion.get(t.competition)!.push(t);
   }
 
-  // La NBA primero: es el título que de verdad define a una franquicia
   const orden: TeamTitle['competition'][] = ['nba', 'nba_cup'];
   const grupos = orden
     .map((comp) => [comp, porCompeticion.get(comp)] as const)
@@ -356,7 +349,6 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
   );
 }
 
-/** Etiqueta en castellano del tipo de movimiento. */
 function tipoMovimiento(tipo: string): string {
   if (tipo === 'Trade') return 'Traspaso';
   if (tipo === 'Signing') return 'Agencia libre';
@@ -371,12 +363,6 @@ function iniciales(nombre: string): string {
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
 }
 
-/**
- * Un movimiento visto desde el equipo: quien entra y quien sale.
- *
- * Las elecciones de draft no tienen jugador detras, asi que se muestran
- * como tales.
- */
 function TeamMovementRow({ entry }: { entry: TeamMovement }) {
   const entra = entry.direction === 'in';
   const abrible = !!entry.dealId && entry.type === 'Trade';
@@ -489,12 +475,10 @@ const styles = StyleSheet.create({
   // Cabecera
   header: {
     alignItems: 'center',
-    // Poco aire arriba: el logo sube y cabe mas contenido sin scroll
     paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
   },
 
-  // Palmarés
   palmaresCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -513,7 +497,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xl,
   },
-  // El trofeo con su recuento y los años son un solo bloque centrado
   palmaresGroup: {
     flex: 1,
     alignItems: 'center',

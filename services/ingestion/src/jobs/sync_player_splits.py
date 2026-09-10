@@ -1,24 +1,3 @@
-"""
-Rellena las estadisticas por equipo dentro de cada temporada.
-
-sync_history deja player_season_teams con la pertenencia a plantilla, pero
-sin numeros: las medias que publica la NBA son de temporada completa y a un
-traspasado le mezclan las dos etapas.
-
-Este job lo arregla en dos fases:
-
-  A. Jugadores traspasados (team_count > 1). Una llamada a PlayerCareerStats
-     por jugador devuelve su carrera entera desglosada por equipo, asi que
-     ademas de rellenar los numeros CREA las filas que faltaban: la etapa en
-     el equipo que dejo a mitad de temporada no sale en ninguna plantilla de
-     final de año.
-
-  B. El resto. Si solo jugo en un equipo, las medias de temporada SON las
-     de ese equipo, asi que se copian de player_season_history sin gastar
-     una sola llamada.
-
-Es reanudable: salta lo que ya tiene numeros.
-"""
 
 import time
 
@@ -41,9 +20,7 @@ STAT_FIELDS = (
     "free_throw_pct",
 )
 
-
 def _fetch_all(client, table: str, columns: str) -> list[dict]:
-    """Lee una tabla entera paginando, porque Supabase corta en 1000 filas."""
     rows: list[dict] = []
     offset = 0
 
@@ -58,14 +35,12 @@ def _fetch_all(client, table: str, columns: str) -> list[dict]:
 
     return rows
 
-
 def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
     total = 0
     for i in range(0, len(rows), BATCH_SIZE):
         result = client.table(table).upsert(rows[i : i + BATCH_SIZE]).execute()
         total += len(result.data)
     return total
-
 
 def sync_player_splits(force: bool = False) -> None:
     client = get_supabase_client()
@@ -86,7 +61,6 @@ def sync_player_splits(force: bool = False) -> None:
 
     print(f"{len(history)} filas de historico, {len(existing)} fichas de plantilla")
 
-    # Cuantas filas con numeros hay ya por (jugador, temporada)
     filled: dict[tuple[str, str], int] = {}
     present: set[tuple[str, str, str]] = set()
     for row in existing:
@@ -95,9 +69,6 @@ def sync_player_splits(force: bool = False) -> None:
         if row["games_played"] is not None:
             filled[key] = filled.get(key, 0) + 1
 
-    # ------------------------------------------------------------------
-    # Fase A: traspasados
-    # ------------------------------------------------------------------
     traded: dict[str, set[str]] = {}
     for row in history:
         if (row["team_count"] or 1) > 1:
@@ -132,7 +103,6 @@ def sync_player_splits(force: bool = False) -> None:
             time.sleep(REQUEST_DELAY)
             continue
 
-        # Solo las temporadas en las que sabemos que hubo traspaso
         relevantes = [
             s
             for s in splits
@@ -161,9 +131,6 @@ def sync_player_splits(force: bool = False) -> None:
         if i < len(pending):
             time.sleep(REQUEST_DELAY)
 
-    # ------------------------------------------------------------------
-    # Fase B: el resto, sin llamadas a la API
-    # ------------------------------------------------------------------
     print("\n=== Fase B: jugadores de un solo equipo (sin llamadas) ===")
 
     directas = []
@@ -202,7 +169,6 @@ def sync_player_splits(force: bool = False) -> None:
     print(f"   Etapas recuperadas en fase A: {nuevas_filas}")
     if errores:
         print(f"   Errores: {errores} (puedes reejecutar para reintentar)")
-
 
 if __name__ == "__main__":
     import sys

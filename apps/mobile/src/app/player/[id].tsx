@@ -44,14 +44,12 @@ import type {
 
 type TabKey = 'games' | 'career' | 'movements' | 'injuries';
 
-/** La lista es una sola FlatList y cambia de contenido segun la pestaña. */
 type ListRow =
   | { kind: 'game'; game: PlayerGameLogEntry }
   | { kind: 'career'; career: PlayerCareerEntry }
   | { kind: 'movement'; movement: PlayerMovement }
   | { kind: 'injury'; injury: PlayerInjury };
 
-/** Los nulos son reales: temporada con plantilla cargada pero sin jugar. */
 function stat(value: number | null, decimals = 1): string {
   return value === null ? '—' : value.toFixed(decimals);
 }
@@ -73,7 +71,6 @@ export default function PlayerDetailScreen() {
     isRefetching: refetchingStats,
   } = usePlayerSeasonStats(playerId);
 
-  // Los históricos no tienen box scores: ni se consulta
   const isRetired = player?.isActive === false;
 
   const {
@@ -87,7 +84,6 @@ export default function PlayerDetailScreen() {
   const { data: movimientos } = usePlayerMovements(playerId);
   const { data: lesiones } = usePlayerInjuries(playerId);
 
-  // Basta una lesion vigente para marcar al jugador
   const lesionado = (lesiones ?? []).some((l) => l.isCurrent);
   const { data: draft } = usePlayerDraft(playerId);
 
@@ -95,13 +91,10 @@ export default function PlayerDetailScreen() {
   const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
   const [mediasAbiertas, setMediasAbiertas] = useState(false);
 
-  // Las temporadas seleccionables son las de su carrera, sin repetir: un
-  // traspasado tiene dos filas del mismo año, una por equipo.
   const careerSeasons = Array.from(new Set((career ?? []).map((c) => c.season)));
   const activeSeason =
     pickedSeason ?? (season && season.length > 0 ? season : careerSeasons[0]);
 
-  // Va despues de la carrera porque necesita saber que temporada pedir
   const {
     data: gameLog,
     refetch: refetchGameLog,
@@ -109,7 +102,6 @@ export default function PlayerDetailScreen() {
   } = usePlayerGameLog(playerId, !isRetired, activeSeason);
 
   const [selectedTab, setSelectedTab] = useState<TabKey>('games');
-  // Un retirado solo tiene carrera, asi que no hay eleccion que ofrecer
   const tab: TabKey = isRetired ? 'career' : selectedTab;
 
   const isRefetching =
@@ -123,9 +115,6 @@ export default function PlayerDetailScreen() {
     refetchAwards();
   };
 
-  // player_game_log no guarda el equipo del jugador, y sus columnas
-  // matchup y win_loss estan vacias en casi todas las filas porque vienen
-  // del box score. El equipo se deduce de la carrera, que ya esta cargada.
   const equiposEnTemporada = new Set(
     (career ?? []).filter((c) => c.season === activeSeason).map((c) => c.teamId),
   );
@@ -300,7 +289,10 @@ export default function PlayerDetailScreen() {
                     {carrera.gamesPlayed} partidos)
                   </Text>
                   <Animated.View
-                    style={{ transform: [{ rotate: mediasAbiertas ? '180deg' : '0deg' }] }}
+                    style={[
+                      styles.careerChevron,
+                      { transform: [{ rotate: mediasAbiertas ? '180deg' : '0deg' }] },
+                    ]}
                   >
                     <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
                   </Animated.View>
@@ -424,11 +416,6 @@ export default function PlayerDetailScreen() {
   );
 }
 
-/**
- * Los premios se agrupan por tipo: interesa "5 MVP" de un vistazo, no cinco
- * trofeos repetidos. El trofeo que se dibuja es el del año más reciente en
- * que lo gano, porque es el diseño que la gente asocia al jugador.
- */
 function Palmares({ awards }: { awards: PlayerAward[] }) {
   const grupos = new Map<string, PlayerAward[]>();
   for (const a of awards) {
@@ -481,7 +468,6 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
   );
 }
 
-/** Etiqueta en castellano del tipo de movimiento. */
 function tipoMovimiento(tipo: string): string {
   if (tipo === 'Trade') return 'Traspaso';
   if (tipo === 'Signing') return 'Agencia libre';
@@ -492,7 +478,6 @@ function tipoMovimiento(tipo: string): string {
 }
 
 function MovementRow({ entry }: { entry: PlayerMovement }) {
-  // Solo los traspasos tienen operacion detras que abrir
   const abrible = !!entry.dealId && entry.type === 'Trade';
 
   return (
@@ -526,7 +511,6 @@ function MovementRow({ entry }: { entry: PlayerMovement }) {
             <Text style={styles.movementTeamText}>{entry.fromTeam.abbreviation}</Text>
           </View>
         ) : (
-          // Un fichaje no tiene equipo de origen
           <Text style={styles.movementSinOrigen}>—</Text>
         )}
 
@@ -661,7 +645,6 @@ function SeasonStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-/** Escudo y abreviatura, que es lo minimo para reconocer un equipo. */
 function TeamChip({ abbr, logo }: { abbr: string; logo?: string }) {
   return (
     <View style={styles.gameLogTeam}>
@@ -684,7 +667,9 @@ function GameLogHeaderRow() {
   return (
     <View style={styles.gameLogHeader}>
       <Text style={[styles.gameLogHeaderText, styles.colGameDate]}>FECHA</Text>
-      <Text style={[styles.gameLogHeaderText, styles.colGameMatch]}>PARTIDO</Text>
+      <Text style={[styles.gameLogHeaderText, styles.colGameMatch, styles.gameLogHeaderCentrado]}>
+        PARTIDO
+      </Text>
       <Text style={[styles.gameLogHeaderText, styles.colGameResult]}>RES.</Text>
       <Text style={[styles.gameLogHeaderText, styles.colGameMin]}>MIN</Text>
       <Text style={[styles.gameLogHeaderText, styles.colGameStat]}>PTS</Text>
@@ -694,28 +679,16 @@ function GameLogHeaderRow() {
   );
 }
 
-/**
- * Un partido del jugador, en una fila de tabla.
- *
- * Misma estructura que la pestaña Carrera para que las dos listas de la
- * ficha se lean igual. Antes era una tarjeta de tres bloques y ocupaba
- * casi cuatro veces mas alto, lo que hacia interminable una temporada de
- * 82 partidos.
- */
 function GameLogRow({
   entry,
   equipos,
 }: {
   entry: PlayerGameLogEntry;
-  /** Equipos del jugador esa temporada, para saber cual es el rival. */
   equipos: Set<string>;
 }) {
   const game = entry.game;
   const jugo = entry.minutes > 0;
 
-  // Si el jugador es local, el rival es el visitante y al reves. Cuando no
-  // se puede determinar (traspasado y sus dos equipos enfrentados, o sin
-  // datos del partido) se cae a lo que traiga la propia fila.
   const esLocal = game
     ? equipos.has(game.homeTeamId) && !equipos.has(game.awayTeamId)
       ? true
@@ -724,8 +697,6 @@ function GameLogRow({
         : entry.isHome
     : entry.isHome;
 
-  // El equipo del jugador va primero, para que el marcador se lea desde
-  // el. Si no se sabe cual es, se deja el orden natural local-visitante.
   const local = game
     ? { abbr: game.homeTeamAbbr, logo: game.homeTeamLogo }
     : { abbr: '', logo: undefined };
@@ -735,7 +706,6 @@ function GameLogRow({
   const primero = esLocal === false ? visitante : local;
   const segundo = esLocal === false ? local : visitante;
 
-  // El marcador se lee desde el jugador: primero los suyos
   const propios = game ? (esLocal === false ? game.scoreAway : game.scoreHome) : 0;
   const ajenos = game ? (esLocal === false ? game.scoreHome : game.scoreAway) : 0;
   const gano = entry.winLoss ? entry.winLoss === 'W' : game ? propios > ajenos : false;
@@ -787,14 +757,11 @@ function GameLogRow({
           <Text style={[styles.gameLogStat, styles.colGameStat]}>{entry.assists}</Text>
         </>
       ) : (
-        // Sin minutos no hay estadisticas que enseñar, y cuatro ceros se
-        // leen como una mala actuacion en vez de como una ausencia
         <Text style={styles.gameLogDnp}>no jugó</Text>
       )}
     </Pressable>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -807,9 +774,6 @@ const styles = StyleSheet.create({
   },
   nameRow: {
     flexDirection: 'row',
-    // El margen va aqui y no en el texto: si lo lleva el texto, su caja
-    // queda mas alta que las letras y el icono se centra respecto a la
-    // caja, no respecto al nombre
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
@@ -818,6 +782,7 @@ const styles = StyleSheet.create({
   gameLogHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 3,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -828,28 +793,24 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     letterSpacing: 0.5,
   },
+  gameLogHeaderCentrado: { textAlign: 'center' },
   gameLogRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    // Cada fila abre el detalle del partido, asi que es un objetivo
-    // tactil: 52 queda por encima de los 48 que se recomiendan como
-    // minimo y sigue cabiendo el triple de partidos que con la tarjeta
+    gap: 3,
     minHeight: 52,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   gameLogRowPressed: { backgroundColor: colors.surface },
-  // Sin minutos, la fila se atenua entera
   gameLogRowDnp: { opacity: 0.45 },
 
-  // La fecha necesita algo mas que su contenido: el rotulo FECHA de la
-  // cabecera es mas ancho que un 13/06 y se pegaba al de al lado
-  colGameDate: { width: 48 },
-  colGameMatch: { flex: 1, minWidth: 96 },
-  colGameResult: { width: 60 },
-  colGameMin: { width: 40, textAlign: 'center' },
-  colGameStat: { width: 28, textAlign: 'center' },
+  colGameDate: { width: 44 },
+  colGameMatch: { flex: 1, minWidth: 88 },
+  colGameResult: { width: 58, textAlign: 'center', alignItems: 'center' },
+  colGameMin: { width: 46, textAlign: 'center' },
+  colGameStat: { width: 26, textAlign: 'center' },
 
   gameLogDate: {
     color: colors.textMuted,
@@ -859,14 +820,15 @@ const styles = StyleSheet.create({
   gameLogMatchCell: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 3,
   },
   gameLogTeam: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
   },
-  gameLogLogo: { width: 15, height: 15 },
+  gameLogLogo: { width: 14, height: 14 },
   gameLogTeamText: {
     color: colors.text,
     fontSize: fontSize.xs,
@@ -880,6 +842,7 @@ const styles = StyleSheet.create({
   gameLogResult: {
     fontSize: fontSize.xs,
     fontFamily: fontFamily.semibold,
+    textAlign: 'center',
   },
   gameLogWin: { color: colors.success },
   gameLogLoss: { color: colors.danger },
@@ -925,7 +888,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  // El traspaso se distingue porque es el unico que abre detalle
   movementBadgeTrade: { borderColor: colors.primary },
   movementBadgeText: {
     color: colors.textSecondary,
@@ -1079,17 +1041,17 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    // Separada del Palmares: son dos bloques distintos
     marginTop: spacing.lg,
   },
   careerCardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    // El hueco va aqui y no en el titulo: en una fila centrada, un margen
-    // en el hijo desalinea la flecha
     marginBottom: spacing.md,
+  },
+  careerChevron: {
+    marginTop: 1,
   },
   careerCardPressed: {
     opacity: 0.7,
@@ -1103,8 +1065,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   seasonTitle: {
-    // flexShrink: sin el, un titulo de dos lineas ocupa todo el ancho y
-    // empuja el chevron fuera de la tarjeta
     flexShrink: 1,
     color: colors.textSecondary,
     fontSize: fontSize.sm,
@@ -1140,7 +1100,6 @@ const styles = StyleSheet.create({
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
   },
-  // Se distingue del resto porque este si es pulsable
   metaBadgeDraft: {
     borderColor: colors.primary,
   },
@@ -1154,7 +1113,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
 
-  // Palmarés
   palmaresCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -1217,7 +1175,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Pestañas Partidos / Carrera
   detailTabs: {
     flexDirection: 'row',
     gap: spacing.xs,
@@ -1248,7 +1205,6 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  // Tabla de carrera
   careerHeader: {
     flexDirection: 'row',
     alignItems: 'center',

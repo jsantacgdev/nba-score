@@ -38,7 +38,6 @@ export function usePlayerInjuries(playerId?: string) {
     queryKey: ['playerInjuries', playerId],
     queryFn: () => fetchPlayerInjuries(playerId!),
     enabled: !!playerId,
-    // Mas corta que el resto: una lesion cambia de estado a diario
     staleTime: 1000 * 60 * 15,
   });
 }

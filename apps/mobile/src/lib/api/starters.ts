@@ -1,13 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { StartingLineup, StartingLineupPlayer } from '@/types/domain';
 
-/**
- * Quintetos iniciales de un partido, agrupados por equipo.
- *
- * Sale de la base y no de la CDN de la NBA: esa ruta exige la cabecera
- * 'Referer', que fetch prohibe fijar, asi que desde el movil siempre
- * responde 403.
- */
 export async function fetchStartingLineups(gameId: string): Promise<StartingLineup[]> {
   const { data, error } = await supabase.rpc('game_starting_lineups', {
     target_game_id: gameId,

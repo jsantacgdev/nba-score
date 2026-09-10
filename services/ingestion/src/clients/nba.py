@@ -18,9 +18,7 @@ REQUEST_DELAY = 1.5
 
 _TEAM_NAMES: dict[str, str] = {}
 
-
 def get_team_name(team_id: str) -> str:
-    """Nombre del equipo a partir de su ID (datos estaticos, sin peticiones)."""
     global _TEAM_NAMES
     if not _TEAM_NAMES:
         _TEAM_NAMES = {
@@ -28,17 +26,9 @@ def get_team_name(team_id: str) -> str:
         }
     return _TEAM_NAMES.get(str(team_id), str(team_id))
 
-
 def season_date_range(season: str = CURRENT_SEASON) -> tuple[date, date]:
-    """
-    Rango de fechas que cubre una temporada NBA.
-
-    '2026-27' -> (2026-09-01, 2027-08-31). Empieza en septiembre para incluir
-    la pretemporada y termina en agosto para no cortar unas Finales largas.
-    """
     start_year = int(season.split("-")[0])
     return date(start_year, 9, 1), date(start_year + 1, 8, 31)
-
 
 SEASON_TYPE_BY_PREFIX = {
     "001": "preseason",
@@ -46,28 +36,13 @@ SEASON_TYPE_BY_PREFIX = {
     "003": "allstar",
     "004": "playoffs",
     "005": "playin",
-    # La final de la NBA Cup tiene prefijo propio y no cuenta para la
-    # clasificacion, aunque sus estadisticas si cuenten.
     "006": "cup_final",
 }
 
-
 def season_type_from_id(game_id: str) -> str:
-    """El prefijo del ID de la NBA codifica el tipo de partido."""
     return SEASON_TYPE_BY_PREFIX.get(str(game_id)[:3], "regular")
 
-
 def _id(value) -> str:
-    """
-    Normaliza un identificador a texto.
-
-    pandas convierte una columna entera a float en cuanto alguna fila trae
-    NaN, y entonces str() devuelve '1610612759.0'. Ese sufijo no casa con
-    ninguna clave foranea y las filas se descartan en silencio.
-
-    Ojo con los GAME_ID: llevan ceros a la izquierda ('0040400407'), asi
-    que los valores que ya son texto se dejan intactos.
-    """
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, float):
@@ -76,7 +51,6 @@ def _id(value) -> str:
         if value.is_integer():
             return str(int(value))
     return str(value)
-
 
 def build_team_logo_url(abbreviation: str) -> str:
     """URL del logo del equipo (PNG vía ESPN CDN) con parseo de excepciones."""
@@ -90,7 +64,6 @@ def build_team_logo_url(abbreviation: str) -> str:
     final_abbr = espn_exceptions.get(abbr_lower, abbr_lower)
 
     return f"https://a.espncdn.com/i/teamlogos/nba/500/{final_abbr}.png"
-
 
 def build_player_photo_url(player_id: str) -> str:
     """URL de la foto del jugador (PNG transparente, NBA CDN)."""
@@ -133,7 +106,6 @@ def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
         )
 
     return players
-
 
 def get_all_rosters(team_ids: list[str], season: str = CURRENT_SEASON) -> list[dict]:
     """Recorre todos los equipos con pausas entre peticiones."""
@@ -193,7 +165,6 @@ TEAM_METADATA: dict[int, dict[str, str]] = {
     1610612740: {"conference": "West", "division": "Southwest"},  # Pelicans
     1610612759: {"conference": "West", "division": "Southwest"},  # Spurs
 }
-
 
 def get_all_teams() -> list[dict]:
     """Devuelve los equipos de la NBA enriquecidos con conferencia, división y logo."""
@@ -297,13 +268,6 @@ def get_player_game_log(player_id: str, season: str = CURRENT_SEASON) -> list[di
     return games
 
 def _locales_en_campo_neutral(fechas: set[str]) -> dict[str, str]:
-    """
-    Devuelve el equipo local de los partidos de esas fechas.
-
-    Solo se usa para los partidos en campo neutral, que son pocos: las
-    eliminatorias de la NBA Cup en Las Vegas y los partidos
-    internacionales. Una llamada por fecha.
-    """
     locales: dict[str, str] = {}
     for fecha in sorted(fechas):
         try:
@@ -312,8 +276,6 @@ def _locales_en_campo_neutral(fechas: set[str]) -> dict[str, str]:
             for _, row in board.game_header.get_data_frame().iterrows():
                 locales[_id(row["GAME_ID"])] = _id(row["HOME_TEAM_ID"])
         except Exception:
-            # Sin local no se puede insertar el partido, pero un fallo aqui
-            # no debe tumbar la sincronizacion entera.
             continue
         time.sleep(0.6)
     return locales
@@ -323,17 +285,6 @@ def get_league_games(
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> list[dict]:
-    """
-    Obtiene los partidos de la temporada con su marcador.
-
-    Ojo: este endpoint solo devuelve partidos YA JUGADOS. El calendario
-    futuro no aparece aqui, lo trae sync_upcoming_games via balldontlie.
-
-    Usa LeagueGameLog y no LeagueGameFinder porque el segundo se deja
-    partidos: en 2025-26 devolvia 1225 de los 1230 de liga regular. A
-    cambio hay que preguntar una vez por tipo, porque no los mezcla.
-    """
-    # game_id -> fecha y la lista de (equipo, puntos, es_local)
     crudos: dict[str, dict] = {}
 
     for season_type in ("Regular Season", "Pre Season", "Playoffs", "PlayIn"):
@@ -346,7 +297,6 @@ def get_league_games(
             timeout=60,
         )
 
-        # Cada partido trae una fila por equipo
         for _, row in log.get_data_frames()[0].iterrows():
             game_id = _id(row["GAME_ID"])
             entrada = crudos.setdefault(
@@ -360,10 +310,6 @@ def get_league_games(
                 )
             )
 
-    # En campo neutral la NBA marca las dos filas con "@" y ninguna sale
-    # local. Pasa en las eliminatorias de la NBA Cup y en los partidos
-    # internacionales: son cinco en 2025-26, y entre ellos las dos
-    # semifinales, que si cuentan para la clasificacion.
     neutrales = {
         gid: c["starts_at"]
         for gid, c in crudos.items()
@@ -399,14 +345,9 @@ def get_league_games(
                 juego["away_team_id"] = team_id
                 juego["score_away"] = pts
 
-        # Los cancelados vienen con marcador 0-0, y ningun partido jugado
-        # acaba asi. Pasa con el Celtics-Pacers del 16 de abril de 2013,
-        # suspendido por el atentado de Boston y nunca recuperado: los dos
-        # equipos cerraron esa temporada con 81 partidos.
         if juego["score_home"] == 0 and juego["score_away"] == 0:
             continue
 
-        # Solo partidos con ambos equipos identificados
         if juego["home_team_id"] and juego["away_team_id"]:
             partidos.append(juego)
 
@@ -414,19 +355,7 @@ def get_league_games(
 
 ESTADO_POR_CODIGO = {1: "scheduled", 2: "live", 3: "final"}
 
-
 def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
-    """
-    Calendario completo de la temporada, jugado y por jugar.
-
-    Es la unica fuente de la NBA que da partidos futuros: LeagueGameLog solo
-    devuelve los ya jugados. Sustituye a balldontlie para el calendario, y
-    con eso todos los partidos de la base llevan identificador de la NBA en
-    lugar de convivir dos numeraciones.
-
-    Las eliminatorias de la NBA Cup aparecen con los equipos aun sin
-    decidir; esas filas se descartan hasta que haya rival.
-    """
     df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=60).get_data_frames()[0]
 
     partidos = []
@@ -435,7 +364,6 @@ def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
         home_id = _id(row["homeTeam_teamId"])
         away_id = _id(row["awayTeam_teamId"])
 
-        # Rival por decidir: el identificador viene a cero
         if not home_id or not away_id or home_id == "0" or away_id == "0":
             continue
 
@@ -459,7 +387,6 @@ def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
         )
 
     return partidos
-
 
 def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> list[dict]:
     """Obtiene los partidos programados para una fecha concreta."""
@@ -503,7 +430,6 @@ def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> lis
 
     return games
 
-
 def get_box_score(game_id: str) -> list[dict]:
     """
     Obtiene el box score de un partido: stats por jugador de ambos equipos.
@@ -521,7 +447,6 @@ def get_box_score(game_id: str) -> list[dict]:
 
     entries = []
     for _, row in df.iterrows():
-        # Los minutos vienen como "33:57", y vacios si el jugador no jugo
         crudo = str(row.get("minutes") or "").strip()
         if not crudo or crudo in ("nan", "None"):
             minutes = 0.0
@@ -556,21 +481,12 @@ def get_box_score(game_id: str) -> list[dict]:
 
     return entries
 
-
 def season_range(start: str = "2000-01", end: str = CURRENT_SEASON) -> list[str]:
-    """Lista de temporadas entre dos extremos, ambos incluidos. '2000-01' -> '2000-01'."""
     first = int(start.split("-")[0])
     last = int(end.split("-")[0])
     return [f"{y}-{str(y + 1)[-2:]}" for y in range(first, last + 1)]
 
-
 def _num(row, field: str, decimals: int = 1) -> float:
-    """
-    Convierte un campo a float tolerando NaN.
-
-    En temporadas antiguas hay jugadores con 0 intentos, y entonces los
-    porcentajes vienen como NaN, que no es JSON valido y revienta el upsert.
-    """
     value = row.get(field)
     if value is None:
         return 0.0
@@ -582,19 +498,10 @@ def _num(row, field: str, decimals: int = 1) -> float:
         return 0.0
     return round(num, decimals)
 
-
 def _whole(row, field: str) -> int:
-    """Convierte un campo a int tolerando NaN y None."""
     return int(_num(row, field, 0))
 
-
 def get_season_champion(season: str) -> dict | None:
-    """
-    Devuelve el campeon de una temporada deduciendolo del ultimo partido
-    de playoffs disputado: quien gana ese partido levanta el trofeo.
-
-    Devuelve None si la temporada aun no tiene playoffs jugados.
-    """
     finder = leaguegamefinder.LeagueGameFinder(
         season_nullable=season,
         league_id_nullable="00",
@@ -617,15 +524,7 @@ def get_season_champion(season: str) -> dict | None:
         "decided_at": str(last_date)[:10],
     }
 
-
 def get_season_history_stats(season: str) -> list[dict]:
-    """
-    Medias de todos los jugadores de una temporada, con el equipo con el
-    que la terminaron y cuantos equipos pisaron (team_count).
-
-    Incluye 'player_name', que NO es columna de la tabla: sirve para dar de
-    alta a los jugadores historicos que aun no existen en 'players'.
-    """
     stats = leaguedashplayerstats.LeagueDashPlayerStats(
         season=season,
         per_mode_detailed="PerGame",
@@ -658,18 +557,7 @@ def get_season_history_stats(season: str) -> list[dict]:
 
     return results
 
-
 def get_player_career_splits(player_id: str) -> list[dict]:
-    """
-    Medias por temporada Y equipo de toda la carrera de un jugador.
-
-    Es la unica fuente que separa las etapas de un traspasado: donde
-    LeagueDashPlayerStats da una fila con los promedios mezclados, esto da
-    una fila por equipo. Una sola llamada cubre la carrera entera.
-
-    Descarta las filas 'TOT' (team_id 0), que son el agregado que ya
-    tenemos en player_season_history.
-    """
     try:
         career = playercareerstats.PlayerCareerStats(
             player_id=int(player_id),
@@ -678,9 +566,6 @@ def get_player_career_splits(player_id: str) -> list[dict]:
         )
         df = career.get_data_frames()[0]
     except KeyError:
-        # La API responde {} para jugadores muy marginales (contratos de
-        # 10 dias con un puñado de partidos). No hay ficha de carrera y no
-        # sirve de nada reintentarlo: el dato no existe aguas arriba.
         return []
 
     splits = []

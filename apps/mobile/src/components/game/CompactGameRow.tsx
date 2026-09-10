@@ -19,11 +19,6 @@ function roundLabel(game: Game): string | null {
   return game.playoffRound ? (ROUNDS[game.playoffRound] ?? 'Playoffs') : 'Playoffs';
 }
 
-/**
- * Fila de partido en una línea, para listas largas como el histórico de un
- * equipo. La tarjeta grande de GameCard funciona bien con los partidos de
- * un día, pero apilada ochenta veces se hace interminable.
- */
 export function CompactGameRow({ game }: { game: Game }) {
   const isFinal = game.status === 'final';
   const isLive = game.status === 'live';
@@ -36,7 +31,6 @@ export function CompactGameRow({ game }: { game: Game }) {
 
   const ronda = roundLabel(game);
   const serie = game.seriesWins;
-  // El trofeo va con quien gano ese partido, que es el campeon
   const campeonEsLocal = game.titleDecider && ganaLocal;
   const campeonEsVisitante = game.titleDecider && ganaVisitante;
 

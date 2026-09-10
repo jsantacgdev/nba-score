@@ -102,8 +102,6 @@ export async function fetchGameDetail(gameId: string): Promise<GameDetail | null
 
   if (logsError) throw logsError;
 
-  // Sin box score el partido no se ha jugado, asi que se enseña quien esta
-  // convocado: la plantilla actual de cada equipo, sin numeros.
   if (!logs || logs.length === 0) {
     const { data: plantillas, error: plantillaError } = await supabase
       .from('players')
@@ -128,7 +126,6 @@ export async function fetchGameDetail(gameId: string): Promise<GameDetail | null
         .sort((a, b) => {
           const na = Number(a.jerseyNumber);
           const nb = Number(b.jerseyNumber);
-          // Por dorsal, y los que no tienen al final
           if (Number.isNaN(na) && Number.isNaN(nb)) return a.lastName.localeCompare(b.lastName);
           if (Number.isNaN(na)) return 1;
           if (Number.isNaN(nb)) return -1;

@@ -32,7 +32,6 @@ export function useTeamSeasonStats(teamId: string) {
   });
 }
 
-/** Plantilla historica. Solo se consulta si hay temporada seleccionada. */
 export function useTeamSeasonRoster(teamId: string, season?: string) {
   return useQuery({
     queryKey: ['teamSeasonRoster', teamId, season],
@@ -42,7 +41,6 @@ export function useTeamSeasonRoster(teamId: string, season?: string) {
   });
 }
 
-/** Temporadas seleccionables de un equipo. Cambian poco: una hora de cache. */
 export function useTeamSeasons(teamId: string) {
   return useQuery({
     queryKey: ['teamSeasons', teamId],

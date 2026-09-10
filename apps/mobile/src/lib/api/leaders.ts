@@ -1,11 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-/**
- * Ultima temporada con medias cargadas.
- *
- * No vale la temporada en curso del selector: 2026-27 aun no ha empezado
- * y la pantalla abriria vacia.
- */
 export async function fetchLatestStatsSeason(): Promise<string | null> {
   const { data, error } = await supabase
     .from('player_season_history')

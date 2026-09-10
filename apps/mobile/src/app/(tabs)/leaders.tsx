@@ -22,7 +22,6 @@ import { useLatestStatsSeason, useSeasonLeaders } from '@/hooks/useLeaders';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { LeaderEntry, LeaderStat } from '@/types/domain';
 
-/** Campos por los que se puede ordenar. Por defecto, puntos. */
 const CAMPOS: { stat: LeaderStat; label: string }[] = [
   { stat: 'points', label: 'Puntos' },
   { stat: 'rebounds', label: 'Rebotes' },
@@ -114,8 +113,6 @@ export default function LeadersScreen() {
       <SeasonPicker
         visible={pickerOpen}
         title="Temporada"
-        // Aqui el campeon sobra: se elige temporada para ordenar medias,
-        // no para consultar quien gano
         seasons={(seasons ?? []).map((s) => ({ season: s.season }))}
         selected={season}
         onSelect={(s) => {
@@ -140,7 +137,6 @@ function LeaderCard({
 }: {
   entry: LeaderEntry;
   season: string;
-  /** El campo por el que se ordena va resaltado, para saber que se mira. */
   destacado: LeaderStat;
 }) {
   const medias: { stat: LeaderStat; label: string; valor: number }[] = [
@@ -219,8 +215,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.sm,
   },
-  // Sin esto el ScrollView horizontal se come el alto libre y las
-  // pildoras se estiran de arriba abajo
   chipsScroll: { flexGrow: 0, flexShrink: 0 },
   chips: {
     paddingHorizontal: spacing.md,
@@ -302,7 +296,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontFamily: fontFamily.displayBold,
   },
-  // El campo por el que se ordena, resaltado
   statValueActive: { color: colors.primary },
   statLabel: {
     color: colors.textMuted,

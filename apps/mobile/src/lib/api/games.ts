@@ -59,9 +59,6 @@ const SELECT_WITH_TEAMS = `
 `;
 
 export async function fetchGamesByDate(date: Date): Promise<Game[]> {
-  // El dia va de medianoche a medianoche en España, no en la zona del
-  // dispositivo: un partido de la NBA que empieza a las 03:00 aqui
-  // pertenece a ese dia español, no al americano.
   const inicio = startOfDay(date);
   const fin = new Date(addDays(inicio, 1).getTime() - 1);
 
@@ -128,11 +125,6 @@ export async function fetchRecentGameDays(
 
   return days;
 }
-/**
- * Los siguientes N días que tienen partidos programados (posteriores a una
- * fecha de referencia). Es el espejo de fetchRecentGameDays: sirve para que
- * fuera de temporada la pantalla siga diciendo cuándo se vuelve a jugar.
- */
 export async function fetchUpcomingGameDays(
   after: Date,
   daysCount: number,
@@ -190,7 +182,6 @@ export async function fetchGameCountsByDateRange(
   const counts = new Map<string, number>();
   for (const row of data ?? []) {
     const date = new Date(row.starts_at);
-    // Clave: YYYY-MM-DD del dia español
     const key = claveDia(date);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }

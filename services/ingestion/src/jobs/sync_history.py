@@ -1,15 +1,3 @@
-"""
-Backfill historico de jugadores temporada a temporada.
-
-Por cada temporada saca:
-  1. El campeon, deducido del ultimo partido de playoffs.
-  2. Las medias de todos los jugadores (una llamada por temporada).
-  3. Las plantillas de los 30 equipos, que es lo unico que permite saber
-     en que equipo estuvo cada jugador y reconstruir los traspasos.
-
-Es reanudable: salta las temporadas y los equipos ya cargados, asi que si
-se corta a mitad basta con relanzarlo.
-"""
 
 import time
 
@@ -27,9 +15,7 @@ from src.clients.supabase import get_supabase_client
 
 BATCH_SIZE = 500
 
-
 def _fetch_all(client, table: str, columns: str) -> list[dict]:
-    """Lee una tabla entera paginando, porque Supabase corta en 1000 filas."""
     rows: list[dict] = []
     offset = 0
 
@@ -44,7 +30,6 @@ def _fetch_all(client, table: str, columns: str) -> list[dict]:
 
     return rows
 
-
 def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
     total = 0
     for i in range(0, len(rows), BATCH_SIZE):
@@ -52,11 +37,9 @@ def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
         total += len(result.data)
     return total
 
-
 def _split_name(full_name: str) -> tuple[str, str]:
     parts = full_name.strip().split(" ", 1)
     return parts[0], (parts[1] if len(parts) > 1 else "")
-
 
 def sync_history(
     seasons: list[str],
@@ -90,7 +73,6 @@ def sync_history(
     for n, season in enumerate(seasons, start=1):
         print(f"===== [{n}/{len(seasons)}] Temporada {season} =====")
 
-        # --- 1. Campeon -------------------------------------------------
         champion_team_id = None
         try:
             champion = get_season_champion(season)
@@ -109,9 +91,6 @@ def sync_history(
             print("   Sin campeon todavia (temporada en curso o sin playoffs)")
         time.sleep(REQUEST_DELAY)
 
-        # --- 2. Plantillas de los 30 equipos ----------------------------
-        # Se hacen antes que las medias porque de aqui sale quien gano el
-        # anillo de verdad, no solo quien acabo en el equipo campeon.
         roster_rows: list[dict] = []
         roster_players: dict[str, dict] = {}
         champion_squad: set[str] = set()
@@ -150,7 +129,6 @@ def sync_history(
                 if i < len(pending):
                     time.sleep(REQUEST_DELAY)
 
-        # --- 3. Medias de la temporada ----------------------------------
         if season in done_seasons and not force:
             print("   Medias ya cargadas, se omiten")
             stats = []
@@ -163,9 +141,6 @@ def sync_history(
                 print(f"   Error obteniendo medias: {e}")
             time.sleep(REQUEST_DELAY)
 
-        # --- 4. Alta de jugadores historicos ----------------------------
-        # Solo insertamos los que faltan: si tocaramos los existentes
-        # pisariamos el is_active y el equipo actual que pone sync_players.
         nuevos: dict[str, dict] = {}
         for row in stats:
             player_id = row["player_id"]
@@ -182,8 +157,6 @@ def sync_history(
                 "is_active": False,
             }
 
-        # Los que salen en una plantilla pero no en las medias son fichajes
-        # que no llegaron a jugar. Sin esto se perderian del historico.
         for player_id, player in roster_players.items():
             if player_id in known_players or player_id in nuevos:
                 continue
@@ -204,7 +177,6 @@ def sync_history(
             known_players.update(nuevos.keys())
             print(f"   {inserted} jugadores historicos dados de alta")
 
-        # --- 5. Pertenencia a plantilla ---------------------------------
         if roster_rows:
             validas = [r for r in roster_rows if r["player_id"] in known_players]
             descartadas = len(roster_rows) - len(validas)
@@ -215,15 +187,12 @@ def sync_history(
                     msg += f" ({descartadas} descartadas, jugador desconocido)"
                 print(msg)
 
-        # --- 6. Medias + anillo -----------------------------------------
         if stats:
             historia = []
             for row in stats:
                 if row["player_id"] not in known_players:
                     continue
                 team_id = row["primary_team_id"]
-                # Con plantillas sabemos quien estaba en el campeon de verdad.
-                # Sin ellas, lo aproximamos por el equipo con el que acabo.
                 if skip_rosters:
                     anillo = (
                         champion_team_id is not None and team_id == champion_team_id
@@ -243,7 +212,6 @@ def sync_history(
         print()
 
     print("Backfill completado.")
-
 
 if __name__ == "__main__":
     import sys

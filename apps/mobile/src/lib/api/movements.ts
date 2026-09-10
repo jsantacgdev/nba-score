@@ -6,7 +6,6 @@ import type {
   TeamMovement,
 } from '@/types/domain';
 
-/** Movimientos de un jugador, del mas reciente al mas antiguo. */
 export async function fetchPlayerMovements(playerId: string): Promise<PlayerMovement[]> {
   const { data, error } = await supabase.rpc('player_movements', {
     target_player_id: playerId,
@@ -36,7 +35,6 @@ export async function fetchPlayerMovements(playerId: string): Promise<PlayerMove
   }));
 }
 
-/** Movimientos de un equipo, con la direccion de cada uno. */
 export async function fetchTeamMovements(teamId: string): Promise<TeamMovement[]> {
   const { data, error } = await supabase.rpc('team_movements', {
     target_team_id: teamId,
@@ -63,7 +61,6 @@ export async function fetchTeamMovements(teamId: string): Promise<TeamMovement[]
   }));
 }
 
-/** Todas las piezas de una misma operacion. */
 export async function fetchDealDetail(dealId: string): Promise<DealEntry[]> {
   const { data, error } = await supabase.rpc('deal_detail', {
     target_deal_id: dealId,
@@ -97,7 +94,6 @@ export async function fetchDealDetail(dealId: string): Promise<DealEntry[]> {
   }));
 }
 
-/** Lesiones de un jugador: las vigentes primero. */
 export async function fetchPlayerInjuries(playerId: string): Promise<PlayerInjury[]> {
   const { data, error } = await supabase.rpc('player_injury_history', {
     target_player_id: playerId,

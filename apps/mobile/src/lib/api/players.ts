@@ -143,8 +143,6 @@ export async function fetchPlayerGameLog(
     .from('player_game_log')
     .select('*')
     .eq('player_id', playerId)
-    // nullsFirst false: en PostgreSQL los nulos van primero en orden
-    // descendente, asi que una fila sin fecha encabezaria el historial
     .order('game_date', { ascending: false, nullsFirst: false });
 
   if (season) {
@@ -194,16 +192,10 @@ export async function fetchPlayerGameLog(
   });
 }
 
-/** Convierte a number respetando el null (temporada sin empezar). */
 function num(value: number | string | null): number | null {
   return value === null || value === undefined ? null : Number(value);
 }
 
-/**
- * Carrera completa: una fila por temporada y equipo.
- * Un jugador traspasado a mitad de temporada tiene dos filas del mismo año,
- * cada una con las medias de esa etapa.
- */
 export async function fetchPlayerCareer(playerId: string): Promise<PlayerCareerEntry[]> {
   const { data, error } = await supabase.rpc('player_career', {
     target_player_id: playerId,
@@ -233,11 +225,6 @@ export async function fetchPlayerCareer(playerId: string): Promise<PlayerCareerE
   }));
 }
 
-/**
- * Medias de carrera. Solo cubren las temporadas cargadas en la base de
- * datos, asi que en jugadores anteriores a ese rango no coinciden con la
- * media oficial de su carrera completa.
- */
 export async function fetchPlayerCareerTotals(
   playerId: string,
 ): Promise<PlayerCareerTotals | null> {
@@ -270,7 +257,6 @@ export async function fetchPlayerCareerTotals(
   };
 }
 
-/** Palmares de un jugador, de mas reciente a mas antiguo. */
 export async function fetchPlayerAwards(playerId: string): Promise<PlayerAward[]> {
   const { data, error } = await supabase.rpc('player_palmares', {
     target_player_id: playerId,

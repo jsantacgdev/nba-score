@@ -3,7 +3,6 @@ import time
 from src.clients.nba import CURRENT_SEASON, REQUEST_DELAY, get_box_score
 from src.clients.supabase import get_supabase_client
 
-
 def get_games_with_box_scores(client) -> set[str]:
     """Devuelve el conjunto de game_ids que YA tienen box score cargado."""
     loaded: set[str] = set()
@@ -27,19 +26,11 @@ def get_games_with_box_scores(client) -> set[str]:
 
     return loaded
 
-
 def get_all_final_game_ids(
     client,
     exclude_preseason: bool = True,
     season: str | None = CURRENT_SEASON,
 ) -> list[dict]:
-    """
-    Lista los partidos finalizados con su temporada, paginando entero.
-
-    Por defecto se limita a la temporada actual. La tabla guarda 26
-    temporadas de histórico y recorrerlas todas son ~32.000 partidos, o
-    sea unas 13 horas: eso hay que pedirlo a propósito, no por descuido.
-    """
     ids: list[dict] = []
     page_size = 1000
     offset = 0
@@ -78,7 +69,6 @@ def get_all_final_game_ids(
 
     return ids
 
-
 def get_existing_player_ids(client) -> set[str]:
     """Devuelve el conjunto de player_ids que existen en la tabla players."""
     ids: set[str] = set()
@@ -101,7 +91,6 @@ def get_existing_player_ids(client) -> set[str]:
         offset += page_size
 
     return ids
-
 
 def sync_box_scores(
     skip_existing: bool = True,
@@ -169,9 +158,6 @@ def sync_box_scores(
                     time.sleep(REQUEST_DELAY)
                 continue
 
-            # El endpoint de box score no devuelve ni la temporada ni la
-            # fecha. Las sella el job: sin la temporada las lineas se caen
-            # de los filtros, y sin la fecha el historial no se puede ordenar.
             for e in entries:
                 e["season"] = juego["season"]
                 e["game_date"] = juego["starts_at"]
@@ -205,16 +191,12 @@ def sync_box_scores(
     if errors:
         print(f"   ⚠️  Errores: {errors}")
 
-
 if __name__ == "__main__":
     import sys
 
     skip = "--all" not in sys.argv
     include_preseason = "--include-preseason" in sys.argv
 
-    #   (sin flags)          solo la temporada actual
-    #   --season 2015-16     una temporada concreta
-    #   --all-seasons        todo el historico (horas)
     if "--all-seasons" in sys.argv:
         temporada = None
     elif "--season" in sys.argv:

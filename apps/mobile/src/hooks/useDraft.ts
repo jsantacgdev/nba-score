@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchDraftClass, fetchDraftYears, fetchPlayerDraft } from '@/lib/api/draft';
 
-/** El historico del draft no cambia salvo en junio: una hora de cache. */
 const UNA_HORA = 1000 * 60 * 60;
 
 export function useDraftYears() {

@@ -4,12 +4,6 @@ import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-/**
- * Lo minimo para pintar a alguien en la pista.
- *
- * La pista ya no filtra: recibe los cinco ya elegidos, vengan del feed en
- * vivo (quien esta en pista) o de la base (quien fue titular).
- */
 export type JugadorEnPista = {
   playerId: string;
   name: string;
@@ -18,17 +12,6 @@ export type JugadorEnPista = {
   points?: number;
 };
 
-/**
- * Los cinco puestos alrededor del aro que defienden.
- *
- * El aro va abajo, que es el que defiende este equipo, y el quinteto se
- * despliega hacia arriba mirandolo: el pivot pegado a la zona, los aleros
- * abriendo a las bandas y los bases arriba del arco.
- *
- * El orden sigue al de la NBA, que lista el quinteto como F, F, C, G, G.
- * No es la asignacion defensiva real de cada jugador, que cambia en cada
- * posesion, pero da una forma reconocible y estable.
- */
 const HUECOS: { left: DimensionValue; top: DimensionValue }[] = [
   { left: '4%', top: '44%' },  // alero
   { left: '72%', top: '44%' }, // alero
@@ -37,7 +20,6 @@ const HUECOS: { left: DimensionValue; top: DimensionValue }[] = [
   { left: '62%', top: '16%' }, // base
 ];
 
-/** Media pista con el aro abajo: el que defiende este equipo. */
 function Pista() {
   return (
     <Svg style={StyleSheet.absoluteFill} viewBox="0 0 300 300" preserveAspectRatio="none">
@@ -76,7 +58,6 @@ function iniciales(nombre: string): string {
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
 }
 
-/** Apellido solo: en un hueco de la pista no cabe el nombre entero. */
 function apellido(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
   return partes.length > 1 ? partes.slice(1).join(' ') : nombre;
@@ -86,14 +67,11 @@ export function CourtLineup({
   players,
   vacioTexto,
 }: {
-  /** Los cinco a pintar, ya resueltos por quien llama. */
   players: JugadorEnPista[];
   vacioTexto: string;
 }) {
   const quinteto = players.slice(0, 5);
 
-  // Si el feed no marca a nadie (partido antiguo sin datos en vivo) no se
-  // pinta una pista vacia, que confundiria mas que ayudar
   if (quinteto.length === 0) {
     return (
       <View style={styles.vacio}>
@@ -110,8 +88,6 @@ export function CourtLineup({
         const hueco = HUECOS[i] ?? HUECOS[0]!;
         return (
           <Animated.View
-            // La clave es el jugador: al cambiar el quinteto, el que sale
-            // se desvanece y el que entra aparece en su hueco
             key={jugador.playerId}
             entering={FadeIn.duration(400)}
             exiting={FadeOut.duration(300)}

@@ -1,15 +1,3 @@
-"""
-Sincroniza el palmares individual de los jugadores.
-
-El endpoint playerawards devuelve TODOS los reconocimientos de un jugador
-en una sola llamada: desde el MVP hasta el jugador de la semana o una
-medalla olimpica. Aqui nos quedamos solo con los ocho que tienen trofeo
-en la app y tiramos el resto.
-
-Se recorre por jugador, asi que se filtra a los que alguna vez tuvieron
-minutos de rotacion: ningun MVP, Rookie del Ano o Sexto Hombre ha ganado
-su premio jugando menos de diez minutos por partido.
-"""
 
 import time
 
@@ -18,7 +6,6 @@ from src.clients.supabase import get_supabase_client
 
 BATCH_SIZE = 500
 
-# Como los llama la NBA -> como los guardamos
 AWARDS = {
     "NBA Champion": "champion",
     "NBA Most Valuable Player": "mvp",
@@ -30,11 +17,8 @@ AWARDS = {
     "NBA Sixth Man of the Year": "sixth_man",
 }
 
-# Umbral para no consultar a los 3600 jugadores de la base. Es holgado a
-# proposito: el Sexto Hombre del Ano ronda los 25 minutos por partido.
 MIN_MINUTES = 10.0
 MIN_GAMES = 20
-
 
 def _fetch_all(client, table: str, columns: str) -> list[dict]:
     rows: list[dict] = []
@@ -49,7 +33,6 @@ def _fetch_all(client, table: str, columns: str) -> list[dict]:
         offset += 1000
     return rows
 
-
 def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
     total = 0
     for i in range(0, len(rows), BATCH_SIZE):
@@ -57,9 +40,7 @@ def _upsert_in_batches(client, table: str, rows: list[dict]) -> int:
         total += len(result.data)
     return total
 
-
 def get_player_awards(player_id: str) -> list[dict]:
-    """Premios de un jugador, ya filtrados y normalizados."""
     from nba_api.stats.endpoints import playerawards
 
     df = playerawards.PlayerAwards(player_id=int(player_id), timeout=60).get_data_frames()[0]
@@ -73,7 +54,6 @@ def get_player_awards(player_id: str) -> list[dict]:
         season = str(row["SEASON"]).strip()
         if not season or season == "nan":
             continue
-        # La NBA repite alguna fila; la clave primaria no lo perdonaria
         if (season, award) in vistos:
             continue
         vistos.add((season, award))
@@ -89,7 +69,6 @@ def get_player_awards(player_id: str) -> list[dict]:
         )
 
     return filas
-
 
 def sync_awards(force: bool = False) -> None:
     client = get_supabase_client()
@@ -151,7 +130,6 @@ def sync_awards(force: bool = False) -> None:
         print(f"      {award}: {n}")
     if errores:
         print(f"   Errores: {errores} (puedes reejecutar para reintentar)")
-
 
 if __name__ == "__main__":
     import sys

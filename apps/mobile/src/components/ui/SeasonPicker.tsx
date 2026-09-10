@@ -5,24 +5,14 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 
-/**
- * Lo mínimo que necesita el selector. Tanto las temporadas de un equipo
- * como las de la clasificación se reducen a esto.
- */
 export type SeasonOption = {
   season: string;
-  /** Marca el trofeo en la lista. Solo tiene sentido dentro de un equipo. */
   wonChampionship?: boolean;
-  /** Campeon de esa temporada. Lo usa la clasificacion, que es de toda la liga. */
   champion?: {
     name: string;
     abbreviation: string;
     logoUrl?: string;
   };
-  /**
-   * Jugadores destacados del año. Lo usa el draft con sus Rookies del Año,
-   * que pueden ser dos cuando el premio se compartio.
-   */
   featuredPlayers?: {
     name: string;
     photoUrl?: string;
@@ -34,7 +24,6 @@ function iniciales(nombre: string): string {
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
 }
 
-/** Botón que abre el selector y muestra la temporada activa. */
 export function SeasonButton({
   season,
   onPress,
@@ -44,7 +33,6 @@ export function SeasonButton({
   season?: string;
   onPress: () => void;
   wonChampionship?: boolean;
-  /** Campeon de esa temporada. Dentro de un equipo sobra: ya se sabe cual es. */
   champion?: SeasonOption['champion'];
 }) {
   if (!season) return null;
@@ -74,10 +62,6 @@ export function SeasonButton({
   );
 }
 
-/**
- * Panel deslizante con todas las temporadas. Con 43 opciones una tira
- * horizontal obliga a arrastrar demasiado para llegar a las antiguas.
- */
 export function SeasonPicker({
   visible,
   seasons,
