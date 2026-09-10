@@ -27,6 +27,7 @@ import {
   usePlayerAwards,
   usePlayerCareer,
   usePlayerCareerTotals,
+  useCareerHighs,
   usePlayerGameLog,
   usePlayerSeasonStats,
 } from '@/hooks/usePlayerDetail';
@@ -35,6 +36,7 @@ import { estadoLesion, tituloLesion } from '@/constants/injuries';
 import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
+  CareerHigh,
   PlayerAward,
   PlayerCareerEntry,
   PlayerGameLogEntry,
@@ -45,10 +47,36 @@ import type {
 type TabKey = 'games' | 'career' | 'movements' | 'injuries';
 
 type ListRow =
+  | { kind: 'section'; label: string }
   | { kind: 'game'; game: PlayerGameLogEntry }
   | { kind: 'career'; career: PlayerCareerEntry }
   | { kind: 'movement'; movement: PlayerMovement }
   | { kind: 'injury'; injury: PlayerInjury };
+
+const ETIQUETA_TIPO: Record<string, string> = {
+  playoffs: 'Playoffs',
+  playin: 'Play-in',
+  cup_final: 'Final NBA Cup',
+  regular: 'Liga regular',
+  preseason: 'Pretemporada',
+};
+
+function filasDePartidos(log: PlayerGameLogEntry[]): ListRow[] {
+  const tipos = new Set(log.map((g) => g.seasonType ?? 'regular'));
+  const filas: ListRow[] = [];
+  let anterior: string | null = null;
+
+  for (const game of log) {
+    const tipo = game.seasonType ?? 'regular';
+    if (tipos.size > 1 && tipo !== anterior) {
+      filas.push({ kind: 'section', label: ETIQUETA_TIPO[tipo] ?? tipo });
+      anterior = tipo;
+    }
+    filas.push({ kind: 'game', game });
+  }
+
+  return filas;
+}
 
 function stat(value: number | null, decimals = 1): string {
   return value === null ? '—' : value.toFixed(decimals);
@@ -81,6 +109,7 @@ export default function PlayerDetailScreen() {
 
   const { data: awards, refetch: refetchAwards } = usePlayerAwards(playerId);
   const { data: carrera } = usePlayerCareerTotals(playerId);
+  const { data: maximos } = useCareerHighs(playerId);
   const { data: movimientos } = usePlayerMovements(playerId);
   const { data: lesiones } = usePlayerInjuries(playerId);
 
@@ -121,7 +150,7 @@ export default function PlayerDetailScreen() {
 
   let rows: ListRow[];
   if (tab === 'games') {
-    rows = (gameLog ?? []).map((game) => ({ kind: 'game', game }) as ListRow);
+    rows = filasDePartidos(gameLog ?? []);
   } else if (tab === 'career') {
     rows = (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
   } else if (tab === 'movements') {
@@ -164,7 +193,8 @@ export default function PlayerDetailScreen() {
       <FlatList
         style={styles.container}
         data={rows}
-        keyExtractor={(item) => {
+        keyExtractor={(item, index) => {
+          if (item.kind === 'section') return `seccion-${item.label}-${index}`;
           if (item.kind === 'game') return item.game.gameId;
           if (item.kind === 'career') return `${item.career.season}-${item.career.teamId}`;
           if (item.kind === 'movement') return item.movement.id;
@@ -266,6 +296,21 @@ export default function PlayerDetailScreen() {
 
             {/* Palmarés */}
             {awards && awards.length > 0 && <Palmares awards={awards} />}
+
+            {maximos && maximos.length > 0 && (
+              <View style={styles.maximosCard}>
+                <Text style={styles.maximosTitulo}>
+                  {carrera?.firstSeason && carrera.firstSeason >= '2009-10'
+                    ? 'Máximos de su carrera'
+                    : 'Máximos desde 2009-10'}
+                </Text>
+                <View style={styles.maximosFila}>
+                  {maximos.map((m) => (
+                    <MaximoStat key={m.stat} entry={m} />
+                  ))}
+                </View>
+              </View>
+            )}
 
             {/* Medias de toda la carrera. Las de cada temporada estan en
                 la pestaña Carrera, que las desglosa una por una.
@@ -395,6 +440,7 @@ export default function PlayerDetailScreen() {
           </View>
         }
         renderItem={({ item }) => {
+          if (item.kind === 'section') return <SeccionPartidos label={item.label} />;
           if (item.kind === 'game') return <GameLogRow entry={item.game} equipos={equiposEnTemporada} />;
           if (item.kind === 'career') return <CareerRow entry={item.career} />;
           if (item.kind === 'movement') return <MovementRow entry={item.movement} />;
@@ -663,6 +709,47 @@ function TeamChip({ abbr, logo }: { abbr: string; logo?: string }) {
   );
 }
 
+const ETIQUETA_MAXIMO: Record<CareerHigh['stat'], string> = {
+  points: 'PTS',
+  rebounds: 'REB',
+  assists: 'AST',
+  steals: 'ROB',
+  blocks: 'TAP',
+};
+
+function MaximoStat({ entry }: { entry: CareerHigh }) {
+  return (
+    <Pressable
+      disabled={!entry.gameId}
+      onPress={() =>
+        entry.gameId && router.push({ pathname: '/game/[id]', params: { id: entry.gameId } })
+      }
+      style={({ pressed }) => [styles.maximoStat, pressed && entry.gameId && styles.maximoPressed]}
+    >
+      <Text style={styles.maximoValor}>{entry.value}</Text>
+      <Text style={styles.maximoEtiqueta}>{ETIQUETA_MAXIMO[entry.stat]}</Text>
+      {entry.opponentAbbreviation && (
+        <Text style={styles.maximoRival} numberOfLines={1}>
+          {entry.opponentAbbreviation}
+        </Text>
+      )}
+      {entry.date && (
+        <Text style={styles.maximoFecha} numberOfLines={1}>
+          {formatDayMonth(entry.date)}/{String(entry.date.getFullYear()).slice(2)}
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
+function SeccionPartidos({ label }: { label: string }) {
+  return (
+    <View style={styles.seccionPartidos}>
+      <Text style={styles.seccionPartidosTexto}>{label}</Text>
+    </View>
+  );
+}
+
 function GameLogHeaderRow() {
   return (
     <View style={styles.gameLogHeader}>
@@ -778,6 +865,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  seccionPartidos: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  seccionPartidosTexto: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
   },
   gameLogHeader: {
     flexDirection: 'row',
@@ -1035,6 +1132,47 @@ const styles = StyleSheet.create({
   },
 
   // Medias de temporada
+  maximosCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.md,
+  },
+  maximosTitulo: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.semibold,
+    marginBottom: spacing.md,
+  },
+  maximosFila: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  maximoStat: { alignItems: 'center', flex: 1 },
+  maximoPressed: { opacity: 0.6 },
+  maximoValor: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontFamily: fontFamily.displayBold,
+  },
+  maximoEtiqueta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  maximoRival: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontFamily: fontFamily.semibold,
+    marginTop: 3,
+  },
+  maximoFecha: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontFamily: fontFamily.regular,
+  },
   careerCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

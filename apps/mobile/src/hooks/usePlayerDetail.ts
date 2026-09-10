@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { fetchCareerHighs } from '@/lib/api/careerHighs';
 import {
   fetchPlayerById,
   fetchPlayerCareer,
@@ -54,6 +55,15 @@ export function usePlayerAwards(playerId: string) {
   return useQuery({
     queryKey: ['playerAwards', playerId],
     queryFn: () => fetchPlayerAwards(playerId),
+    enabled: !!playerId,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useCareerHighs(playerId?: string) {
+  return useQuery({
+    queryKey: ['careerHighs', playerId],
+    queryFn: () => fetchCareerHighs(playerId!),
     enabled: !!playerId,
     staleTime: 1000 * 60 * 60,
   });
