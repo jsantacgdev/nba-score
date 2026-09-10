@@ -1,16 +1,3 @@
-"""
-Carga el palmares de equipos desde data/palmares.json.
-
-Los campeonatos anteriores a 1983-84 no existen en la API de la NBA: no
-hay ni un partido registrado. Esa parte del fichero es una lista curada a
-mano y validada contra el recuento oficial de titulos por franquicia que
-publica el endpoint FranchiseHistory.
-
-La NBA Cup tampoco esta en la API como competicion, asi que sus ganadores
-salen tambien del fichero.
-
-Es idempotente: hace upsert, asi que se puede relanzar sin duplicar.
-"""
 
 import io
 import json
@@ -23,7 +10,6 @@ RUTA = os.path.join(
     "data",
     "palmares.json",
 )
-
 
 def load_palmares(path: str = RUTA) -> None:
     print(f"Leyendo {path}...")
@@ -53,8 +39,6 @@ def load_palmares(path: str = RUTA) -> None:
 
     client = get_supabase_client()
 
-    # Las fechas exactas de los titulos que vinieron de la API ya estan en
-    # la tabla; no las pisamos con nulos.
     existentes = {
         (r["season"], r["competition"]): r["decided_at"]
         for r in client.table("season_champions")
@@ -70,7 +54,6 @@ def load_palmares(path: str = RUTA) -> None:
         else:
             f.pop("decided_at")
 
-    # Los equipos deben existir para no romper la clave foranea
     validos = {t["id"] for t in client.table("teams").select("id").execute().data}
     descartadas = [f for f in filas if f["team_id"] and f["team_id"] not in validos]
     if descartadas:
@@ -84,7 +67,6 @@ def load_palmares(path: str = RUTA) -> None:
 
     print(f"\n{total} titulos guardados")
 
-    # Resumen de control
     todos = client.table("season_champions").select("season,competition,team_id").execute().data
     nba = [x for x in todos if x["competition"] == "nba"]
     cup = [x for x in todos if x["competition"] == "nba_cup"]
@@ -94,7 +76,6 @@ def load_palmares(path: str = RUTA) -> None:
     sin_equipo = [x for x in todos if not x["team_id"]]
     if sin_equipo:
         print(f"   Sin franquicia actual: {[x['season'] for x in sin_equipo]}")
-
 
 if __name__ == "__main__":
     load_palmares()

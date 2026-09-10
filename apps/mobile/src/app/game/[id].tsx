@@ -20,11 +20,6 @@ export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
   const [vista, setVista] = useState<'stats' | 'court'>('stats');
-  // Dos fuentes distintas segun el estado del partido. En vivo hace falta
-  // el feed de la NBA, que es el unico que sabe quien esta en pista ahora
-  // mismo. Terminado basta la base, y ademas es la unica via: la CDN exige
-  // la cabecera 'Referer', que fetch no deja fijar, y responde 403 desde
-  // el movil.
   const enJuego = data?.game.status === 'live';
   const { data: enPista } = useLiveLineup(id, enJuego);
   const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
@@ -55,8 +50,6 @@ export default function GameDetailScreen() {
     );
   }
 
-  // La caché de React Query dura una hora, asi que puede venir de una
-  // version anterior al cambio y no traer las plantillas.
   const { game, homeRoster, awayRoster, mvp } = data;
   const homeLineup = data.homeLineup ?? [];
   const awayLineup = data.awayLineup ?? [];
@@ -66,13 +59,6 @@ export default function GameDetailScreen() {
 
   const title = `${game.homeTeam.name} vs ${game.awayTeam.name}`;
 
-  /**
-   * Los que no salieron de inicio.
-   *
-   * Se deduce restando el quinteto al box score, que ya esta cargado, en
-   * lugar de pedir nada nuevo. Ordenados por minutos, que es como se lee
-   * un banquillo: primero los que mas pesaron.
-   */
   function suplentesDe(lado: 'home' | 'away'): GameBoxScoreEntry[] {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
     const plantel = lado === 'home' ? homeRoster : awayRoster;
@@ -82,7 +68,6 @@ export default function GameDetailScreen() {
     return plantel.filter((p) => !titulares.has(p.playerId));
   }
 
-  /** Los cinco a pintar, de la fuente que corresponda. */
   function quintetoDe(lado: 'home' | 'away'): JugadorEnPista[] {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
 
@@ -246,13 +231,6 @@ function TeamBlock({
   );
 }
 
-/**
- * Plantilla de un equipo en un partido que aun no se ha jugado.
- *
- * Misma estructura que el box score para que la pantalla no cambie de
- * forma al pasar de un partido programado a uno terminado, pero con dorsal
- * y posicion en lugar de estadisticas, que todavia no existen.
- */
 function TeamLineup({
   title,
   logoUrl,
@@ -408,12 +386,6 @@ function TeamBoxScore({
   );
 }
 
-/**
- * El resto de la convocatoria, bajo la pista.
- *
- * Los que no llegaron a jugar salen atenuados y sin estadisticas: en el
- * box score aparecen con cero, y ensenarlo confundiria con un mal partido.
- */
 function Banquillo({ jugadores }: { jugadores: GameBoxScoreEntry[] }) {
   if (jugadores.length === 0) return null;
 
@@ -459,7 +431,6 @@ function Banquillo({ jugadores }: { jugadores: GameBoxScoreEntry[] }) {
   );
 }
 
-/** Conmutador entre la tabla de estadisticas y la pista. */
 function VistaTab({
   label,
   active,

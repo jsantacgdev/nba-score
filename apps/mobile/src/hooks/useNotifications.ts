@@ -25,13 +25,6 @@ export function useScheduledCount() {
   });
 }
 
-/**
- * Enciende o apaga los avisos.
- *
- * Al encender pide permiso primero: si el sistema lo niega, no se guarda
- * la preferencia, para que el interruptor no quede encendido sin que
- * llegue ningun aviso.
- */
 export function useToggleNotifications() {
   const queryClient = useQueryClient();
   const { data: favoriteIds = [] } = useFavoriteTeamIds();
@@ -58,7 +51,6 @@ export function useToggleNotifications() {
   });
 }
 
-/** Vuelve a programar, por ejemplo al cambiar de equipos favoritos. */
 export function useRescheduleNotifications() {
   const queryClient = useQueryClient();
 

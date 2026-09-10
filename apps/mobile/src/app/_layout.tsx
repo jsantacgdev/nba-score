@@ -19,12 +19,6 @@ import { View } from 'react-native';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/constants/theme';
 
-/**
- * Que hacer cuando llega un aviso con la app abierta.
- *
- * Por defecto expo-notifications no muestra nada en primer plano, asi que
- * un aviso que salta mientras usas la app pasaria desapercibido.
- */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -35,7 +29,6 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
-  // Al tocar el aviso se abre el partido que lo genero
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((respuesta) => {
       const gameId = respuesta.notification.request.content.data?.gameId;

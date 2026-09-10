@@ -44,15 +44,11 @@ export default function FavoritesScreen() {
   const alternarAvisos = useToggleNotifications();
   const reprogramar = useRescheduleNotifications();
 
-  // Al cambiar de equipos hay que rehacer los avisos: los del equipo que
-  // se deja de seguir sobran y los del nuevo no existen todavia.
   const clave = [...favoriteIds].sort().join(',');
   useEffect(() => {
     if (avisosActivos && favoriteIds.length > 0) {
       reprogramar.mutate(favoriteIds);
     }
-    // reprogramar cambia en cada render y no debe disparar el efecto
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, avisosActivos]);
 
   // Separar partidos en próximos y pasados

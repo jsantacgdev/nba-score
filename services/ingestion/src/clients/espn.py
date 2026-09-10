@@ -1,20 +1,3 @@
-"""
-Lesiones desde el feed publico de ESPN.
-
-Da estado, tipo de lesion, lado del cuerpo, fecha estimada de vuelta y un
-comentario. Ni nba_api ni el plan gratuito de balldontlie publican nada de
-esto.
-
-Dos limites que conviene tener presentes:
-
-  * Es una foto del presente. Solo devuelve las lesiones vigentes, asi que
-    el historico hay que construirlo guardando la foto cada vez.
-
-  * No trae el identificador de jugador de la NBA, solo nombres. El cruce
-    es por nombre normalizado; hoy casan los 74 sin ambiguedad. Se
-    conserva el identificador de ESPN, que va dentro de la URL de su
-    ficha, por si algun dia el nombre no basta.
-"""
 
 import re
 import unicodedata
@@ -23,22 +6,17 @@ import httpx
 
 URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries"
 
-
 def normalizar_nombre(nombre: str) -> str:
-    """Sin acentos, sin puntuacion y en minusculas, para poder cruzar."""
     limpio = unicodedata.normalize("NFKD", nombre or "")
     limpio = limpio.encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z ]", "", limpio.lower()).strip()
 
-
 def _espn_athlete_id(athlete: dict) -> str | None:
-    """El identificador de ESPN solo aparece dentro de la URL de su ficha."""
     for enlace in athlete.get("links") or []:
         encontrado = re.search(r"/id/(\d+)/", str(enlace.get("href") or ""))
         if encontrado:
             return encontrado.group(1)
     return None
-
 
 def get_injuries() -> list[dict]:
     response = httpx.get(URL, timeout=60)

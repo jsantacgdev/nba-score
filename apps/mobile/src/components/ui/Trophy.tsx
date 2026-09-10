@@ -5,22 +5,14 @@ import type { ImageStyle, StyleProp } from 'react-native';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { AwardCode } from '@/types/domain';
 
-/** Los premios individuales mas los titulos de equipo. */
 export type TrophyCode = AwardCode | 'nba_cup';
 
-/**
- * Temporada en la que la NBA estrenó los trofeos rediseñados de los premios
- * individuales. Fue la misma en la que se creó el Clutch Player of the Year,
- * que por eso solo existe con el diseño nuevo.
- */
 const REDESIGN_SEASON = '2022-23';
 
 type TrophyArt = {
   label: string;
-  /** Explicación para quien empieza en el baloncesto: es el motivo del tooltip. */
   description: string;
   current: number;
-  /** Diseño anterior al rediseño, si lo tenemos. */
   legacy?: number;
 };
 
@@ -85,10 +77,6 @@ export function awardLabel(award: TrophyCode): string {
   return TROPHIES[award]?.label ?? award;
 }
 
-/**
- * Las temporadas se comparan como texto: '2021-22' < '2022-23' funciona
- * porque el formato empieza siempre por el año de inicio.
- */
 export function trophyArt(award: TrophyCode, season: string): number | null {
   const art = TROPHIES[award];
   if (!art) return null;
@@ -105,17 +93,10 @@ export function Trophy({
   interactive = true,
 }: {
   award: TrophyCode;
-  /** Decide el diseño del trofeo (viejo o nuevo). Usa el más reciente. */
   season: string;
-  /**
-   * Todas las veces que se gano, ya con la etiqueta que quiera quien lo
-   * usa: el equipo muestra anos (1989) y el jugador temporadas (1988-89).
-   * Sin esto un trofeo que representa tres titulos solo explicaba uno.
-   */
   seasons?: string[];
   size?: number;
   style?: StyleProp<ImageStyle>;
-  /** A false el trofeo es decorativo y no abre la explicación. */
   interactive?: boolean;
 }) {
   const [open, setOpen] = useState(false);

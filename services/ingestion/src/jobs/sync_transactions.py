@@ -1,9 +1,3 @@
-"""
-Carga los movimientos de jugadores: traspasos, fichajes y cortes.
-
-Una sola llamada trae el historico completo desde julio de 2015, asi que
-el job es idempotente y se puede relanzar cuantas veces haga falta.
-"""
 
 from collections import Counter
 
@@ -11,7 +5,6 @@ from src.clients.nba_movement import get_player_movement
 from src.clients.supabase import get_supabase_client
 
 BATCH_SIZE = 500
-
 
 def sync_transactions() -> None:
     print("Sincronizando movimientos de jugadores...")
@@ -29,9 +22,6 @@ def sync_transactions() -> None:
 
     client = get_supabase_client()
 
-    # Los equipos si tienen clave foranea implicita en la app, asi que se
-    # descartan los que no reconocemos (franquicias antiguas o ligas de
-    # desarrollo que aparecen sueltas en el feed).
     filas_equipos = client.table("teams").select("id, full_name").execute().data
     equipos = {t["id"] for t in filas_equipos}
     por_nombre = {t["full_name"]: t["id"] for t in filas_equipos}
@@ -42,8 +32,6 @@ def sync_transactions() -> None:
     for m in movimientos:
         fila = dict(m)
 
-        # El nombre del equipo que cede se resuelve aqui, que es donde se
-        # conoce la tabla de equipos
         nombre_origen = fila.pop("from_team_id_nombre", None)
         fila["from_team_id"] = por_nombre.get(nombre_origen) if nombre_origen else None
         if nombre_origen and not fila["from_team_id"]:
@@ -73,7 +61,6 @@ def sync_transactions() -> None:
 
     print(f"\n✅ {total} movimientos guardados")
 
-    # Cuantos enlazan con jugadores que tenemos
     conocidos: set[str] = set()
     offset = 0
     while True:
@@ -88,7 +75,6 @@ def sync_transactions() -> None:
     con_ficha = {m["player_id"] for m in limpios if m["player_id"] and m["player_id"] in conocidos}
     todos = {m["player_id"] for m in limpios if m["player_id"]}
     print(f"   {len(con_ficha)} de {len(todos)} jugadores del feed tienen ficha en la app")
-
 
 if __name__ == "__main__":
     sync_transactions()

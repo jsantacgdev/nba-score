@@ -1,21 +1,7 @@
-/**
- * Traduccion de los campos de lesion, que ESPN publica en ingles.
- *
- * Solo se traduce el vocabulario cerrado: estado, zona del cuerpo y lado.
- * El comentario largo es prosa libre y se deja tal cual.
- *
- * Cada zona guarda su genero y su numero porque el lado concuerda con
- * ella: "rodilla derecha" pero "tobillo derecho" y "costillas derechas".
- *
- * Todas las funciones devuelven el original si no conocen el termino, para
- * que una lesion nueva salga en ingles en vez de desaparecer.
- */
 
 type Zona = {
   es: string;
-  /** Femenino. */
   f?: boolean;
-  /** Plural. */
   pl?: boolean;
 };
 
@@ -77,12 +63,6 @@ export function zonaLesion(valor?: string): string | undefined {
   return ZONAS[valor]?.es ?? valor;
 }
 
-/**
- * Titulo de la lesion, con el lado concordado: "Rodilla derecha".
- *
- * El lado se omite cuando no aporta: 'None' significa que no aplica y
- * 'Not Specified' que no se ha dicho.
- */
 export function tituloLesion(zona?: string, lado?: string): string {
   const info = zona ? ZONAS[zona] : undefined;
   const nombre = info?.es ?? zona;

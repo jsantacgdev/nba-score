@@ -13,12 +13,6 @@ import { useDraftClass, useDraftYears } from '@/hooks/useDraft';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { DraftPick } from '@/types/domain';
 
-/**
- * Los drafts modernos tienen dos rondas, pero los de los 60 llegaban a 21
- * y las elecciones territoriales iban en una "ronda 0" sin numero de pick.
- * Por eso las secciones se generan a partir de los datos en lugar de
- * asumir que siempre hay dos.
- */
 function roundTitle(round: number | null): string {
   if (round === null || round === 0) return 'Elecciones territoriales';
   if (round === 1) return 'Primera ronda';
@@ -42,7 +36,6 @@ export default function DraftScreen() {
 
   const { data: picks, isLoading } = useDraftClass(activeYear);
 
-  // Cabecera de ronda intercalada entre las selecciones
   const rows: Row[] = [];
   let lastRound: number | null | undefined;
   for (const pick of picks ?? []) {
@@ -128,7 +121,6 @@ function iniciales(nombre: string): string {
 }
 
 function PickRow({ pick }: { pick: DraftPick }) {
-  // Solo los que llegaron a jugar tienen ficha que abrir
   const abrible = pick.hasProfile;
 
   return (
@@ -243,7 +235,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontFamily: fontFamily.displaySemibold,
   },
-  // Atenuado: nunca llego a jugar en la NBA, no hay ficha detras
   nameMuted: { color: colors.textMuted },
   org: {
     color: colors.textMuted,

@@ -16,7 +16,6 @@ export type Player = {
   position?: string;
   jerseyNumber?: string;
   photoUrl?: string;
-  /** false en los jugadores históricos: no tienen partidos cargados. */
   isActive: boolean;
 };
 
@@ -33,11 +32,8 @@ export type Game = {
   period?: number;
   timeRemaining?: string;
   seasonType?: 'preseason' | 'regular' | 'allstar' | 'playoffs' | 'playin';
-  /** Balance de la eliminatoria tras este partido. Solo en playoffs. */
   seriesWins?: { home: number; away: number };
-  /** 1 primera ronda, 2 semifinales de conferencia, 3 finales, 4 Finales NBA. */
   playoffRound?: number;
-  /** Este partido decidio el titulo de la NBA. */
   titleDecider?: boolean;
 };
 
@@ -125,10 +121,6 @@ export type GameBoxScoreEntry = {
   gameScore: number;
 };
 
-/**
- * Jugador en un partido aun sin jugar: no hay estadisticas todavia, solo
- * quien esta en la plantilla.
- */
 export type GameLineupPlayer = {
   playerId: string;
   firstName: string;
@@ -144,7 +136,6 @@ export type GameDetail = {
   homeRoster: GameBoxScoreEntry[];
   awayRoster: GameBoxScoreEntry[];
   mvp: GameBoxScoreEntry | null;
-  /** Solo en partidos sin jugar; vacias cuando ya hay box score. */
   homeLineup: GameLineupPlayer[];
   awayLineup: GameLineupPlayer[];
 };
@@ -169,7 +160,6 @@ export type LeagueStanding = {
 export type StandingsSeason = {
   season: string;
   gamesCount: number;
-  /** Campeon de esa temporada. Falta en la temporada aun en juego. */
   champion?: {
     teamId: string;
     name: string;
@@ -178,14 +168,12 @@ export type StandingsSeason = {
   };
 };
 
-/** Una etapa de la carrera: un jugador en un equipo durante una temporada. */
 export type PlayerCareerEntry = {
   season: string;
   teamId: string;
   teamName: string;
   teamAbbreviation: string;
   teamLogoUrl?: string;
-  /** null cuando la temporada aun no ha empezado y solo hay plantilla. */
   gamesPlayed: number | null;
   minutes: number | null;
   points: number | null;
@@ -197,7 +185,6 @@ export type PlayerCareerEntry = {
   fieldGoalPct: number | null;
   threePointPct: number | null;
   freeThrowPct: number | null;
-  /** Numero de equipos en los que jugo esa temporada. >1 significa traspaso. */
   teamCount: number;
   wonChampionship: boolean;
 };
@@ -230,7 +217,6 @@ export type SearchResultTeam = {
 
 export type SearchResult = SearchResultPlayer | SearchResultTeam;
 
-/** Medias de toda la carrera, ponderadas por partidos jugados. */
 export type PlayerCareerTotals = {
   playerId: string;
   seasons: number;
@@ -250,10 +236,6 @@ export type PlayerCareerTotals = {
   lastSeason: string;
 };
 
-/**
- * Una fila de plantilla, valga para la temporada actual o para una pasada.
- * Los nulos son reales: hay temporadas cargadas sin estadisticas.
- */
 export type TeamSeasonPlayer = {
   playerId: string;
   firstName: string;
@@ -296,7 +278,6 @@ export type PlayerAward = {
 export type TeamTitle = {
   competition: 'nba' | 'nba_cup';
   season: string;
-  /** Ano en que se levanto el titulo: la temporada 1969-70 es el 1970. */
   year: number;
 };
 
@@ -306,17 +287,13 @@ export type DraftPick = {
   draftYear: number;
   round: number | null;
   roundPick: number | null;
-  /** 0 en las elecciones territoriales de los 60, que no llevaban numero. */
   overallPick: number | null;
   teamId?: string;
   teamAbbreviation?: string;
   teamLogoUrl?: string;
-  /** Universidad o club de procedencia. */
   organization?: string;
   photoUrl?: string;
-  /** Temporada en que gano el Rookie del Año, si lo gano. */
   roySeason?: string;
-  /** Llego a jugar en la NBA y tiene ficha que abrir. */
   hasProfile: boolean;
 };
 
@@ -324,11 +301,6 @@ export type DraftYear = {
   year: number;
   picks: number;
   rounds: number;
-  /**
-   * Rookies del Año salidos de esa clase. Normalmente uno, a veces dos
-   * (premio compartido o novato que debuto con un año de retraso), y a
-   * veces ninguno: el ROY de esa temporada puede venir de otra clase.
-   */
   roy: {
     playerId: string;
     playerName: string;
@@ -337,13 +309,6 @@ export type DraftYear = {
   }[];
 };
 
-/**
- * Medias por las que se puede ordenar la liga.
- *
- * No estan los porcentajes de tiro: player_season_history guarda el
- * porcentaje ya calculado y no los intentos, asi que ordenar por el
- * pondria arriba a quien tiro tres veces.
- */
 export type LeaderStat = 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks' | 'minutes';
 
 export type LeaderEntry = {
@@ -363,7 +328,6 @@ export type LeaderEntry = {
   blocks: number;
 };
 
-/** Un equipo reducido a lo que hace falta para pintarlo en una fila. */
 type TeamRef = {
   id: string;
   abbreviation: string;
@@ -371,12 +335,6 @@ type TeamRef = {
   logoUrl?: string;
 };
 
-/**
- * Tipos de movimiento tal y como los publica la NBA.
- *
- * 'Trade' es traspaso y 'Signing' es agencia libre; los tres restantes son
- * corte, corte reclamado por otro equipo y conversion de contrato.
- */
 export type MovementType =
   | 'Trade'
   | 'Signing'
@@ -387,7 +345,6 @@ export type MovementType =
 
 export type PlayerMovement = {
   id: string;
-  /** Agrupa las filas de una misma operacion. Solo lo llevan los traspasos. */
   dealId?: string;
   type: MovementType;
   date: Date;
@@ -402,7 +359,6 @@ export type TeamMovement = {
   type: MovementType;
   date: Date;
   description: string;
-  /** 'in' si el equipo recibe, 'out' si cede. */
   direction: 'in' | 'out';
   playerId?: string;
   playerName?: string;
@@ -417,7 +373,6 @@ export type DealEntry = {
   playerId?: string;
   playerName?: string;
   photoUrl?: string;
-  /** Sin jugador: lo que cambia de manos es una eleccion de draft. */
   isDraftPick: boolean;
   fromTeam?: TeamRef;
   toTeam?: TeamRef;
@@ -439,20 +394,11 @@ export type PlayerInjury = {
   teamLogoUrl?: string;
 };
 
-/**
- * Datos en vivo desde la CDN de la NBA.
- *
- * Conviven con Game y GameDetail en lugar de sustituirlos: nuestra base
- * tiene el historico desde 1984 y la CDN solo el presente, asi que uno
- * completa al otro mientras el partido esta en juego.
- */
 export type LiveScoreboardGame = {
   gameId: string;
   status: 'scheduled' | 'live' | 'final';
-  /** Texto tal cual lo publica la NBA: "Q3 4:12", "Final", "7:30 pm ET". */
   statusText: string;
   period: number;
-  /** Reloj del periodo, ya legible. Ausente si esta parado. */
   clock?: string;
   homeAbbr: string;
   awayAbbr: string;
@@ -465,7 +411,6 @@ export type LivePlayer = {
   name: string;
   jerseyNumber?: string;
   starter: boolean;
-  /** En pista en este momento. */
   onCourt: boolean;
   played: boolean;
   minutes: string;
@@ -480,7 +425,6 @@ export type LivePlayer = {
 export type LiveTeam = {
   abbreviation: string;
   score: number;
-  /** Puntos de cada cuarto, incluidas las prorrogas. */
   periods: number[];
   players: LivePlayer[];
 };
@@ -497,18 +441,11 @@ export type LiveGame = {
   away: LiveTeam;
 };
 
-/**
- * Un titular del quinteto inicial.
- *
- * Las estadisticas son opcionales: vienen del box score de ese partido, y
- * puede no estar cargado.
- */
 export type StartingLineupPlayer = {
   playerId: string;
   name: string;
   jerseyNumber?: string;
   photoUrl?: string;
-  /** F, C o G tal y como lo lista la NBA. Decorativo. */
   courtPosition?: string;
   minutes?: number;
   points?: number;

@@ -26,7 +26,6 @@ export default function StandingsScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const { data: seasons } = useStandingsSeasons();
-  // Sin elección explícita, la temporada más reciente disponible
   const season = pickedSeason ?? seasons?.[0]?.season;
   const seasonInfo = seasons?.find((s) => s.season === season);
 
@@ -321,7 +320,6 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
   },
-  // Columna fija aunque no haya trofeo, para que no bailen las cifras
   colTrophy: {
     width: 24,
     alignItems: 'center',

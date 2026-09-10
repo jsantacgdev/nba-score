@@ -1,11 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { LeagueStanding, StandingsSeason } from '@/types/domain';
 
-/**
- * Temporadas que tienen clasificación disponible, de más nueva a más vieja.
- * Sale de los partidos realmente cargados, así que el selector se amplía
- * solo según se vayan sincronizando temporadas.
- */
 export async function fetchStandingsSeasons(): Promise<StandingsSeason[]> {
   const { data, error } = await supabase.rpc('standings_seasons');
 

@@ -10,13 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, radius, spacing } from '@/constants/theme';
 
-/**
- * Bloque gris que late mientras llegan los datos.
- *
- * Enseñar la forma de la pantalla en lugar de un spinner centrado evita
- * el salto de maquetacion al cargar y hace la espera mas corta de lo que
- * es, porque ya se intuye lo que va a aparecer.
- */
 export function SkeletonBlock({
   width,
   height,
@@ -53,7 +46,6 @@ export function SkeletonBlock({
   );
 }
 
-/** Esqueleto de la ficha de un jugador: foto, nombre, chips, medias y tabla. */
 export function PlayerDetailSkeleton() {
   return (
     <View style={styles.contenedor}>
@@ -93,7 +85,6 @@ export function PlayerDetailSkeleton() {
   );
 }
 
-/** Esqueleto del detalle de un partido: marcador, MVP, equipos y box score. */
 export function GameDetailSkeleton() {
   return (
     <View style={styles.contenedor}>

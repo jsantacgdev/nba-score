@@ -8,20 +8,10 @@ import type { Game } from '@/types/domain';
 const CLAVE_ACTIVAS = 'notifications:enabled';
 const CANAL = 'partidos';
 
-/** Cuanto antes del salto inicial avisamos. */
 export const MINUTOS_ANTES = 30;
 
-/**
- * Tope de avisos programados a la vez.
- *
- * Android limita las alarmas por aplicacion, y una temporada entera de
- * varios equipos favoritos se iria a varios cientos. Con 40 se cubren mas
- * de dos semanas siguiendo a tres equipos, y se reprograma cada vez que se
- * abre la pantalla.
- */
 const MAX_AVISOS = 40;
 
-/** Dias hacia adelante que se miran al programar. */
 const DIAS_VISTA = 30;
 
 export async function notificacionesActivadas(): Promise<boolean> {
@@ -36,12 +26,6 @@ export async function guardarActivadas(activas: boolean): Promise<void> {
   await AsyncStorage.setItem(CLAVE_ACTIVAS, activas ? '1' : '0');
 }
 
-/**
- * Pide permiso al sistema. Devuelve si quedo concedido.
- *
- * En Android 13 y posteriores el permiso se pide en caliente; en versiones
- * anteriores viene concedido de fabrica.
- */
 export async function pedirPermiso(): Promise<boolean> {
   const actual = await Notifications.getPermissionsAsync();
   if (actual.granted) return true;
@@ -51,7 +35,6 @@ export async function pedirPermiso(): Promise<boolean> {
   return pedido.granted;
 }
 
-/** Android exige un canal para que la notificacion suene y vibre. */
 export async function prepararCanal(): Promise<void> {
   if (Platform.OS !== 'android') return;
 
@@ -70,14 +53,6 @@ function textoAviso(game: Game): { titulo: string; cuerpo: string } {
   };
 }
 
-/**
- * Reprograma todos los avisos de los equipos favoritos.
- *
- * Se cancela y se vuelve a crear en bloque en lugar de ir sincronizando
- * uno a uno: los partidos se aplazan y se reprograman, y llevar la cuenta
- * de que aviso corresponde a que partido daria mas problemas que rehacerlo
- * entero, que cuesta milisegundos.
- */
 export async function reprogramarAvisos(teamIds: string[]): Promise<number> {
   await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -88,7 +63,6 @@ export async function reprogramarAvisos(teamIds: string[]): Promise<number> {
 
   const partidos = await fetchGamesByTeams(teamIds, 0, DIAS_VISTA);
 
-  // Solo lo que aun no ha empezado y da tiempo a avisar
   const ahora = Date.now();
   const proximos = partidos
     .filter((g) => g.status === 'scheduled')
@@ -116,7 +90,6 @@ export async function reprogramarAvisos(teamIds: string[]): Promise<number> {
   return proximos.length;
 }
 
-/** Cuantos avisos hay puestos ahora mismo. */
 export async function avisosProgramados(): Promise<number> {
   const puestos = await Notifications.getAllScheduledNotificationsAsync();
   return puestos.length;

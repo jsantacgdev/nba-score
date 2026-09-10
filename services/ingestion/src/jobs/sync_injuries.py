@@ -1,11 +1,3 @@
-"""
-Carga las lesiones vigentes desde ESPN.
-
-El feed solo devuelve lo que hay ahora mismo, asi que este job construye el
-historico por acumulacion: cada pasada refresca last_seen_at de lo que
-sigue apareciendo y apaga is_current en lo que ya no aparece, que es la
-forma de saber, aproximadamente, cuando se dio de alta un jugador.
-"""
 
 from datetime import datetime, timezone
 
@@ -13,7 +5,6 @@ from src.clients.espn import get_injuries, normalizar_nombre
 from src.clients.supabase import get_supabase_client
 
 BATCH_SIZE = 200
-
 
 def sync_injuries() -> None:
     print("Sincronizando lesiones...")
@@ -27,7 +18,6 @@ def sync_injuries() -> None:
 
     client = get_supabase_client()
 
-    # Indice de jugadores por nombre normalizado
     por_nombre: dict[str, list[dict]] = {}
     offset = 0
     while True:
@@ -62,7 +52,6 @@ def sync_injuries() -> None:
         if len(candidatos) == 1:
             jugador = candidatos[0]
         elif len(candidatos) > 1:
-            # Se desempata por equipo; si tampoco basta, se guarda sin ficha
             equipo_id = equipos.get(lesion["nombre_equipo"])
             mismos = [c for c in candidatos if c.get("team_id") == equipo_id]
             jugador = mismos[0] if len(mismos) == 1 else None
@@ -99,8 +88,6 @@ def sync_injuries() -> None:
     if ambiguos:
         print(f"   {len(ambiguos)} con nombre repetido: {ambiguos[:6]}")
 
-    # Lo que ya no aparece en el feed deja de estar vigente. Se hace antes
-    # del upsert para no apagar lo que acabamos de traer.
     vigentes = {f["id"] for f in filas}
     anteriores = client.table("player_injuries").select("id").eq("is_current", True).execute().data
     resueltas = [x["id"] for x in (anteriores or []) if x["id"] not in vigentes]
@@ -117,7 +104,6 @@ def sync_injuries() -> None:
     print(f"\n✅ {total} lesiones guardadas")
     if resueltas:
         print(f"   {len(resueltas)} ya no aparecen en el feed: marcadas como resueltas")
-
 
 if __name__ == "__main__":
     sync_injuries()

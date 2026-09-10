@@ -1,14 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import type { DraftPick, DraftYear } from '@/types/domain';
 
-/** Años con draft registrado, del mas reciente al mas antiguo. */
 export async function fetchDraftYears(): Promise<DraftYear[]> {
   const { data, error } = await supabase.rpc('draft_years');
 
   if (error) throw error;
 
   return (data ?? []).map((row) => {
-    // Una clase puede tener cero, uno o dos Rookies del Año
     const roy: DraftYear['roy'] = [];
     if (row.roy_player_id) {
       roy.push({
@@ -58,10 +56,6 @@ export async function fetchDraftClass(year: number): Promise<DraftPick[]> {
   }));
 }
 
-/**
- * El draft de un jugador. Los 136 elegidos dos veces devuelven el mas
- * reciente, que es el que de verdad los trajo a la liga.
- */
 export async function fetchPlayerDraft(playerId: string): Promise<DraftPick | null> {
   const { data, error } = await supabase
     .from('draft_picks')

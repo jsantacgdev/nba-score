@@ -16,13 +16,6 @@ function iniciales(nombre: string): string {
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
 }
 
-/**
- * Detalle de una operacion: quien recibe que y de quien.
- *
- * Se agrupa por equipo receptor porque es como se lee un traspaso: "los
- * Lakers reciben esto, los Mavericks esto otro". Un traspaso a tres bandas
- * como el de Doncic sale con sus tres bloques.
- */
 export default function DealScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: piezas, isLoading } = useDealDetail(id);
