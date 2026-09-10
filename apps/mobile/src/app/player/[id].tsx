@@ -772,8 +772,7 @@ function GameLogRow({
       <View style={styles.colGameResult}>
         {hayResultado && (
           <Text style={[styles.gameLogResult, gano ? styles.gameLogWin : styles.gameLogLoss]}>
-            {gano ? 'V' : 'D'}
-            {marcador ? ` ${marcador}` : ''}
+            {marcador}
           </Text>
         )}
       </View>
@@ -1088,6 +1087,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+    // El hueco va aqui y no en el titulo: en una fila centrada, un margen
+    // en el hijo desalinea la flecha
+    marginBottom: spacing.md,
   },
   careerCardPressed: {
     opacity: 0.7,
@@ -1101,10 +1103,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   seasonTitle: {
+    // flexShrink: sin el, un titulo de dos lineas ocupa todo el ancho y
+    // empuja el chevron fuera de la tarjeta
+    flexShrink: 1,
     color: colors.textSecondary,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.semibold,
-    marginBottom: spacing.md,
   },
   seasonStatsRow: {
     flexDirection: 'row',
