@@ -1,7 +1,6 @@
 
 import hashlib
 import re
-from collections import defaultdict
 
 import httpx
 
@@ -24,33 +23,28 @@ def equipo_origen(descripcion: str) -> str | None:
     nombre = encontrado.group(1).strip().rstrip(".")
     return ALIAS_EQUIPOS.get(nombre, nombre)
 
-def agrupar_operaciones(movimientos: list[dict]) -> None:
-    por_fecha: dict[str, list[dict]] = defaultdict(list)
-    for m in movimientos:
-        if m["transaction_type"] == "Trade" and m["from_team_id_nombre"]:
-            por_fecha[m["transaction_date"]].append(m)
+def deal_id(group_sort) -> str | None:
+    """
+    Identificador de la operacion, tal y como la agrupa la NBA.
 
-    for fecha, filas in por_fecha.items():
-        padre: dict[str, str] = {}
+    GroupSort llega como "Trade 2025031" y es la propia numeracion de la
+    liga: todas las piezas de un mismo traspaso lo comparten, incluidas las
+    de un tres bandas, y nunca abarca mas de un dia.
 
-        def raiz(x: str) -> str:
-            padre.setdefault(x, x)
-            while padre[x] != x:
-                padre[x] = padre[padre[x]]
-                x = padre[x]
-            return x
+    Antes esto se deducia con un union-find sobre los equipos que se
+    intercambiaban jugadores. Funcionaba en los casos faciles, pero en dia
+    de mercado encadenaba traspasos sin relacion hasta juntar veinte
+    equipos en una sola "operacion", porque basta que dos acuerdos
+    compartan un equipo para que se fusionen. Este campo lo resuelve sin
+    heuristica.
 
-        def unir(a: str, b: str) -> None:
-            ra, rb = raiz(a), raiz(b)
-            if ra != rb:
-                padre[ra] = rb
+    Se normaliza a minusculas y sin espacios porque viaja en una ruta.
+    """
+    texto = str(group_sort or "").strip()
+    if not texto:
+        return None
+    return texto.lower().replace(" ", "-")
 
-        for f in filas:
-            unir(f["team_slug"] or "?", f["from_team_id_nombre"])
-
-        for f in filas:
-            grupo = raiz(f["team_slug"] or "?")
-            f["deal_id"] = hashlib.md5(f"{fecha}|{grupo}".encode("utf-8")).hexdigest()[:16]
 
 def _id(value) -> str | None:
     if value is None:
@@ -92,9 +86,7 @@ def get_player_movement() -> list[dict]:
             "player_slug": (str(fila.get("PLAYER_SLUG") or "").strip() or None),
             "team_slug": (str(fila.get("TEAM_SLUG") or "").strip() or None),
             "from_team_id_nombre": equipo_origen(descripcion),
-            "deal_id": clave,
+            "deal_id": deal_id(fila.get("GroupSort")),
         }
 
-    lista = list(movimientos.values())
-    agrupar_operaciones(lista)
-    return lista
+    return list(movimientos.values())
