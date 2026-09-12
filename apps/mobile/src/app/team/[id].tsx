@@ -131,7 +131,7 @@ export default function TeamDetailScreen() {
           }
           renderItem={({ item }) => <RosterRow entry={item} season={activeSeason} />}
         />
-      ) : (
+      ) : activeTab === 'games' ? (
         <FlatList
           style={styles.container}
           data={[]}
@@ -182,7 +182,7 @@ export default function TeamDetailScreen() {
             </View>
           }
         />
-      )}
+      ) : null}
 
       {activeTab === 'movements' && (
         <FlatList
