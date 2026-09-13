@@ -17,6 +17,14 @@ export type Player = {
   jerseyNumber?: string;
   photoUrl?: string;
   isActive: boolean;
+  /** Tal y como la publica la NBA: "6-8", pies y pulgadas. */
+  height?: string;
+  heightCm?: number;
+  weightKg?: number;
+  birthDate?: Date;
+  /** Temporadas en la liga; 0 si es novato. */
+  experience?: number;
+  college?: string;
 };
 
 export type GameStatus = 'scheduled' | 'live' | 'final';

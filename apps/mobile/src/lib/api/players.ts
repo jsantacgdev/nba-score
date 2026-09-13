@@ -24,6 +24,12 @@ function mapPlayer(row: PlayerRow): Player {
     jerseyNumber: row.jersey_number ?? undefined,
     photoUrl: row.photo_url ?? undefined,
     isActive: row.is_active ?? true,
+    height: row.height ?? undefined,
+    heightCm: row.height_cm ?? undefined,
+    weightKg: row.weight_kg ?? undefined,
+    birthDate: row.birth_date ? new Date(row.birth_date) : undefined,
+    experience: row.experience ?? undefined,
+    college: row.college ?? undefined,
   };
 }
 

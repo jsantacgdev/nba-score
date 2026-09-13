@@ -282,6 +282,52 @@ export type Database = {
           },
         ]
       }
+      player_contracts: {
+        Row: {
+          player_id: string
+          salary: number
+          season: string
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          player_id: string
+          salary: number
+          season: string
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          player_id?: string
+          salary?: number
+          season?: string
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_contracts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_contracts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_contracts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_game_log: {
         Row: {
           assists: number | null
@@ -538,6 +584,55 @@ export type Database = {
           },
           {
             foreignKeyName: "player_injuries_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_salary_history: {
+        Row: {
+          player_id: string
+          salary: number
+          season: string
+          team_id: string | null
+          team_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          player_id: string
+          salary: number
+          season: string
+          team_id?: string | null
+          team_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          player_id?: string
+          salary?: number
+          season?: string
+          team_id?: string | null
+          team_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_salary_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_salary_history_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "league_standings"
+            referencedColumns: ["team_id"]
+          },
+          {
+            foreignKeyName: "player_salary_history_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -818,8 +913,14 @@ export type Database = {
       }
       players: {
         Row: {
+          bbref_id: string | null
+          birth_date: string | null
+          college: string | null
           created_at: string | null
+          experience: number | null
           first_name: string
+          height: string | null
+          height_cm: number | null
           id: string
           is_active: boolean | null
           jersey_number: string | null
@@ -828,10 +929,17 @@ export type Database = {
           position: string | null
           team_id: string | null
           updated_at: string | null
+          weight_kg: number | null
         }
         Insert: {
+          bbref_id?: string | null
+          birth_date?: string | null
+          college?: string | null
           created_at?: string | null
+          experience?: number | null
           first_name: string
+          height?: string | null
+          height_cm?: number | null
           id: string
           is_active?: boolean | null
           jersey_number?: string | null
@@ -840,10 +948,17 @@ export type Database = {
           position?: string | null
           team_id?: string | null
           updated_at?: string | null
+          weight_kg?: number | null
         }
         Update: {
+          bbref_id?: string | null
+          birth_date?: string | null
+          college?: string | null
           created_at?: string | null
+          experience?: number | null
           first_name?: string
+          height?: string | null
+          height_cm?: number | null
           id?: string
           is_active?: boolean | null
           jersey_number?: string | null
@@ -852,6 +967,7 @@ export type Database = {
           position?: string | null
           team_id?: string | null
           updated_at?: string | null
+          weight_kg?: number | null
         }
         Relationships: [
           {
@@ -869,6 +985,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      salary_cap_rules: {
+        Row: {
+          first_apron: number | null
+          luxury_tax: number | null
+          salary_cap: number
+          salary_floor: number | null
+          season: string
+          second_apron: number | null
+        }
+        Insert: {
+          first_apron?: number | null
+          luxury_tax?: number | null
+          salary_cap: number
+          salary_floor?: number | null
+          season: string
+          second_apron?: number | null
+        }
+        Update: {
+          first_apron?: number | null
+          luxury_tax?: number | null
+          salary_cap?: number
+          salary_floor?: number | null
+          season?: string
+          second_apron?: number | null
+        }
+        Relationships: []
       }
       season_champions: {
         Row: {
@@ -1107,6 +1250,17 @@ export type Database = {
           turnovers: number
         }[]
       }
+      player_contract: {
+        Args: { target_player_id: string }
+        Returns: {
+          salary: number
+          season: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+          team_name: string
+        }[]
+      }
       player_injury_history: {
         Args: { target_player_id: string }
         Returns: {
@@ -1147,6 +1301,17 @@ export type Database = {
         Returns: {
           award: string
           season: string
+          team_name: string
+        }[]
+      }
+      player_salary_history: {
+        Args: { target_player_id: string }
+        Returns: {
+          salary: number
+          season: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
           team_name: string
         }[]
       }
@@ -1279,6 +1444,23 @@ export type Database = {
           competition: string
           season: string
           year: number
+        }[]
+      }
+      team_salary: {
+        Args: { target_season: string; target_team_id: string }
+        Returns: {
+          first_apron: number
+          jersey_number: string
+          luxury_tax: number
+          payroll: number
+          photo_url: string
+          player_id: string
+          player_name: string
+          player_position: string
+          salary: number
+          salary_cap: number
+          salary_floor: number
+          second_apron: number
         }[]
       }
       team_season_roster: {
