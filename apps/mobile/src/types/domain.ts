@@ -486,3 +486,62 @@ export type CareerHigh = {
   opponentAbbreviation?: string;
   seasonType?: string;
 };
+
+export type TeamSalaryPlayer = {
+  playerId: string;
+  playerName: string;
+  photoUrl?: string;
+  jerseyNumber?: string;
+  position?: string;
+  salary: number;
+};
+
+/**
+ * Nomina de un equipo y los umbrales de esa temporada.
+ *
+ * Los aprons solo existen desde el convenio de 2023; en temporadas
+ * anteriores llegan a cero y no deben pintarse.
+ */
+export type TeamSalary = {
+  season: string;
+  payroll: number;
+  salaryCap: number;
+  salaryFloor: number;
+  luxuryTax: number;
+  firstApron: number;
+  secondApron: number;
+  players: TeamSalaryPlayer[];
+};
+
+/** Una temporada del contrato de un jugador. */
+export type PlayerContractYear = {
+  season: string;
+  salary: number;
+  teamId?: string;
+  teamAbbreviation?: string;
+  teamName?: string;
+  teamLogoUrl?: string;
+};
+
+export type PlayerSalarySeason = {
+  season: string;
+  salary: number;
+  teamId?: string;
+  teamName: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+  /** Temporada aun no jugada: es contrato, no dinero cobrado. */
+  future: boolean;
+};
+
+/** Un tramo seguido en el mismo equipo. */
+export type SalaryStint = {
+  teamName: string;
+  teamId?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+  startSeason: string;
+  endSeason: string;
+  total: number;
+  seasons: PlayerSalarySeason[];
+};

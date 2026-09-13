@@ -17,6 +17,9 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CompactGameRow } from '@/components/game/CompactGameRow';
 import { useTeamMovements } from '@/hooks/useMovements';
+import { useTeamSalary } from '@/hooks/useTeamSalary';
+import { SalaryRulesModal } from '@/components/team/SalaryRulesModal';
+import type { TeamSalary, TeamSalaryPlayer } from '@/types/domain';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateDMY } from '@/lib/format';
 import type { TeamMovement } from '@/types/domain';
@@ -31,7 +34,7 @@ import { getPositionName } from '@/constants/positions';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { Game, Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
 
-type Tab = 'roster' | 'games' | 'movements';
+type Tab = 'roster' | 'games' | 'movements' | 'salary';
 
 export default function TeamDetailScreen() {
   const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
@@ -40,6 +43,7 @@ export default function TeamDetailScreen() {
   const { data: movimientos, isLoading: movimientosLoading } = useTeamMovements(teamId);
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
   const [seasonPickerOpen, setSeasonPickerOpen] = useState(false);
+  const [reglasAbiertas, setReglasAbiertas] = useState(false);
 
   const { data: team, refetch: refetchTeam } = useTeam(teamId);
   const { data: teamSeasons } = useTeamSeasons(teamId);
@@ -47,6 +51,7 @@ export default function TeamDetailScreen() {
 
   const activeSeason =
     pickedSeason ?? (season && season.length > 0 ? season : teamSeasons?.[0]?.season);
+  const { data: salarial, isLoading: salarialLoading } = useTeamSalary(teamId, activeSeason);
 
   const {
     data: seasonRoster,
@@ -222,6 +227,58 @@ export default function TeamDetailScreen() {
         />
       )}
 
+      {activeTab === 'salary' && (
+        <FlatList
+          style={styles.container}
+          data={salarial?.players ?? []}
+          keyExtractor={(p) => p.playerId}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          ListHeaderComponent={
+            <View>
+              <TeamHeader
+                team={team}
+                season={activeSeason}
+                seasons={teamSeasons}
+                onOpenPicker={() => setSeasonPickerOpen(true)}
+              />
+              <TeamPalmares titles={palmares} />
+              <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
+
+              {salarialLoading && <LoadingState message="Cargando salarios..." compact />}
+
+              {!salarialLoading && !salarial && (
+                <Text style={styles.emptyText}>
+                  No hay contratos cargados para {activeSeason}. Solo tenemos los vigentes.
+                </Text>
+              )}
+
+              {salarial && (
+                <ResumenSalarial datos={salarial} onExplicar={() => setReglasAbiertas(true)} />
+              )}
+            </View>
+          }
+          renderItem={({ item }) => (
+            <FilaSalario jugador={item} nomina={salarial?.payroll ?? 0} />
+          )}
+        />
+      )}
+
+      {salarial && (
+        <SalaryRulesModal
+          visible={reglasAbiertas}
+          onClose={() => setReglasAbiertas(false)}
+          datos={salarial}
+        />
+      )}
+
       <SeasonPicker
         visible={seasonPickerOpen}
         seasons={teamSeasons ?? []}
@@ -345,6 +402,17 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
           Traspasos
         </Text>
       </Pressable>
+      <Pressable
+        onPress={() => onChange('salary')}
+        style={[styles.tabButton, activeTab === 'salary' && styles.tabButtonActive]}
+      >
+        <Text
+          style={[styles.tabButtonText, activeTab === 'salary' && styles.tabButtonTextActive]}
+          numberOfLines={1}
+        >
+          Salarial
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -419,6 +487,140 @@ function TeamMovementRow({ entry }: { entry: TeamMovement }) {
       )}
 
       {abrible && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+    </Pressable>
+  );
+}
+
+/** Millones con un decimal: "58,5 M". */
+function millones(valor: number): string {
+  return `${(valor / 1_000_000).toFixed(1).replace('.', ',')} M`;
+}
+
+/**
+ * En que tramo esta la nomina.
+ *
+ * El orden importa y es acumulativo: quien pasa el segundo apron esta
+ * tambien sobre el primero y en impuesto de lujo. Se devuelve el mas alto
+ * que haya superado, que es el que condiciona lo que el equipo puede hacer.
+ */
+function tramoSalarial(datos: TeamSalary): { etiqueta: string; color: string } {
+  const { payroll: n } = datos;
+  if (datos.secondApron && n >= datos.secondApron) {
+    return { etiqueta: 'Sobre el segundo apron', color: colors.danger };
+  }
+  if (datos.firstApron && n >= datos.firstApron) {
+    return { etiqueta: 'Sobre el primer apron', color: colors.danger };
+  }
+  if (datos.luxuryTax && n >= datos.luxuryTax) {
+    return { etiqueta: 'En impuesto de lujo', color: colors.primary };
+  }
+  if (datos.salaryCap && n >= datos.salaryCap) {
+    return { etiqueta: 'Sobre el tope salarial', color: colors.primary };
+  }
+  if (datos.salaryFloor && n < datos.salaryFloor) {
+    return { etiqueta: 'Bajo el suelo salarial', color: colors.danger };
+  }
+  return { etiqueta: 'Bajo el tope salarial', color: colors.success };
+}
+
+function ResumenSalarial({
+  datos,
+  onExplicar,
+}: {
+  datos: TeamSalary;
+  onExplicar: () => void;
+}) {
+  const tramo = tramoSalarial(datos);
+
+  // La barra se escala al segundo apron, que es el techo real del sistema
+  const techo = datos.secondApron || datos.luxuryTax || datos.salaryCap || 1;
+  const marcas = [
+    { nombre: 'Tope', valor: datos.salaryCap },
+    { nombre: 'Impuesto', valor: datos.luxuryTax },
+    { nombre: 'Apron 1', valor: datos.firstApron },
+    { nombre: 'Apron 2', valor: datos.secondApron },
+  ].filter((m) => m.valor > 0);
+
+  return (
+    <View style={styles.salCard}>
+      <Text style={styles.salNomina}>{millones(datos.payroll)}</Text>
+      <Text style={styles.salSubtitulo}>Nómina {datos.season}</Text>
+
+      {/* Estado y barra abren la explicacion de que implica cada limite */}
+      <Pressable
+        onPress={onExplicar}
+        style={({ pressed }) => [styles.salPulsable, pressed && styles.salPulsablePressed]}
+      >
+        <View style={[styles.salEstado, { borderColor: tramo.color }]}>
+          <Text style={[styles.salEstadoTexto, { color: tramo.color }]}>{tramo.etiqueta}</Text>
+          <Ionicons name="information-circle-outline" size={14} color={tramo.color} />
+        </View>
+
+        <View style={styles.salBarra}>
+        <View
+          style={[
+            styles.salBarraRelleno,
+            {
+              width: `${Math.min(100, (datos.payroll / techo) * 100)}%`,
+              backgroundColor: tramo.color,
+            },
+          ]}
+        />
+          {marcas.map((m) => (
+            <View
+              key={m.nombre}
+              style={[styles.salMarca, { left: `${Math.min(99, (m.valor / techo) * 100)}%` }]}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.salPista}>Toca para ver qué implica cada límite</Text>
+      </Pressable>
+
+      {marcas.map((m) => (
+        <View key={m.nombre} style={styles.salUmbral}>
+          <Text style={styles.salUmbralNombre}>{m.nombre}</Text>
+          <Text style={styles.salUmbralValor}>{millones(m.valor)}</Text>
+          <Text
+            style={[
+              styles.salUmbralDif,
+              { color: datos.payroll >= m.valor ? colors.danger : colors.success },
+            ]}
+          >
+            {datos.payroll >= m.valor ? '+' : '−'}
+            {millones(Math.abs(datos.payroll - m.valor))}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function FilaSalario({ jugador, nomina }: { jugador: TeamSalaryPlayer; nomina: number }) {
+  const porcentaje = nomina > 0 ? (jugador.salary / nomina) * 100 : 0;
+
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/player/[id]', params: { id: jugador.playerId } })}
+      style={({ pressed }) => [styles.salFila, pressed && styles.salFilaPressed]}
+    >
+      <PlayerAvatar
+        photoUrl={jugador.photoUrl}
+        initials={iniciales(jugador.playerName)}
+        size={34}
+      />
+      <View style={styles.salFilaInfo}>
+        <Text style={styles.salFilaNombre} numberOfLines={1}>
+          {jugador.playerName}
+        </Text>
+        <View style={styles.salFilaBarra}>
+          <View style={[styles.salFilaBarraRelleno, { width: `${porcentaje}%` }]} />
+        </View>
+      </View>
+      <View style={styles.salFilaDinero}>
+        <Text style={styles.salFilaImporte}>{millones(jugador.salary)}</Text>
+        <Text style={styles.salFilaPorcentaje}>{porcentaje.toFixed(0)}%</Text>
+      </View>
     </Pressable>
   );
 }
@@ -551,6 +753,132 @@ const styles = StyleSheet.create({
   },
 
   // Tab switcher
+  salCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  salNomina: {
+    color: colors.text,
+    fontSize: 34,
+    fontFamily: fontFamily.displayBold,
+    textAlign: 'center',
+  },
+  salSubtitulo: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  salPulsable: { borderRadius: radius.md },
+  salPulsablePressed: { opacity: 0.7 },
+  salPista: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    textAlign: 'center',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  salEstado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  salEstadoTexto: {
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  salBarra: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceLight,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  salBarraRelleno: { height: '100%', borderRadius: 4 },
+  // Marca de cada umbral sobre la barra
+  salMarca: {
+    position: 'absolute',
+    top: 0,
+    width: 2,
+    height: '100%',
+    backgroundColor: colors.background,
+  },
+  salUmbral: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 3,
+  },
+  salUmbralNombre: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.semibold,
+  },
+  salUmbralValor: {
+    width: 78,
+    textAlign: 'right',
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  salUmbralDif: {
+    width: 82,
+    textAlign: 'right',
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+
+  salFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  salFilaPressed: { backgroundColor: colors.surface },
+  salFilaInfo: { flex: 1 },
+  salFilaNombre: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  salFilaBarra: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.surfaceLight,
+    marginTop: 5,
+    overflow: 'hidden',
+  },
+  salFilaBarraRelleno: { height: '100%', backgroundColor: colors.primary, borderRadius: 2 },
+  salFilaDinero: { alignItems: 'flex-end', minWidth: 68 },
+  salFilaImporte: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
+  },
+  salFilaPorcentaje: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+  },
+
   movRow: {
     flexDirection: 'row',
     alignItems: 'center',
