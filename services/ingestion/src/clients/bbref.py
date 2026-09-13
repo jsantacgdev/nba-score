@@ -132,7 +132,8 @@ def parsear(pagina: str) -> list[dict]:
 
         for bruto in re.findall(r'<p class="transaction[^"]*">(.*?)</p>', cuerpo, re.S):
             jugadores = [
-                _texto(n) for n in re.findall(r'<a href="/players/[^"]+">(.*?)</a>', bruto)
+                _texto(n)
+                for n in re.findall(r"<a href=['\"]/players/[^'\"]*['\"][^>]*>(.*?)</a>", bruto)
             ]
             equipos = [
                 ALIAS_BBREF.get(a, a) for a in re.findall(r'data-attr-to="([A-Z]{3})"', bruto)
@@ -224,3 +225,232 @@ def picks_del_texto(texto: str, equipo_pagina: str, nombres: dict[str, str]) -> 
                 }
             )
     return picks
+
+
+# ============================================
+# Contratos
+# ============================================
+
+URL_CONTRATOS = "https://www.basketball-reference.com/contracts/{equipo}.html"
+
+def _es_temporada(texto: str) -> bool:
+    """Forma "2026-27". Se comprueba a mano para no depender de regex."""
+    return (
+        len(texto) == 7
+        and texto[:4].isdigit()
+        and texto[4] == "-"
+        and texto[5:].isdigit()
+    )
+
+
+def _dinero(texto: str) -> int | None:
+    """"$58,456,566" -> 58456566."""
+    limpio = texto.strip()
+    if not limpio.startswith("$"):
+        return None
+    try:
+        return int(limpio[1:].replace(",", "").split(".")[0])
+    except ValueError:
+        return None
+
+
+def descargar_contratos(equipo: str, cache: Path | None = None) -> str | None:
+    """Pagina de contratos vigentes de un equipo."""
+    global _ultima_peticion
+
+    equipo_url = ABREV_EN_URL.get(equipo, equipo)
+    destino = cache / f"contratos_{equipo}.html" if cache else None
+    if destino and destino.exists():
+        return destino.read_text(encoding="utf-8", errors="ignore")
+
+    espera = ESPERA_SEGUNDOS - (time.time() - _ultima_peticion)
+    if espera > 0:
+        time.sleep(espera)
+
+    try:
+        respuesta = httpx.get(
+            URL_CONTRATOS.format(equipo=equipo_url),
+            headers=HEADERS,
+            timeout=40,
+            follow_redirects=True,
+        )
+        _ultima_peticion = time.time()
+    except Exception:
+        _ultima_peticion = time.time()
+        return None
+
+    if respuesta.status_code != 200:
+        return None
+
+    if destino:
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_text(respuesta.text, encoding="utf-8")
+    return respuesta.text
+
+
+def parsear_contratos(pagina: str) -> list[dict]:
+    """
+    Salario de cada jugador por temporada.
+
+    La tabla viene dentro de un comentario HTML, que es como
+    Basketball-Reference dificulta el rascado, asi que primero se destapa.
+
+    La cabecera trae las temporadas ("2026-27", "2027-28"...) y cada fila
+    un jugador con su salario en cada una. Las celdas vacias son años sin
+    contrato y se omiten.
+    """
+    destapado = pagina.replace("<!--", "").replace("-->", "")
+
+    tabla = re.search(r'<table[^>]*id="contracts"[^>]*>(.*?)</table>', destapado, re.S)
+    if not tabla:
+        return []
+    cuerpo = tabla.group(1)
+
+    filas = re.findall(r"<tr[^>]*>(.*?)</tr>", cuerpo, re.S)
+    if not filas:
+        return []
+
+    # La primera fila con celdas es la cabecera con las temporadas
+    temporadas: list[str] = []
+    for fila in filas:
+        celdas = [_texto(c) for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", fila, re.S)]
+        if any(_es_temporada(c) for c in celdas):
+            temporadas = celdas
+            break
+    if not temporadas:
+        return []
+
+    contratos = []
+    for fila in filas:
+        # Mezclan comillas simples y dobles en los href
+        enlace = re.search(r"<a href=['\"]/players/[^'\"]*['\"][^>]*>(.*?)</a>", fila)
+        if not enlace:
+            continue
+        nombre = _texto(enlace.group(1))
+        celdas = [_texto(c) for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", fila, re.S)]
+
+        for i, celda in enumerate(celdas):
+            if i >= len(temporadas):
+                break
+            temporada = temporadas[i]
+            if not _es_temporada(temporada):
+                continue
+            importe = _dinero(celda)
+            if importe is None:
+                continue
+            contratos.append(
+                {
+                    "player_name": nombre,
+                    "season": temporada,
+                    "salary": importe,
+                }
+            )
+
+    return contratos
+
+
+# ============================================
+# Fichas de jugador: indice y sueldos historicos
+# ============================================
+
+URL_INDICE = "https://www.basketball-reference.com/players/{letra}/"
+URL_JUGADOR = "https://www.basketball-reference.com/players/{letra}/{bbref_id}.html"
+
+
+def _descargar(url: str, destino: Path | None) -> str | None:
+    """Descarga respetando el Crawl-delay, con cache en disco."""
+    global _ultima_peticion
+
+    if destino and destino.exists():
+        return destino.read_text(encoding="utf-8", errors="ignore")
+
+    espera = ESPERA_SEGUNDOS - (time.time() - _ultima_peticion)
+    if espera > 0:
+        time.sleep(espera)
+
+    try:
+        respuesta = httpx.get(url, headers=HEADERS, timeout=40, follow_redirects=True)
+        _ultima_peticion = time.time()
+    except Exception:
+        _ultima_peticion = time.time()
+        return None
+
+    if respuesta.status_code != 200:
+        return None
+
+    if destino:
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_text(respuesta.text, encoding="utf-8")
+    return respuesta.text
+
+
+def descargar_indice(letra: str, cache: Path | None = None) -> str | None:
+    """Indice de jugadores cuyo apellido empieza por esa letra."""
+    destino = cache / f"indice_{letra}.html" if cache else None
+    return _descargar(URL_INDICE.format(letra=letra), destino)
+
+
+def parsear_indice(pagina: str) -> list[dict]:
+    """
+    Jugadores del indice: identificador, nombre y años en activo.
+
+    Los años sirven para desempatar cuando dos jugadores comparten nombre,
+    que con casi 5.000 fichas historicas pasa mas de lo que parece.
+    """
+    tabla = re.search(r'<table[^>]*id="players"[^>]*>(.*?)</table>', pagina, re.S)
+    if not tabla:
+        return []
+
+    jugadores = []
+    for fila in re.findall(r"<tr[^>]*>(.*?)</tr>", tabla.group(1), re.S):
+        enlace = re.search(
+            r"<a href=['\"]/players/[a-z]/([a-z0-9]+)\.html['\"][^>]*>(.*?)</a>", fila
+        )
+        if not enlace:
+            continue
+        celdas = [_texto(c) for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", fila, re.S)]
+        desde = celdas[1] if len(celdas) > 1 and celdas[1].isdigit() else None
+        hasta = celdas[2] if len(celdas) > 2 and celdas[2].isdigit() else None
+        jugadores.append(
+            {
+                "bbref_id": enlace.group(1),
+                "name": _texto(enlace.group(2)),
+                "from_year": int(desde) if desde else None,
+                "to_year": int(hasta) if hasta else None,
+            }
+        )
+    return jugadores
+
+
+def descargar_jugador(bbref_id: str, cache: Path | None = None) -> str | None:
+    """Ficha personal de un jugador."""
+    destino = cache / f"jugador_{bbref_id}.html" if cache else None
+    return _descargar(URL_JUGADOR.format(letra=bbref_id[0], bbref_id=bbref_id), destino)
+
+
+def parsear_salarios(pagina: str) -> list[dict]:
+    """
+    Lo cobrado por temporada, con el equipo que lo pagaba.
+
+    La tabla va dentro de un comentario HTML y termina con una fila de
+    total de carrera, que se descarta: no es una temporada.
+    """
+    destapado = pagina.replace("<!--", "").replace("-->", "")
+    tabla = re.search(r'<table[^>]*id="all_salaries"[^>]*>(.*?)</table>', destapado, re.S)
+    if not tabla:
+        return []
+
+    salarios = []
+    for fila in re.findall(r"<tr[^>]*>(.*?)</tr>", tabla.group(1), re.S):
+        celdas = [_texto(c) for c in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", fila, re.S)]
+        if len(celdas) < 4:
+            continue
+        temporada, equipo, _liga, importe = celdas[0], celdas[1], celdas[2], celdas[3]
+        if not _es_temporada(temporada):
+            continue
+        dinero = _dinero(importe)
+        if dinero is None:
+            continue
+        salarios.append({"season": temporada, "team_name": equipo, "salary": dinero})
+
+    return salarios
