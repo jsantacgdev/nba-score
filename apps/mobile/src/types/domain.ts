@@ -375,6 +375,14 @@ export type DealEntry = {
   playerName?: string;
   photoUrl?: string;
   isDraftPick: boolean;
+  /**
+   * Ronda y año de la eleccion, cuando se han podido confirmar. El feed de
+   * la NBA solo dice "draft consideration"; esto sale de
+   * Basketball-Reference y queda a nulo si el cruce no fue seguro.
+   */
+  draftRound?: number;
+  draftPickYear?: number;
+  draftNote?: string;
   fromTeam?: TeamRef;
   toTeam?: TeamRef;
 };

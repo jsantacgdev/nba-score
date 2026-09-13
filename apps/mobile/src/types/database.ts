@@ -769,6 +769,9 @@ export type Database = {
         Row: {
           deal_id: string | null
           description: string
+          draft_note: string | null
+          draft_pick_year: number | null
+          draft_round: number | null
           from_team_id: string | null
           id: string
           player_id: string | null
@@ -782,6 +785,9 @@ export type Database = {
         Insert: {
           deal_id?: string | null
           description: string
+          draft_note?: string | null
+          draft_pick_year?: number | null
+          draft_round?: number | null
           from_team_id?: string | null
           id: string
           player_id?: string | null
@@ -795,6 +801,9 @@ export type Database = {
         Update: {
           deal_id?: string | null
           description?: string
+          draft_note?: string | null
+          draft_pick_year?: number | null
+          draft_round?: number | null
           from_team_id?: string | null
           id?: string
           player_id?: string | null
@@ -972,6 +981,9 @@ export type Database = {
         Args: { target_deal_id: string }
         Returns: {
           description: string
+          draft_note: string
+          draft_pick_year: number
+          draft_round: number
           from_abbreviation: string
           from_logo_url: string
           from_name: string
