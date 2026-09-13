@@ -75,6 +75,9 @@ export async function fetchDealDetail(dealId: string): Promise<DealEntry[]> {
     playerName: row.player_name || undefined,
     photoUrl: row.photo_url ?? undefined,
     isDraftPick: row.is_draft_pick ?? false,
+    draftRound: row.draft_round ?? undefined,
+    draftPickYear: row.draft_pick_year ?? undefined,
+    draftNote: row.draft_note ?? undefined,
     fromTeam: row.from_team_id
       ? {
           id: row.from_team_id,

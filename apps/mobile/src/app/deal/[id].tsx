@@ -11,6 +11,41 @@ import { formatDateDMY } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { DealEntry } from '@/types/domain';
 
+/**
+ * Como se nombra una eleccion de draft.
+ *
+ * La ronda y el año salen de Basketball-Reference; el feed de la NBA dice
+ * siempre "draft consideration". Sin ese detalle se deja el nombre
+ * generico, que es preferible a arriesgar una ronda equivocada.
+ *
+ * Una fila puede esconder varias elecciones: la NBA anota un unico "draft
+ * consideration" por equipo receptor, asi que las cuatro rondas que
+ * Filadelfia mando a Boston por Jaylen Brown son una sola linea. Cuando
+ * pasa eso se dice cuantas son y se desglosan debajo.
+ */
+function elecciones(pieza: DealEntry): { año?: number; ronda: number }[] {
+  if (!pieza.draftNote) return [];
+  return pieza.draftNote.split('|').map((trozo) => {
+    const [año, ronda] = trozo.split(':');
+    return { año: año === '?' ? undefined : Number(año), ronda: Number(ronda) };
+  });
+}
+
+function etiquetaEleccion(pieza: DealEntry): string {
+  const lista = elecciones(pieza);
+  if (lista.length > 1) return `${lista.length} elecciones de draft`;
+  if (!pieza.draftRound) return 'Elección de draft';
+  const ronda = `Elección de ${pieza.draftRound}ª ronda`;
+  return pieza.draftPickYear ? `${ronda} · ${pieza.draftPickYear}` : ronda;
+}
+
+/** Desglose "1ª 2028 · 2ª 2028 · ..." cuando hay mas de una. */
+function desgloseEleccion(pieza: DealEntry): string | null {
+  const lista = elecciones(pieza);
+  if (lista.length < 2) return null;
+  return lista.map((e) => `${e.ronda}ª ${e.año ?? ''}`.trim()).join(' · ');
+}
+
 function iniciales(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
   return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase();
@@ -97,8 +132,11 @@ function BloqueEquipo({ piezas }: { piezas: DealEntry[] }) {
 
           <View style={styles.piezaInfo}>
             <Text style={styles.piezaNombre} numberOfLines={1}>
-              {p.isDraftPick ? 'Elección de draft' : p.playerName}
+              {p.isDraftPick ? etiquetaEleccion(p) : p.playerName}
             </Text>
+            {desgloseEleccion(p) && (
+              <Text style={styles.desglose}>{desgloseEleccion(p)}</Text>
+            )}
             {p.fromTeam && (
               <View style={styles.desde}>
                 <Text style={styles.desdeTexto}>de</Text>
@@ -194,6 +232,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     fontFamily: fontFamily.displaySemibold,
+  },
+  desglose: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: 2,
   },
   desde: {
     flexDirection: 'row',
