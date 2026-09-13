@@ -9,6 +9,7 @@ from nba_api.stats.endpoints import scoreboardv2
 from nba_api.stats.endpoints import scheduleleaguev2
 from nba_api.stats.endpoints import boxscoretraditionalv3
 from datetime import date, datetime
+import re
 import time
 from nba_api.stats.library.http import NBAStatsHTTP
 
@@ -69,6 +70,55 @@ def build_player_photo_url(player_id: str) -> str:
     """URL de la foto del jugador (PNG transparente, NBA CDN)."""
     return f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
 
+def _altura_cm(texto) -> int | None:
+    """
+    La NBA publica la altura como "6-8": pies y pulgadas.
+
+    Se guarda tambien en centimetros porque es como se lee aqui.
+    """
+    partes = str(texto or "").strip().split("-")
+    if len(partes) != 2:
+        return None
+    try:
+        return round((int(partes[0]) * 12 + int(partes[1])) * 2.54)
+    except ValueError:
+        return None
+
+
+def _peso_kg(texto) -> int | None:
+    """El peso viene en libras."""
+    try:
+        return round(float(str(texto).strip()) * 0.453592)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fecha_nacimiento(texto) -> str | None:
+    """'MAR 03, 1998' -> '1998-03-03'."""
+    meses = {
+        "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
+        "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+    }
+    encontrado = re.match(r"([A-Z]{3})\s+(\d{1,2}),\s*(\d{4})", str(texto or "").strip().upper())
+    if not encontrado:
+        return None
+    mes = meses.get(encontrado.group(1))
+    if not mes:
+        return None
+    return f"{encontrado.group(3)}-{mes:02d}-{int(encontrado.group(2)):02d}"
+
+
+def _experiencia(texto) -> int | None:
+    """'R' es novato; el resto son temporadas jugadas."""
+    valor = str(texto or "").strip().upper()
+    if valor == "R":
+        return 0
+    try:
+        return int(valor)
+    except ValueError:
+        return None
+
+
 def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
     """Obtiene la plantilla de un equipo."""
     roster = commonteamroster.CommonTeamRoster(
@@ -102,6 +152,12 @@ def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
                 "jersey_number": jersey,
                 "photo_url": build_player_photo_url(_id(row["PLAYER_ID"])),
                 "is_active": True,
+                "height": str(row.get("HEIGHT") or "").strip() or None,
+                "height_cm": _altura_cm(row.get("HEIGHT")),
+                "weight_kg": _peso_kg(row.get("WEIGHT")),
+                "birth_date": _fecha_nacimiento(row.get("BIRTH_DATE")),
+                "experience": _experiencia(row.get("EXP")),
+                "college": str(row.get("SCHOOL") or "").strip() or None,
             }
         )
 
