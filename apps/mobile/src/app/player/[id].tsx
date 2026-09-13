@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,6 +19,9 @@ import { Trophy, awardLabel } from '@/components/ui/Trophy';
 import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
 import { usePlayerDraft } from '@/hooks/useDraft';
 import { usePlayerInjuries, usePlayerMovements } from '@/hooks/useMovements';
+import { useTeam } from '@/hooks/useTeamRoster';
+import { usePlayerSalaryTimeline } from '@/hooks/useTeamSalary';
+import { agruparEtapas } from '@/lib/api/salary';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { PlayerDetailSkeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -37,21 +41,24 @@ import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
   CareerHigh,
+  Player,
   PlayerAward,
   PlayerCareerEntry,
   PlayerGameLogEntry,
   PlayerInjury,
   PlayerMovement,
+  SalaryStint,
 } from '@/types/domain';
 
-type TabKey = 'games' | 'career' | 'movements' | 'injuries';
+type TabKey = 'games' | 'career' | 'movements' | 'injuries' | 'contract';
 
 type ListRow =
   | { kind: 'section'; label: string }
   | { kind: 'game'; game: PlayerGameLogEntry }
   | { kind: 'career'; career: PlayerCareerEntry }
   | { kind: 'movement'; movement: PlayerMovement }
-  | { kind: 'injury'; injury: PlayerInjury };
+  | { kind: 'injury'; injury: PlayerInjury }
+  | { kind: 'contract'; contract: SalaryStint };
 
 const ETIQUETA_TIPO: Record<string, string> = {
   playoffs: 'Playoffs',
@@ -111,7 +118,14 @@ export default function PlayerDetailScreen() {
   const { data: carrera } = usePlayerCareerTotals(playerId);
   const { data: maximos } = useCareerHighs(playerId);
   const { data: movimientos } = usePlayerMovements(playerId);
+  const { data: equipoActual } = useTeam(player?.teamId ?? '');
   const { data: lesiones } = usePlayerInjuries(playerId);
+  const { data: sueldos } = usePlayerSalaryTimeline(playerId);
+
+  // Tramos seguidos en el mismo equipo, del mas reciente al mas antiguo
+  const etapas = agruparEtapas(sueldos ?? []);
+  const totalCarrera = (sueldos ?? []).reduce((suma, t) => suma + t.salary, 0);
+  const [etapaAbierta, setEtapaAbierta] = useState<SalaryStint | null>(null);
 
   const lesionado = (lesiones ?? []).some((l) => l.isCurrent);
   const { data: draft } = usePlayerDraft(playerId);
@@ -155,8 +169,10 @@ export default function PlayerDetailScreen() {
     rows = (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
   } else if (tab === 'movements') {
     rows = (movimientos ?? []).map((m) => ({ kind: 'movement', movement: m }) as ListRow);
-  } else {
+  } else if (tab === 'injuries') {
     rows = (lesiones ?? []).map((i) => ({ kind: 'injury', injury: i }) as ListRow);
+  } else {
+    rows = etapas.map((e) => ({ kind: 'contract', contract: e }) as ListRow);
   }
 
   if (isLoading) {
@@ -198,7 +214,8 @@ export default function PlayerDetailScreen() {
           if (item.kind === 'game') return item.game.gameId;
           if (item.kind === 'career') return `${item.career.season}-${item.career.teamId}`;
           if (item.kind === 'movement') return item.movement.id;
-          return item.injury.id;
+          if (item.kind === 'injury') return item.injury.id;
+          return `${item.contract.startSeason}-${item.contract.teamName}`;
         }}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -223,10 +240,26 @@ export default function PlayerDetailScreen() {
                   {player.firstName} {player.lastName}
                 </Text>
                 {/* Lesionado ahora mismo segun el parte diario */}
-                {lesionado && (
-                  <Ionicons name="medkit" size={22} color={colors.danger} />
-                )}
+                {lesionado && <Ionicons name="medkit" size={22} color={colors.danger} />}
               </View>
+
+              {/* El equipo va bajo el nombre, no como una etiqueta mas:
+                  es identidad del jugador, no un dato suelto */}
+              {equipoActual && (
+                <Pressable
+                  onPress={() =>
+                    router.push({ pathname: '/team/[id]', params: { id: equipoActual.id } })
+                  }
+                  style={({ pressed }) => [styles.equipoLinea, pressed && styles.equipoPressed]}
+                >
+                  <TeamLogo
+                    logoUrl={equipoActual.logoUrl}
+                    abbreviation={equipoActual.abbreviation}
+                    size={22}
+                  />
+                  <Text style={styles.equipoNombre}>{equipoActual.fullName}</Text>
+                </Pressable>
+              )}
               <View style={styles.headerMeta}>
                 {player.jerseyNumber && (
                   <View style={styles.metaBadge}>
@@ -264,14 +297,7 @@ export default function PlayerDetailScreen() {
                 )}
               </View>
 
-              {careerSeasons.length > 0 && (
-                <View style={styles.seasonRow}>
-                  <SeasonButton
-                    season={activeSeason}
-                    onPress={() => setSeasonPickerOpen(true)}
-                  />
-                </View>
-              )}
+              <FichaDatos jugador={player} />
             </View>
 
             {/* Botón Comparar. Vale también para retirados: la comparativa
@@ -371,7 +397,15 @@ export default function PlayerDetailScreen() {
             {isRetired ? (
               <Text style={styles.sectionTitle}>Carrera</Text>
             ) : (
-              <View style={styles.detailTabs}>
+              // Cinco pestañas ya no reparten bien el ancho, asi que la
+              // fila se desplaza. Dentro de un ScrollView el flex:1 no
+              // sirve: cada pestaña se dimensiona por su texto.
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.detailTabsScroll}
+                contentContainerStyle={styles.detailTabs}
+              >
                 <DetailTab
                   label="Partidos"
                   active={tab === 'games'}
@@ -392,20 +426,50 @@ export default function PlayerDetailScreen() {
                   active={tab === 'injuries'}
                   onPress={() => setSelectedTab('injuries')}
                 />
-              </View>
+                <DetailTab
+                  label="Contrato"
+                  active={tab === 'contract'}
+                  onPress={() => setSelectedTab('contract')}
+                />
+              </ScrollView>
             )}
 
             {tab === 'games' ? (
-              gameLog && gameLog.length > 0 ? (
-                <GameLogHeaderRow />
-              ) : (
-                <EmptyState
-                  icon="calendar-outline"
-                  title="Sin partidos cargados"
-                  message={`No hay box scores de ${activeSeason ?? 'esta temporada'} en la base de datos. Su carrera y sus medias sí están disponibles.`}
-                  compact
-                />
-              )
+              <>
+                {/* El selector vive aqui porque solo manda sobre esta
+                    pestaña: fuera parecia filtrar toda la ficha */}
+                {careerSeasons.length > 0 && (
+                  <View style={styles.barraTemporada}>
+                    <Pressable
+                      onPress={() => setSeasonPickerOpen(true)}
+                      style={({ pressed }) => [
+                        styles.selectorTemporada,
+                        pressed && styles.selectorPressed,
+                      ]}
+                    >
+                      <Ionicons name="calendar-outline" size={15} color={colors.primary} />
+                      <Text style={styles.selectorTexto}>{activeSeason}</Text>
+                      <Ionicons name="chevron-down" size={15} color={colors.textSecondary} />
+                    </Pressable>
+                    {gameLog && gameLog.length > 0 && (
+                      <Text style={styles.contadorPartidos}>
+                        {gameLog.length} {gameLog.length === 1 ? 'partido' : 'partidos'}
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {gameLog && gameLog.length > 0 ? (
+                  <GameLogHeaderRow />
+                ) : (
+                  <EmptyState
+                    icon="calendar-outline"
+                    title="Sin partidos cargados"
+                    message={`No hay box scores de ${activeSeason ?? 'esta temporada'} en la base de datos. Su carrera y sus medias sí están disponibles.`}
+                    compact
+                  />
+                )}
+              </>
             ) : tab === 'career' ? (
               <>
                 {career && career.length > 0 && <CareerHeaderRow />}
@@ -427,7 +491,7 @@ export default function PlayerDetailScreen() {
                   compact
                 />
               )
-            ) : (
+            ) : tab === 'injuries' ? (
               (!lesiones || lesiones.length === 0) && (
                 <EmptyState
                   icon="medkit-outline"
@@ -436,6 +500,20 @@ export default function PlayerDetailScreen() {
                   compact
                 />
               )
+            ) : etapas.length > 0 ? (
+              <View style={styles.contratoResumen}>
+                <Text style={styles.contratoTotal}>{millonesSueldo(totalCarrera)}</Text>
+                <Text style={styles.contratoSubtitulo}>
+                  Ganado en su carrera · {(sueldos ?? []).length} temporadas
+                </Text>
+              </View>
+            ) : (
+              <EmptyState
+                icon="document-text-outline"
+                title="Sin datos de sueldo"
+                message="No hay histórico cargado para este jugador todavía."
+                compact
+              />
             )}
           </View>
         }
@@ -444,9 +522,14 @@ export default function PlayerDetailScreen() {
           if (item.kind === 'game') return <GameLogRow entry={item.game} equipos={equiposEnTemporada} />;
           if (item.kind === 'career') return <CareerRow entry={item.career} />;
           if (item.kind === 'movement') return <MovementRow entry={item.movement} />;
-          return <InjuryRow entry={item.injury} />;
+          if (item.kind === 'injury') return <InjuryRow entry={item.injury} />;
+          return (
+            <EtapaRow etapa={item.contract} onAbrir={() => setEtapaAbierta(item.contract)} />
+          );
         }}
       />
+
+      <EtapaModal etapa={etapaAbierta} onCerrar={() => setEtapaAbierta(null)} />
 
       <SeasonPicker
         visible={seasonPickerOpen}
@@ -615,6 +698,151 @@ function InjuryRow({ entry }: { entry: PlayerInjury }) {
         </>
       )}
     </View>
+  );
+}
+
+/**
+ * Datos de la persona, no del jugador: altura, peso, edad y procedencia.
+ *
+ * Van en su propia fila y no como etiquetas junto al dorsal porque no son
+ * lo mismo: el dorsal o la posicion identifican al jugador en la pista, y
+ * esto es curiosidad de ficha.
+ */
+function FichaDatos({ jugador }: { jugador: Player }) {
+  const edad = jugador.birthDate
+    ? Math.floor((Date.now() - jugador.birthDate.getTime()) / 31_557_600_000)
+    : undefined;
+
+  const datos: { etiqueta: string; valor: string }[] = [];
+  if (jugador.heightCm) datos.push({ etiqueta: 'Altura', valor: `${jugador.heightCm} cm` });
+  if (jugador.weightKg) datos.push({ etiqueta: 'Peso', valor: `${jugador.weightKg} kg` });
+  if (edad) datos.push({ etiqueta: 'Edad', valor: `${edad} años` });
+  if (jugador.experience !== undefined) {
+    datos.push({
+      etiqueta: 'Experiencia',
+      valor: jugador.experience === 0 ? 'Novato' : `${jugador.experience} temp.`,
+    });
+  }
+
+  if (datos.length === 0) return null;
+
+  return (
+    <View style={styles.datosFila}>
+      {datos.map((d) => (
+        <View key={d.etiqueta} style={styles.dato}>
+          <Text style={styles.datoValor}>{d.valor}</Text>
+          <Text style={styles.datoEtiqueta}>{d.etiqueta}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Sueldos en millones: "58,5 M". */
+function millonesSueldo(valor: number): string {
+  return `${(valor / 1_000_000).toFixed(1).replace('.', ',')} M`;
+}
+
+/**
+ * Una etapa en un equipo: "2018 - 2024 · DAL · 109,6 M".
+ *
+ * El rango va en años sueltos y no en temporadas completas porque asi se
+ * lee de un vistazo; el detalle temporada a temporada esta al pulsar.
+ */
+function EtapaRow({ etapa, onAbrir }: { etapa: SalaryStint; onAbrir: () => void }) {
+  const desde = etapa.startSeason.slice(0, 4);
+  // El fin de "2028-29" es 2029, no 2028
+  const hasta = String(Number(etapa.endSeason.slice(0, 4)) + 1);
+  const porJugar = etapa.seasons.some((t) => t.future);
+
+  return (
+    <Pressable
+      onPress={onAbrir}
+      style={({ pressed }) => [styles.etapaFila, pressed && styles.etapaPressed]}
+    >
+      <TeamLogo
+        logoUrl={etapa.teamLogoUrl}
+        abbreviation={etapa.teamAbbreviation ?? '?'}
+        size={30}
+      />
+
+      <View style={styles.etapaInfo}>
+        <Text style={styles.etapaRango}>
+          {desde} – {hasta}
+        </Text>
+        <Text style={styles.etapaEquipo} numberOfLines={1}>
+          {etapa.teamName}
+        </Text>
+      </View>
+
+      <View style={styles.etapaDinero}>
+        <Text style={styles.etapaTotal}>{millonesSueldo(etapa.total)}</Text>
+        <Text style={styles.etapaTemporadas}>
+          {etapa.seasons.length} {etapa.seasons.length === 1 ? 'temp.' : 'temps.'}
+          {porJugar ? ' · en vigor' : ''}
+        </Text>
+      </View>
+
+      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+    </Pressable>
+  );
+}
+
+/** Detalle de una etapa, temporada a temporada. */
+function EtapaModal({ etapa, onCerrar }: { etapa: SalaryStint | null; onCerrar: () => void }) {
+  if (!etapa) return null;
+  const maximo = Math.max(...etapa.seasons.map((t) => t.salary), 1);
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onCerrar}>
+      <Pressable style={styles.etapaBackdrop} onPress={onCerrar}>
+        <Pressable style={styles.etapaSheet} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.etapaHandle} />
+
+          <View style={styles.etapaModalCabecera}>
+            <TeamLogo
+              logoUrl={etapa.teamLogoUrl}
+              abbreviation={etapa.teamAbbreviation ?? '?'}
+              size={30}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.etapaModalTitulo}>{etapa.teamName}</Text>
+              <Text style={styles.etapaModalRango}>
+                {etapa.startSeason} – {etapa.endSeason} · {millonesSueldo(etapa.total)}
+              </Text>
+            </View>
+            <Pressable onPress={onCerrar} hitSlop={10}>
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.etapaLista}>
+            {etapa.seasons.map((t) => (
+              <View key={`${t.season}-${t.teamName}`} style={styles.etapaTemporadaFila}>
+                <Text style={styles.etapaTemporadaNombre}>{t.season}</Text>
+                <View style={styles.etapaTemporadaBarra}>
+                  <View
+                    style={[
+                      styles.etapaTemporadaRelleno,
+                      { width: `${(t.salary / maximo) * 100}%` },
+                      // Lo aun no jugado se distingue: es compromiso, no
+                      // dinero ya cobrado
+                      t.future && styles.etapaTemporadaFuturo,
+                    ]}
+                  />
+                </View>
+                <Text style={styles.etapaTemporadaImporte}>{millonesSueldo(t.salary)}</Text>
+              </View>
+            ))}
+            {etapa.seasons.some((t) => t.future) && (
+              <Text style={styles.etapaNota}>
+                Las barras huecas son temporadas contratadas que aún no se han jugado.
+              </Text>
+            )}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -859,6 +1087,254 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.lg,
   },
+  equipoLinea: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  equipoPressed: { opacity: 0.6 },
+  equipoNombre: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
+  },
+
+  etapaFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  etapaPressed: { backgroundColor: colors.surface },
+  etapaInfo: { flex: 1 },
+  etapaRango: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displayBold,
+  },
+  etapaEquipo: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    marginTop: 1,
+  },
+  etapaDinero: { alignItems: 'flex-end' },
+  etapaTotal: {
+    color: colors.primary,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displayBold,
+  },
+  etapaTemporadas: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    marginTop: 1,
+  },
+
+  etapaBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  etapaSheet: {
+    maxHeight: '80%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
+  },
+  etapaHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.borderStrong,
+    alignSelf: 'center',
+    marginBottom: spacing.md,
+  },
+  etapaModalCabecera: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  etapaModalTitulo: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontFamily: fontFamily.displayBold,
+  },
+  etapaModalRango: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: 1,
+  },
+  etapaLista: { padding: spacing.md },
+  etapaTemporadaFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  etapaTemporadaNombre: {
+    width: 58,
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  etapaTemporadaBarra: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.surfaceLight,
+    overflow: 'hidden',
+  },
+  etapaTemporadaRelleno: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  // Contratado pero sin jugar: hueco en lugar de macizo
+  etapaTemporadaFuturo: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  etapaTemporadaImporte: {
+    width: 64,
+    textAlign: 'right',
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
+  },
+  etapaNota: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.regular,
+    fontStyle: 'italic',
+    marginTop: spacing.md,
+    textAlign: 'center',
+  },
+
+  contratoResumen: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  contratoTotal: {
+    color: colors.primary,
+    fontSize: 30,
+    fontFamily: fontFamily.displayBold,
+  },
+  contratoSubtitulo: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: 2,
+  },
+  contratoFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  contratoTemporada: {
+    width: 62,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  contratoEquipo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: 58,
+  },
+  contratoEquipoTexto: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+  contratoBarra: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.surfaceLight,
+    overflow: 'hidden',
+  },
+  contratoBarraRelleno: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 3,
+  },
+  contratoImporte: {
+    width: 64,
+    textAlign: 'right',
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displayBold,
+  },
+
+  barraTemporada: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  selectorTemporada: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  selectorPressed: { opacity: 0.7 },
+  selectorTexto: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  contadorPartidos: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+  },
+
+  datosFila: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    marginTop: spacing.lg,
+  },
+  dato: { alignItems: 'center' },
+  datoValor: {
+    color: colors.text,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displayBold,
+  },
+  datoEtiqueta: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginTop: 1,
+  },
+
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1238,6 +1714,12 @@ const styles = StyleSheet.create({
   metaBadgeRetired: {
     borderColor: colors.borderStrong,
   },
+  // Lleva escudo dentro, asi que necesita disponerse en fila
+  metaBadgeEquipo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   metaBadgeDraft: {
     borderColor: colors.primary,
   },
@@ -1313,16 +1795,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  detailTabs: {
-    flexDirection: 'row',
-    gap: spacing.xs,
+  detailTabsScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
+  detailTabs: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
   detailTab: {
-    flex: 1,
     paddingVertical: spacing.sm,
-    paddingHorizontal: 2,
+    paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.full,
     alignItems: 'center',
