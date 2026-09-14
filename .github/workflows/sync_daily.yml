@@ -36,6 +36,31 @@ jobs:
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
         run: python -m src.jobs.sync_upcoming_games
 
+      # Las tres fuentes de la pestaña de Novedades. Son una peticion HTTP
+      # cada una y ninguna depende de las demas, asi que van seguidas: si
+      # una fuente falla, el hilo se queda sin esa parte pero no sin las
+      # otras.
+      - name: Sync injuries (ESPN)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_injuries
+        continue-on-error: true
+
+      - name: Sync transactions (NBA)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_transactions
+        continue-on-error: true
+
+      - name: Sync news (ESPN Deportes)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_news
+        continue-on-error: true
+
       # - name: Sync finalized games
       #   env:
       #     SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
