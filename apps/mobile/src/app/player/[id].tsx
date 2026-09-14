@@ -37,7 +37,7 @@ import {
 } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { estadoLesion, tituloLesion } from '@/constants/injuries';
-import { tipoMovimiento } from '@/constants/movements';
+import { sentidoMovimiento, tipoMovimiento } from '@/constants/movements';
 import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
@@ -600,6 +600,7 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
 
 function MovementRow({ entry }: { entry: PlayerMovement }) {
   const abrible = !!entry.dealId && entry.type === 'Trade';
+  const { desde, hasta } = sentidoMovimiento(entry.type, entry.toTeam, entry.fromTeam);
 
   return (
     <Pressable
@@ -622,14 +623,10 @@ function MovementRow({ entry }: { entry: PlayerMovement }) {
       </View>
 
       <View style={styles.movementTeams}>
-        {entry.fromTeam ? (
+        {desde ? (
           <View style={styles.movementTeam}>
-            <TeamLogo
-              logoUrl={entry.fromTeam.logoUrl}
-              abbreviation={entry.fromTeam.abbreviation}
-              size={24}
-            />
-            <Text style={styles.movementTeamText}>{entry.fromTeam.abbreviation}</Text>
+            <TeamLogo logoUrl={desde.logoUrl} abbreviation={desde.abbreviation} size={24} />
+            <Text style={styles.movementTeamText}>{desde.abbreviation}</Text>
           </View>
         ) : (
           <Text style={styles.movementSinOrigen}>—</Text>
@@ -637,15 +634,13 @@ function MovementRow({ entry }: { entry: PlayerMovement }) {
 
         <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
 
-        {entry.toTeam && (
+        {hasta ? (
           <View style={styles.movementTeam}>
-            <TeamLogo
-              logoUrl={entry.toTeam.logoUrl}
-              abbreviation={entry.toTeam.abbreviation}
-              size={24}
-            />
-            <Text style={styles.movementTeamText}>{entry.toTeam.abbreviation}</Text>
+            <TeamLogo logoUrl={hasta.logoUrl} abbreviation={hasta.abbreviation} size={24} />
+            <Text style={styles.movementTeamText}>{hasta.abbreviation}</Text>
           </View>
+        ) : (
+          <Text style={styles.movementSinOrigen}>—</Text>
         )}
 
         {abrible && (
