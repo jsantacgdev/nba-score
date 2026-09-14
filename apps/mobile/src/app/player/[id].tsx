@@ -819,7 +819,9 @@ function EtapaModal({ etapa, onCerrar }: { etapa: SalaryStint | null; onCerrar: 
           <ScrollView contentContainerStyle={styles.etapaLista}>
             {etapa.seasons.map((t) => (
               <View key={`${t.season}-${t.teamName}`} style={styles.etapaTemporadaFila}>
-                <Text style={styles.etapaTemporadaNombre}>{t.season}</Text>
+                <Text style={styles.etapaTemporadaNombre} numberOfLines={1}>
+                  {t.season}
+                </Text>
                 <View style={styles.etapaTemporadaBarra}>
                   <View
                     style={[
@@ -1183,21 +1185,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   etapaTemporadaNombre: {
-    width: 58,
+    width: 76,
     color: colors.textSecondary,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
   },
   etapaTemporadaBarra: {
     flex: 1,
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.surfaceLight,
     overflow: 'hidden',
   },
   etapaTemporadaRelleno: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
     backgroundColor: colors.primary,
   },
   // Contratado pero sin jugar: hueco en lugar de macizo
