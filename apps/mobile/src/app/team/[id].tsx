@@ -31,6 +31,7 @@ import {
 } from '@/hooks/useTeamRoster';
 import { useTeamGames } from '@/hooks/useTeamGames';
 import { getPositionName } from '@/constants/positions';
+import { tipoMovimiento } from '@/constants/movements';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { Game, Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
 
@@ -415,15 +416,6 @@ function TabSwitcher({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Ta
       </Pressable>
     </View>
   );
-}
-
-function tipoMovimiento(tipo: string): string {
-  if (tipo === 'Trade') return 'Traspaso';
-  if (tipo === 'Signing') return 'Agencia libre';
-  if (tipo === 'Waive') return 'Corte';
-  if (tipo === 'AwardOnWaivers') return 'Reclamado';
-  if (tipo === 'ContractConverted') return 'Contrato convertido';
-  return tipo;
 }
 
 function iniciales(nombre: string): string {

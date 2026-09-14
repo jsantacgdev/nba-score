@@ -108,3 +108,27 @@ export function formatMinutes(minutes: number): string {
   const s = total % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
+
+/**
+ * "hace 20 min", "hace 3 h", "ayer" o la fecha.
+ *
+ * Solo lo usa el hilo de novedades, donde lo que importa es si algo acaba
+ * de pasar. El corte a dia se hace con el calendario español, no con las
+ * 24 horas: una noticia de ayer a las 23:00 es de ayer aunque hayan pasado
+ * dos horas.
+ */
+export function formatRelative(date: Date): string {
+  const ahora = new Date();
+  const minutos = Math.round((ahora.getTime() - date.getTime()) / 60000);
+
+  // Una fecha futura no deberia darse, pero el feed trae horas con margen
+  if (minutos < 1) return 'ahora';
+  if (minutos < 60) return `hace ${minutos} min`;
+
+  const hoy = claveDia(ahora);
+  const dia = claveDia(date);
+  if (dia === hoy) return `hace ${Math.floor(minutos / 60)} h`;
+  if (dia === claveDia(addDays(ahora, -1))) return 'ayer';
+
+  return formatDateDMY(date);
+}
