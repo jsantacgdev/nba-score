@@ -21,7 +21,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useNovedades } from '@/hooks/useNews';
 import { estadoLesion, tituloLesion } from '@/constants/injuries';
-import { tipoMovimiento } from '@/constants/movements';
+import { sentidoMovimiento, tipoMovimiento } from '@/constants/movements';
 import { formatRelative } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { FeedEntry, FeedKind } from '@/types/domain';
@@ -232,6 +232,7 @@ function MovimientoRow({ entry }: { entry: FeedEntry }) {
   // El detalle de un traspaso solo existe cuando la NBA agrupo sus piezas
   const alTraspaso = !!entry.dealId && entry.subtitle === 'Trade';
   const abrible = alTraspaso || !!entry.playerId;
+  const { desde, hasta } = sentidoMovimiento(entry.subtitle ?? '', entry.team, entry.otherTeam);
 
   return (
     <Pressable
@@ -259,22 +260,14 @@ function MovimientoRow({ entry }: { entry: FeedEntry }) {
             {entry.title}
           </Text>
           <View style={styles.equipos}>
-            {entry.otherTeam ? (
-              <TeamLogo
-                logoUrl={entry.otherTeam.logoUrl}
-                abbreviation={entry.otherTeam.abbreviation}
-                size={20}
-              />
+            {desde ? (
+              <TeamLogo logoUrl={desde.logoUrl} abbreviation={desde.abbreviation} size={20} />
             ) : (
               <Text style={styles.sinOrigen}>—</Text>
             )}
             <Ionicons name="arrow-forward" size={13} color={colors.textMuted} />
-            {entry.team ? (
-              <TeamLogo
-                logoUrl={entry.team.logoUrl}
-                abbreviation={entry.team.abbreviation}
-                size={20}
-              />
+            {hasta ? (
+              <TeamLogo logoUrl={hasta.logoUrl} abbreviation={hasta.abbreviation} size={20} />
             ) : (
               <Text style={styles.sinOrigen}>—</Text>
             )}
