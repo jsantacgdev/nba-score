@@ -37,6 +37,7 @@ import {
 } from '@/hooks/usePlayerDetail';
 import { getPositionName } from '@/constants/positions';
 import { estadoLesion, tituloLesion } from '@/constants/injuries';
+import { tipoMovimiento } from '@/constants/movements';
 import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
@@ -595,15 +596,6 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
       </ScrollView>
     </View>
   );
-}
-
-function tipoMovimiento(tipo: string): string {
-  if (tipo === 'Trade') return 'Traspaso';
-  if (tipo === 'Signing') return 'Agencia libre';
-  if (tipo === 'Waive') return 'Corte';
-  if (tipo === 'AwardOnWaivers') return 'Reclamado';
-  if (tipo === 'ContractConverted') return 'Contrato convertido';
-  return tipo;
 }
 
 function MovementRow({ entry }: { entry: PlayerMovement }) {

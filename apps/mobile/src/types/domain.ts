@@ -337,7 +337,7 @@ export type LeaderEntry = {
   blocks: number;
 };
 
-type TeamRef = {
+export type TeamRef = {
   id: string;
   abbreviation: string;
   name?: string;
@@ -544,4 +544,41 @@ export type SalaryStint = {
   endSeason: string;
   total: number;
   seasons: PlayerSalarySeason[];
+};
+
+// ============================================
+// Novedades
+// ============================================
+
+/** Las tres cosas que pasan entre partido y partido. */
+export type FeedKind = 'news' | 'injury' | 'movement';
+
+/**
+ * Una fila del hilo de novedades.
+ *
+ * Las tres fuentes llegan por la misma funcion y con la misma forma, asi
+ * que los campos que solo usa una van opcionales: el enlace y la imagen
+ * son de las noticias, el rival es del movimiento, el estado de la lesion
+ * viaja en `subtitle`.
+ */
+export type FeedEntry = {
+  kind: FeedKind;
+  id: string;
+  happenedAt: Date;
+  title: string;
+  subtitle?: string;
+  detail?: string;
+  /** Solo noticias: el articulo en espn.es. */
+  link?: string;
+  imageUrl?: string;
+  playerId?: string;
+  playerName?: string;
+  photoUrl?: string;
+  team?: TeamRef;
+  /** Solo movimientos: el equipo de origen. */
+  otherTeam?: TeamRef;
+  dealId?: string;
+  /** Solo lesiones: zona y lado, para escribirlas en castellano. */
+  injuryType?: string;
+  injurySide?: string;
 };

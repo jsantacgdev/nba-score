@@ -250,6 +250,42 @@ export type Database = {
           },
         ]
       }
+      news_articles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          headline: string
+          id: string
+          image_url: string | null
+          link: string | null
+          player_ids: string[] | null
+          published: string
+          team_ids: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          headline: string
+          id: string
+          image_url?: string | null
+          link?: string | null
+          player_ids?: string[] | null
+          published: string
+          team_ids?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          headline?: string
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          player_ids?: string[] | null
+          published?: string
+          team_ids?: string[] | null
+        }
+        Relationships: []
+      }
       player_awards: {
         Row: {
           award: string
@@ -1192,6 +1228,32 @@ export type Database = {
           team_abbreviation: string
           team_id: string
           team_logo_url: string
+        }[]
+      }
+      nombre_desde_slug: { Args: { slug: string }; Returns: string }
+      novedades: {
+        Args: { kind_filter?: string; target_limit?: number }
+        Returns: {
+          deal_id: string
+          detail: string
+          happened_at: string
+          id: string
+          image_url: string
+          injury_side: string
+          injury_type: string
+          kind: string
+          link: string
+          other_abbreviation: string
+          other_logo_url: string
+          other_team_id: string
+          photo_url: string
+          player_id: string
+          player_name: string
+          subtitle: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+          title: string
         }[]
       }
       player_career: {
