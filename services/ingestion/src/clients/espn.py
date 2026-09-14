@@ -55,3 +55,82 @@ def get_injuries() -> list[dict]:
             )
 
     return [l for l in lesiones if l["id"]]
+
+
+# ============================================
+# Noticias
+# ============================================
+
+URL_NOTICIAS = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news"
+
+
+# Los videos se descartan: su titular es de tertulia, no de noticia
+TIPOS_DESCARTADOS = {"Media"}
+
+
+def get_news(limite: int = 50) -> list[dict]:
+    """
+    Titulares de la NBA en castellano, ya redactados por ESPN Deportes.
+
+    Con lang=es y region=es la misma API devuelve su edicion en castellano,
+    con titular y resumen escritos por sus periodistas y enlace a espn.es.
+    No es una traduccion de la edicion inglesa sino otra redaccion: los
+    identificadores no coinciden y la seleccion de temas es distinta.
+
+    Conserva las etiquetas de equipo y jugador, que es lo que permite
+    llevar cada noticia a su ficha y no dejarla en un muro suelto. Sus
+    identificadores no son los de la NBA, asi que aqui solo se extraen los
+    nombres; el cruce lo hace el job, que es quien conoce la base.
+    """
+    response = httpx.get(
+        URL_NOTICIAS,
+        params={"limit": limite, "lang": "es", "region": "es"},
+        timeout=60,
+    )
+    response.raise_for_status()
+
+    noticias = []
+    for articulo in response.json().get("articles") or []:
+        identificador = str(articulo.get("id") or "").strip()
+        titular = str(articulo.get("headline") or "").strip()
+        if not identificador or not titular:
+            continue
+        if str(articulo.get("type") or "") in TIPOS_DESCARTADOS:
+            continue
+
+        equipos, jugadores = [], []
+        for categoria in articulo.get("categories") or []:
+            tipo = categoria.get("type")
+            if tipo == "team":
+                nombre = (categoria.get("team") or {}).get("description") or categoria.get(
+                    "description"
+                )
+                if nombre:
+                    equipos.append(str(nombre).strip())
+            elif tipo == "athlete":
+                nombre = (categoria.get("athlete") or {}).get("description") or categoria.get(
+                    "description"
+                )
+                if nombre:
+                    jugadores.append(str(nombre).strip())
+
+        imagen = None
+        for img in articulo.get("images") or []:
+            if img.get("url"):
+                imagen = str(img["url"])
+                break
+
+        noticias.append(
+            {
+                "id": identificador,
+                "headline": titular,
+                "description": str(articulo.get("description") or "").strip() or None,
+                "link": ((articulo.get("links") or {}).get("web") or {}).get("href"),
+                "image_url": imagen,
+                "published": str(articulo.get("published") or "").strip() or None,
+                "team_names": sorted(set(equipos)),
+                "player_names": sorted(set(jugadores)),
+            }
+        )
+
+    return noticias
