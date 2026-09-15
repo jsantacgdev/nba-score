@@ -34,13 +34,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="news"
-        options={{
-          title: 'Novedades',
-          tabBarIcon: ({ color, size }) => <Ionicons name="newspaper" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="teams"
         options={{
           title: 'Equipos',
@@ -63,6 +56,13 @@ export default function TabsLayout() {
         options={{
           title: 'Clasificación',
           tabBarIcon: ({ color, size }) => <Ionicons name="trophy" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="news"
+        options={{
+          title: 'Novedades',
+          tabBarIcon: ({ color, size }) => <Ionicons name="newspaper" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
