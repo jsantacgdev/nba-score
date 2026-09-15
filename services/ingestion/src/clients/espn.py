@@ -1,6 +1,7 @@
 
 import re
 import unicodedata
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -64,6 +65,28 @@ def get_injuries() -> list[dict]:
 URL_NOTICIAS = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news"
 
 
+
+# ESPN da el enlace en www.espn.es, que no sirve articulos: cualquier ruta
+# acaba en 302 a la portada de ESPN Deportes y el titular se pierde. El
+# identificador y la ruta si valen, asi que solo hay que cambiar el
+# dominio por el que los sirve de verdad.
+#
+# Comprobado sobre las 53 noticias que teniamos guardadas: las 53 usan ese
+# dominio, y las probadas llegan al articulo con el cambio.
+HOST_SIN_ARTICULOS = "www.espn.es"
+HOST_CON_ARTICULOS = "espndeportes.espn.com"
+
+
+def enlace_al_articulo(url: str | None) -> str | None:
+    if not url:
+        return None
+    partes = urlsplit(url)
+    if partes.netloc != HOST_SIN_ARTICULOS:
+        return url
+    return urlunsplit(
+        ("https", HOST_CON_ARTICULOS, partes.path, partes.query, partes.fragment)
+    )
+
 # Los videos se descartan: su titular es de tertulia, no de noticia
 TIPOS_DESCARTADOS = {"Media"}
 
@@ -125,7 +148,9 @@ def get_news(limite: int = 50) -> list[dict]:
                 "id": identificador,
                 "headline": titular,
                 "description": str(articulo.get("description") or "").strip() or None,
-                "link": ((articulo.get("links") or {}).get("web") or {}).get("href"),
+                "link": enlace_al_articulo(
+                    ((articulo.get("links") or {}).get("web") or {}).get("href")
+                ),
                 "image_url": imagen,
                 "published": str(articulo.get("published") or "").strip() or None,
                 "team_names": sorted(set(equipos)),
