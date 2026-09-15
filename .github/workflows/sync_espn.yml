@@ -1,0 +1,60 @@
+name: Sync ESPN Feeds
+
+# Las dos fuentes que alimentan la pestaña de Novedades y que cambian
+# durante el día: los titulares de ESPN Deportes y el parte de lesiones.
+#
+# Van aparte de la sincronización diaria porque su ritmo es otro. Un
+# titular que llega por la mañana no puede esperar a las 10:00 del día
+# siguiente, y las lesiones se reportan a lo largo del día, muchas veces
+# horas antes del partido.
+#
+# Cada seis horas: el feed de ESPN devuelve los 50 titulares más
+# recientes y no publican tantos, así que con esa frecuencia no se escapa
+# ninguno. Son dos peticiones HTTP por ejecución.
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+# Si una ejecución se solapa con la anterior, se descarta: las dos harían
+# el mismo upsert.
+concurrency:
+  group: sync-espn
+  cancel-in-progress: false
+
+jobs:
+  sync-espn:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: services/ingestion
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: services/ingestion/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Ninguna depende de la otra: si ESPN falla una, la otra sigue
+      - name: Sync news (ESPN Deportes)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_news
+        continue-on-error: true
+
+      - name: Sync injuries (ESPN)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_injuries
+        continue-on-error: true
