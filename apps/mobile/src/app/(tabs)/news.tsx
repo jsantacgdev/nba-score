@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,7 +50,14 @@ const FILTROS: { kind?: FeedKind; label: string }[] = [
 
 export default function NewsScreen() {
   const [filtro, setFiltro] = useState<FeedKind | undefined>(undefined);
-  const { data, isLoading, isRefetching, refetch, error } = useNovedades(filtro);
+  // Las pestañas se quedan montadas, asi que hay que decirle al hilo
+  // cuando esta delante para que no siga refrescando desde el fondo
+  const enPantalla = useIsFocused();
+  const { data, isLoading, isRefetching, refetch, error } = useNovedades(
+    filtro,
+    60,
+    enPantalla,
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
