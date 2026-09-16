@@ -11,8 +11,10 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { GameDetailSkeleton } from '@/components/ui/Skeleton';
 import { CourtLineup } from '@/components/game/CourtLineup';
 import { HeadToHead } from '@/components/game/HeadToHead';
+import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
 import { useHeadToHead } from '@/hooks/useHeadToHead';
+import { useGameTeamForm } from '@/hooks/useGameTeamForm';
 import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -29,6 +31,7 @@ export default function GameDetailScreen() {
     data?.game,
     vista === 'h2h',
   );
+  const { data: forma, isLoading: cargandoForma } = useGameTeamForm(id, vista === 'h2h');
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
@@ -177,12 +180,20 @@ export default function GameDetailScreen() {
         )}
 
         {vista === 'h2h' ? (
-          <HeadToHead
-            home={game.homeTeam}
-            away={game.awayTeam}
-            data={historial}
-            isLoading={cargandoHistorial}
-          />
+          <>
+            <ComoLlegan
+              home={game.homeTeam}
+              away={game.awayTeam}
+              data={forma}
+              isLoading={cargandoForma}
+            />
+            <HeadToHead
+              home={game.homeTeam}
+              away={game.awayTeam}
+              data={historial}
+              isLoading={cargandoHistorial}
+            />
+          </>
         ) : vista === 'court' ? (
           <>
             <CourtLineup

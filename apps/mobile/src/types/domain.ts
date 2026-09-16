@@ -630,3 +630,40 @@ export type HeadToHead = {
   /** Quien llega ganando los ultimos seguidos. */
   streak?: { teamId: string; wins: number };
 };
+
+// ============================================
+// Como llegan
+// ============================================
+
+/** El estado de un equipo al llegar a un partido. */
+export type TeamForm = {
+  teamId: string;
+  wins: number;
+  losses: number;
+  /** Puesto en su conferencia; sin partidos jugados no hay puesto. */
+  conferenceRank?: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  homeWins: number;
+  homeLosses: number;
+  awayWins: number;
+  awayLosses: number;
+  /** Positiva si son victorias seguidas, negativa si son derrotas. */
+  streak: number;
+  /** Los ultimos cinco, del mas antiguo al mas reciente. */
+  lastResults: ('W' | 'L')[];
+};
+
+/**
+ * Como llegan los dos equipos de un partido.
+ *
+ * Los numeros son los de la fecha del partido, no los de hoy. Si esa
+ * temporada aun no habia empezado son los de la anterior, y entonces
+ * `previousSeason` avisa para poder titularlo como lo que es.
+ */
+export type GameTeamForm = {
+  season: string;
+  previousSeason: boolean;
+  home: TeamForm;
+  away: TeamForm;
+};
