@@ -10,7 +10,9 @@ import type { GameBoxScoreEntry, GameLineupPlayer } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { GameDetailSkeleton } from '@/components/ui/Skeleton';
 import { CourtLineup } from '@/components/game/CourtLineup';
+import { HeadToHead } from '@/components/game/HeadToHead';
 import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
+import { useHeadToHead } from '@/hooks/useHeadToHead';
 import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -19,10 +21,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
-  const [vista, setVista] = useState<'stats' | 'court'>('stats');
+  const [vista, setVista] = useState<'stats' | 'court' | 'h2h'>('stats');
   const enJuego = data?.game.status === 'live';
   const { data: enPista } = useLiveLineup(id, enJuego);
   const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
+  const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
+    data?.game,
+    vista === 'h2h',
+  );
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
@@ -146,23 +152,38 @@ export default function GameDetailScreen() {
             active={vista === 'court'}
             onPress={() => setVista('court')}
           />
-        </View>
-
-        {/* Toggle entre equipos */}
-        <View style={styles.teamToggleRow}>
-          <TeamToggle
-            label={game.homeTeam.abbreviation}
-            active={selectedTeam === 'home'}
-            onPress={() => setSelectedTeam('home')}
-          />
-          <TeamToggle
-            label={game.awayTeam.abbreviation}
-            active={selectedTeam === 'away'}
-            onPress={() => setSelectedTeam('away')}
+          <VistaTab
+            label="Cara a cara"
+            active={vista === 'h2h'}
+            onPress={() => setVista('h2h')}
           />
         </View>
 
-        {vista === 'court' ? (
+        {/* Toggle entre equipos. El cara a cara habla de los dos a la vez,
+            asi que alli no pinta nada. */}
+        {vista !== 'h2h' && (
+          <View style={styles.teamToggleRow}>
+            <TeamToggle
+              label={game.homeTeam.abbreviation}
+              active={selectedTeam === 'home'}
+              onPress={() => setSelectedTeam('home')}
+            />
+            <TeamToggle
+              label={game.awayTeam.abbreviation}
+              active={selectedTeam === 'away'}
+              onPress={() => setSelectedTeam('away')}
+            />
+          </View>
+        )}
+
+        {vista === 'h2h' ? (
+          <HeadToHead
+            home={game.homeTeam}
+            away={game.awayTeam}
+            data={historial}
+            isLoading={cargandoHistorial}
+          />
+        ) : vista === 'court' ? (
           <>
             <CourtLineup
               players={quintetoDe(selectedTeam)}

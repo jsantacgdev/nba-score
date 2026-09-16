@@ -582,3 +582,51 @@ export type FeedEntry = {
   injuryType?: string;
   injurySide?: string;
 };
+
+// ============================================
+// Cara a cara
+// ============================================
+
+/** Un enfrentamiento anterior entre los dos mismos equipos. */
+export type HeadToHeadGame = {
+  id: string;
+  startsAt: Date;
+  season: string;
+  seasonType: string;
+  /** Quien jugaba en casa aquel dia, que no tiene por que ser el de hoy. */
+  homeTeamId: string;
+  awayTeamId: string;
+  scoreHome: number;
+  scoreAway: number;
+  winnerTeamId: string;
+};
+
+/** Lo que uno de los dos equipos hizo en esos partidos. */
+export type HeadToHeadSide = {
+  teamId: string;
+  wins: number;
+  /** Victorias jugando en su propia cancha. */
+  winsAtHome: number;
+  /** Media de puntos anotados. */
+  pointsAvg: number;
+  /** La victoria mas holgada, si gano alguna. */
+  biggestWin?: { gameId: string; margin: number; startsAt: Date };
+};
+
+/**
+ * El historial entre los dos equipos de un partido.
+ *
+ * `home` y `away` son el local y el visitante de ESE partido, no de cada
+ * enfrentamiento: la pestaña los usa como lados fijos para que el balance
+ * se pueda leer de un vistazo.
+ */
+export type HeadToHead = {
+  /** Del mas reciente al mas antiguo. */
+  games: HeadToHeadGame[];
+  home: HeadToHeadSide;
+  away: HeadToHeadSide;
+  /** Temporada del enfrentamiento mas antiguo que consta. */
+  firstSeason?: string;
+  /** Quien llega ganando los ultimos seguidos. */
+  streak?: { teamId: string; wins: number };
+};
