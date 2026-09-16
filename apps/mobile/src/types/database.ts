@@ -1230,6 +1230,26 @@ export type Database = {
           team_logo_url: string
         }[]
       }
+      game_team_form: {
+        Args: { target_game_id: string }
+        Returns: {
+          away_losses: number
+          away_wins: number
+          conference_rank: number
+          home_losses: number
+          home_wins: number
+          last_results: string[]
+          losses: number
+          points_against: number
+          points_for: number
+          previous_season: boolean
+          season: string
+          side: string
+          streak: number
+          team_id: string
+          wins: number
+        }[]
+      }
       nombre_desde_slug: { Args: { slug: string }; Returns: string }
       novedades: {
         Args: { kind_filter?: string; target_limit?: number }
