@@ -1452,15 +1452,23 @@ export type Database = {
         Args: { target_season: string }
         Returns: {
           abbreviation: string
+          away_losses: number
+          away_wins: number
           city: string
           conference: string
           division: string
           full_name: string
           games_played: number
+          home_losses: number
+          home_wins: number
+          last10_losses: number
+          last10_wins: number
+          last_results: string[]
           logo_url: string
           losses: number
           name: string
           point_differential: number
+          streak: number
           team_id: string
           win_percentage: number
           wins: number

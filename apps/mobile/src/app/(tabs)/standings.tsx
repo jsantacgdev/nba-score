@@ -13,8 +13,17 @@ import { ErrorState } from '@/components/ui/ErrorState';
 
 type ConferenceFilter = 'East' | 'West';
 
+type Vista = 'balance' | 'sedes' | 'forma';
+
+const VISTAS: { key: Vista; label: string }[] = [
+  { key: 'balance', label: 'Balance' },
+  { key: 'sedes', label: 'Casa y fuera' },
+  { key: 'forma', label: 'Forma' },
+];
+
 export default function StandingsScreen() {
   const [conference, setConference] = useState<ConferenceFilter>('East');
+  const [vista, setVista] = useState<Vista>('balance');
   const [pickedSeason, setPickedSeason] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -53,6 +62,20 @@ export default function StandingsScreen() {
         />
       </View>
 
+      <View style={styles.vistaRow}>
+        {VISTAS.map((v) => (
+          <Pressable
+            key={v.key}
+            onPress={() => setVista(v.key)}
+            style={[styles.vistaChip, vista === v.key && styles.vistaChipActive]}
+          >
+            <Text style={[styles.vistaChipText, vista === v.key && styles.vistaChipTextActive]}>
+              {v.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       {isLoading && <LoadingState message="Cargando clasificación..." />}
 
       {error && <ErrorState title="No se puede cargar la clasificación" onRetry={refetch} />}
@@ -73,11 +96,16 @@ export default function StandingsScreen() {
           ListHeaderComponent={
             <View>
               <Legend />
-              <StandingsHeaderRow />
+              <StandingsHeaderRow vista={vista} />
             </View>
           }
           renderItem={({ item, index }) => (
-            <StandingsRow standing={item} position={index + 1} season={season} />
+            <StandingsRow
+              standing={item}
+              position={index + 1}
+              season={season}
+              vista={vista}
+            />
           )}
         />
       )}
@@ -127,16 +155,71 @@ function Legend() {
   );
 }
 
-function StandingsHeaderRow() {
+function StandingsHeaderRow({ vista }: { vista: Vista }) {
   return (
     <View style={styles.headerRow}>
       <Text style={[styles.headerText, styles.colPosition]}>#</Text>
       <Text style={[styles.headerText, styles.colTeam]}>Equipo</Text>
-      <View style={styles.colTrophy} />
-      <Text style={[styles.headerText, styles.colStat]}>V</Text>
-      <Text style={[styles.headerText, styles.colStat]}>D</Text>
-      <Text style={[styles.headerText, styles.colStat]}>%</Text>
-      <Text style={[styles.headerText, styles.colStatDiff]}>+/-</Text>
+
+      {vista === 'balance' && (
+        <>
+          <Text style={[styles.headerText, styles.colStat]}>V</Text>
+          <Text style={[styles.headerText, styles.colStat]}>D</Text>
+          <Text style={[styles.headerText, styles.colStat]}>%</Text>
+          <Text style={[styles.headerText, styles.colStatDiff]}>+/-</Text>
+        </>
+      )}
+
+      {vista === 'sedes' && (
+        <>
+          <Text style={[styles.headerText, styles.colSplit]}>CASA</Text>
+          <Text style={[styles.headerText, styles.colSplit]}>FUERA</Text>
+        </>
+      )}
+
+      {vista === 'forma' && (
+        <>
+          <Text style={[styles.headerText, styles.colStreak]} numberOfLines={1}>
+            RACHA
+          </Text>
+          <Text style={[styles.headerText, styles.colChips]}>ÚLT. 5</Text>
+          <Text style={[styles.headerText, styles.colLast10]}>ÚLT. 10</Text>
+        </>
+      )}
+    </View>
+  );
+}
+
+const RACHA_MINIMA = 3;
+
+function rachaTexto(streak: number): string | null {
+  if (streak >= RACHA_MINIMA) return `${streak}V`;
+  if (streak <= -RACHA_MINIMA) return `${-streak}D`;
+  return null;
+}
+
+function TiraResultados({ resultados }: { resultados: ('W' | 'L')[] }) {
+  if (resultados.length === 0) {
+    return <Text style={[styles.statText, styles.colChips]}>—</Text>;
+  }
+
+  return (
+    <View style={[styles.colChips, styles.tira]}>
+      {resultados.map((resultado, i) => (
+        <View
+          key={i}
+          style={[styles.chip, resultado === 'W' ? styles.chipGanado : styles.chipPerdido]}
+        >
+          <Text
+            style={[
+              styles.chipTexto,
+              resultado === 'W' ? styles.chipTextoGanado : styles.chipTextoPerdido,
+            ]}
+          >
+            {resultado}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -145,10 +228,12 @@ function StandingsRow({
   standing,
   position,
   season,
+  vista,
 }: {
   standing: LeagueStanding;
   position: number;
   season?: string;
+  vista: Vista;
 }) {
   const isPlayoffSpot = position <= 6;
   const isPlayInSpot = position >= 7 && position <= 10;
@@ -178,28 +263,58 @@ function StandingsRow({
         <Text style={styles.teamName} numberOfLines={1}>
           {standing.name}
         </Text>
-      </View>
-
-      <View style={styles.colTrophy}>
         {standing.wonChampionship && <Trophy award="champion" season={season ?? ''} size={20} />}
       </View>
 
-      <Text style={[styles.statText, styles.colStat]}>{standing.wins}</Text>
-      <Text style={[styles.statText, styles.colStat]}>{standing.losses}</Text>
-      <Text style={[styles.statText, styles.colStat]}>
-        {standing.winPercentage.toFixed(3).substring(1)}
-      </Text>
-      <Text
-        style={[
-          styles.statText,
-          styles.colStatDiff,
-          diff > 0 && styles.diffPositive,
-          diff < 0 && styles.diffNegative,
-        ]}
-      >
-        {diff > 0 ? '+' : ''}
-        {diff.toFixed(1)}
-      </Text>
+      {vista === 'balance' && (
+        <>
+          <Text style={[styles.statText, styles.colStat]}>{standing.wins}</Text>
+          <Text style={[styles.statText, styles.colStat]}>{standing.losses}</Text>
+          <Text style={[styles.statText, styles.colStat]}>
+            {standing.winPercentage.toFixed(3).substring(1)}
+          </Text>
+          <Text
+            style={[
+              styles.statText,
+              styles.colStatDiff,
+              diff > 0 && styles.diffPositive,
+              diff < 0 && styles.diffNegative,
+            ]}
+          >
+            {diff > 0 ? '+' : ''}
+            {diff.toFixed(1)}
+          </Text>
+        </>
+      )}
+
+      {vista === 'sedes' && (
+        <>
+          <Text style={[styles.statText, styles.colSplit]}>
+            {standing.homeWins}-{standing.homeLosses}
+          </Text>
+          <Text style={[styles.statText, styles.colSplit]}>
+            {standing.awayWins}-{standing.awayLosses}
+          </Text>
+        </>
+      )}
+
+      {vista === 'forma' && (
+        <>
+          <Text
+            style={[
+              styles.statText,
+              styles.colStreak,
+              standing.streak > 0 ? styles.diffPositive : styles.diffNegative,
+            ]}
+          >
+            {rachaTexto(standing.streak) ?? ''}
+          </Text>
+          <TiraResultados resultados={standing.lastResults} />
+          <Text style={[styles.statText, styles.colLast10]}>
+            {standing.last10Wins}-{standing.last10Losses}
+          </Text>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -249,6 +364,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
+  },
+  vistaRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  vistaChip: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  vistaChipActive: {
+    backgroundColor: colors.surfaceLight,
+    borderColor: colors.primary,
+  },
+  vistaChipText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  vistaChipTextActive: {
+    color: colors.text,
   },
   listContent: {
     paddingHorizontal: spacing.md,
@@ -313,15 +455,46 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
   },
-  colTrophy: {
-    width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   colStatDiff: {
     width: 56,
     textAlign: 'right',
   },
+  colSplit: {
+    width: 62,
+    textAlign: 'center',
+  },
+  colStreak: {
+    width: 46,
+    textAlign: 'center',
+  },
+  colChips: {
+    width: 85,
+    textAlign: 'center',
+  },
+  colLast10: {
+    width: 44,
+    textAlign: 'center',
+  },
+  tira: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  chip: {
+    width: 15,
+    height: 18,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipGanado: { backgroundColor: 'rgba(93, 171, 133, 0.25)' },
+  chipPerdido: { backgroundColor: 'rgba(209, 100, 100, 0.2)' },
+  chipTexto: {
+    fontSize: 10,
+    fontFamily: fontFamily.displayBold,
+  },
+  chipTextoGanado: { color: colors.success },
+  chipTextoPerdido: { color: colors.danger },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -358,7 +531,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
-    flex: 1,
+    flexShrink: 1,
   },
   statText: {
     color: colors.text,
