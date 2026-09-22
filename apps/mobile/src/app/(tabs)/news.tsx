@@ -209,20 +209,22 @@ function LesionRow({ entry }: { entry: FeedEntry }) {
           </View>
         </View>
 
-        <View style={styles.derecha}>
-          {entry.subtitle ? (
-            <View style={styles.badgeLesion}>
-              <Text style={styles.badgeLesionTexto}>{estadoLesion(entry.subtitle)}</Text>
-            </View>
-          ) : null}
-          {entry.team ? (
-            <TeamLogo
-              logoUrl={entry.team.logoUrl}
-              abbreviation={entry.team.abbreviation}
-              size={22}
-            />
-          ) : null}
-        </View>
+        {/* El escudo va pegado al nombre y a la lesion, que es de lo que
+            habla la fila. El estado se queda al final y a su altura: la
+            fila los centra a los tres. */}
+        {entry.team ? (
+          <TeamLogo
+            logoUrl={entry.team.logoUrl}
+            abbreviation={entry.team.abbreviation}
+            size={28}
+          />
+        ) : null}
+
+        {entry.subtitle ? (
+          <View style={styles.badgeLesion}>
+            <Text style={styles.badgeLesionTexto}>{estadoLesion(entry.subtitle)}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.meta}>
@@ -388,7 +390,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontFamily: fontFamily.regular,
   },
-  derecha: { alignItems: 'flex-end', gap: spacing.xs },
   equipos: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   sinOrigen: {
     color: colors.textMuted,
@@ -422,6 +423,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
     backgroundColor: colors.danger,
+    // Todos igual de anchos, el que mide "Día a día": si no, el escudo
+    // de al lado bailaria de sitio en cada fila segun el estado.
+    minWidth: 72,
+    alignItems: 'center',
   },
   badgeLesionTexto: {
     color: colors.text,

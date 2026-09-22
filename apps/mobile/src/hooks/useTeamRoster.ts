@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPlayersByTeam } from '@/lib/api/players';
+import { fetchTeamInjuries } from '@/lib/api/movements';
 import {
   fetchTeamById,
   fetchTeamPalmares,
@@ -56,5 +57,20 @@ export function useTeamPalmares(teamId: string) {
     queryFn: () => fetchTeamPalmares(teamId),
     enabled: !!teamId,
     staleTime: 1000 * 60 * 60,
+  });
+}
+
+/**
+ * Los lesionados de hoy.
+ *
+ * Solo tiene sentido sobre la plantilla vigente: en la de 2019-20 estos
+ * partes no pintan nada, y de ahi el `activo`.
+ */
+export function useTeamInjuries(teamId: string, activo = true) {
+  return useQuery({
+    queryKey: ['teamInjuries', teamId],
+    queryFn: () => fetchTeamInjuries(teamId),
+    enabled: !!teamId && activo,
+    staleTime: 1000 * 60 * 30,
   });
 }
