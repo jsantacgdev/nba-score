@@ -9,11 +9,9 @@ import { formatDateDMY } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { HeadToHead as Historial, HeadToHeadGame, Team } from '@/types/domain';
 
-/** Cuantos enfrentamientos se enseñan de golpe. */
 const PASO = 10;
 
 type Props = {
-  /** El local y el visitante del partido que se esta mirando. */
   home: Team;
   away: Team;
   data?: Historial;
@@ -26,15 +24,6 @@ function etiquetaFase(seasonType: string): string | null {
   return null;
 }
 
-/**
- * El historial entre los dos equipos del partido.
- *
- * Los enfrentamientos se pintan siempre con el local de hoy a la izquierda
- * y el visitante a la derecha, aunque aquel dia jugaran al reves. Si se
- * respetara el orden de cada partido habria que leer los nombres uno a uno
- * para saber quien gano; asi los lados no se mueven y el balance se ve
- * bajando la vista. La casita marca quien jugaba en su cancha.
- */
 export function HeadToHead({ home, away, data, isLoading }: Props) {
   const [mostrados, setMostrados] = useState(PASO);
 
@@ -57,8 +46,6 @@ export function HeadToHead({ home, away, data, isLoading }: Props) {
   const total = historial.games.length;
   const visibles = historial.games.slice(0, mostrados);
 
-  // Los partidos ya vienen ordenados por fecha, asi que para agruparlos
-  // basta con cortar cada vez que cambia la temporada.
   const grupos: { season: string; games: HeadToHeadGame[] }[] = [];
   for (const game of visibles) {
     const ultimo = grupos[grupos.length - 1];
@@ -66,8 +53,6 @@ export function HeadToHead({ home, away, data, isLoading }: Props) {
     else grupos.push({ season: game.season, games: [game] });
   }
 
-  // El balance de cada temporada sale de todos sus partidos, no solo de
-  // los que se ven: si no, cambiaria al pulsar "Ver más".
   function balanceDe(season: string): string {
     const delAno = historial.games.filter((g) => g.season === season);
     const local = delAno.filter((g) => g.winnerTeamId === home.id).length;
@@ -102,8 +87,6 @@ export function HeadToHead({ home, away, data, isLoading }: Props) {
           </View>
         </View>
 
-        {/* Los dos trozos sin redondear: el redondeo lo pone el contenedor
-            y si no quedaria una muesca en medio. */}
         <View style={styles.barraBalance}>
           <View style={[styles.barraLocal, { flex: historial.home.wins }]} />
           <View style={[styles.barraVisitante, { flex: historial.away.wins }]} />
@@ -205,8 +188,6 @@ function Comparativa({
   const pctIzquierda = max > 0 ? (izquierda / max) * 100 : 0;
   const pctDerecha = max > 0 ? (derecha / max) * 100 : 0;
 
-  // El prefijo es para los margenes ("+24"), que sin signo no se leen como
-  // una diferencia. Un cero no lo lleva: "+0" no significa nada.
   const escribir = (valor: number) =>
     valor > 0 ? `${prefijo}${valor.toFixed(decimales)}` : valor.toFixed(decimales);
 
@@ -305,7 +286,6 @@ function FilaEnfrentamiento({
 const styles = StyleSheet.create({
   container: { marginBottom: spacing.lg },
 
-  // Balance
   balanceCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -380,7 +360,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displaySemibold,
   },
 
-  // Comparativas
   comparativa: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -434,13 +413,9 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: radius.sm,
   },
-  // Cada lado lleva siempre el mismo color, el del local a la izquierda y
-  // el del visitante a la derecha, para no tener que mirar la etiqueta en
-  // cada barra.
   barraLocal: { backgroundColor: colors.primary },
   barraVisitante: { backgroundColor: colors.secondary },
 
-  // Lista de enfrentamientos
   listaTitulo: {
     color: colors.text,
     fontSize: fontSize.lg,

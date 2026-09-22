@@ -3,7 +3,6 @@ import { TeamLogo } from '@/components/ui/TeamLogo';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { GameTeamForm, Team, TeamForm } from '@/types/domain';
 
-/** A partir de aqui una racha merece contarse. */
 const RACHA_MINIMA = 3;
 
 type Props = {
@@ -17,19 +16,7 @@ function conferencia(team: Team): string {
   return team.conference === 'East' ? 'Este' : 'Oeste';
 }
 
-/**
- * Como llegan los dos equipos al partido.
- *
- * Abre la pestaña de cara a cara porque es lo primero que se pregunta
- * antes de un partido, y el historial no lo contesta: dos equipos pueden
- * llevar cincuenta años vestidos y llegar hoy en direcciones opuestas.
- *
- * Del local se enseña su registro en casa y del visitante el suyo a
- * domicilio, que es el que va a pesar esta noche.
- */
 export function ComoLlegan({ home, away, data, isLoading }: Props) {
-  // Mientras carga no se pone nada: el cara a cara de debajo ya tiene su
-  // propio indicador y dos ruedas girando quedan raras.
   if (isLoading || !data) return null;
 
   return (
@@ -193,8 +180,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Ganado en verde y perdido en rojo apagado: la tira se lee de un
-  // vistazo sin pararse a mirar las letras.
   chipGanado: { backgroundColor: 'rgba(93, 171, 133, 0.22)' },
   chipPerdido: { backgroundColor: 'rgba(209, 100, 100, 0.18)' },
   chipTexto: {

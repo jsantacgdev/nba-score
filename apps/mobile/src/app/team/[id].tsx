@@ -62,13 +62,8 @@ export default function TeamDetailScreen() {
   const activeSeason =
     pickedSeason ?? (season && season.length > 0 ? season : teamSeasons?.[0]?.season);
 
-  // Los partes medicos son de hoy, asi que solo valen para la plantilla
-  // vigente: puestos sobre la de hace cinco años dirian una mentira.
-  const temporadaVigente = teamSeasons?.[0]?.season;
-  const { data: lesionados } = useTeamInjuries(
-    teamId,
-    !!activeSeason && activeSeason === temporadaVigente,
-  );
+  const esTemporadaVigente = !!activeSeason && activeSeason === teamSeasons?.[0]?.season;
+  const { data: lesionados } = useTeamInjuries(teamId, esTemporadaVigente);
   const { data: salarial, isLoading: salarialLoading } = useTeamSalary(teamId, activeSeason);
 
   const {
@@ -156,7 +151,7 @@ export default function TeamDetailScreen() {
             <RosterRow
               entry={item}
               season={activeSeason}
-              lesion={lesionados?.[item.playerId]}
+              lesion={esTemporadaVigente ? lesionados?.[item.playerId] : undefined}
             />
           )}
         />
@@ -702,8 +697,6 @@ function RosterRow({
         )}
       </View>
 
-      {/* La baja va en rojo lleno y el dia a dia solo perfilado: una es un
-          no y la otra una duda, y asi se separan sin leer. */}
       {estado && (
         <View style={[styles.rowEstado, baja ? styles.rowEstadoBaja : styles.rowEstadoDuda]}>
           <Text style={[styles.rowEstadoTexto, !baja && styles.rowEstadoTextoDuda]}>
@@ -1075,8 +1068,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
     borderWidth: 1,
-    // El ancho del estado mas largo, "Baja toda la temporada" aparte, para
-    // que las etiquetas formen columna en la lista.
     minWidth: 72,
     alignItems: 'center',
   },

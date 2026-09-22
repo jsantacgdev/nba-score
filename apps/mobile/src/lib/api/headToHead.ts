@@ -1,13 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Game, HeadToHead, HeadToHeadGame, HeadToHeadSide } from '@/types/domain';
 
-/**
- * Tope de enfrentamientos que se traen.
- *
- * La base arranca en 1984-85 y dos equipos de la misma division se han
- * visto poco mas de doscientas veces desde entonces, asi que con este
- * tope no se corta ningun historial y se evita paginar.
- */
 const MAX_PARTIDOS = 400;
 
 function puntos(game: HeadToHeadGame, teamId: string): { propios: number; rival: number } {
@@ -41,7 +34,6 @@ function resumirLado(teamId: string, games: HeadToHeadGame[]): HeadToHeadSide {
   return lado;
 }
 
-/** Cuantos seguidos lleva ganados el que gano el ultimo. */
 function calcularRacha(games: HeadToHeadGame[]): HeadToHead['streak'] {
   const ultimo = games[0];
   if (!ultimo) return undefined;
@@ -64,19 +56,12 @@ export async function fetchHeadToHead(game: Game): Promise<HeadToHead> {
     .select(
       'id, starts_at, season, season_type, home_team_id, away_team_id, score_home, score_away',
     )
-    // El emparejamiento es el mismo se juegue donde se juegue, asi que hay
-    // que mirar las dos combinaciones de local y visitante.
     .or(
       `and(home_team_id.eq.${local},away_team_id.eq.${visitante}),` +
         `and(home_team_id.eq.${visitante},away_team_id.eq.${local})`,
     )
     .eq('status', 'final')
-    // La pretemporada no cuenta como precedente: son amistosos y muchos
-    // titulares ni se visten.
     .neq('season_type', 'preseason')
-    // Solo lo anterior a este partido. El cara a cara es lo que los dos
-    // equipos se traian hasta ese dia, no el resto de la historia: mirando
-    // un partido de 2019 lo que paso despues no viene a cuento.
     .lt('starts_at', game.startsAt.toISOString())
     .neq('id', game.id)
     .order('starts_at', { ascending: false })
@@ -101,8 +86,6 @@ export async function fetchHeadToHead(game: Game): Promise<HeadToHead> {
         winnerTeamId: scoreHome > scoreAway ? row.home_team_id : row.away_team_id,
       };
     })
-    // En la NBA no hay empates: un final igualado es una fila a medio
-    // cargar y contarla daria una victoria a quien no la gano.
     .filter((g) => g.scoreHome !== g.scoreAway);
 
   return {

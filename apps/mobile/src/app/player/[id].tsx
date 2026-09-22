@@ -863,6 +863,7 @@ function CareerHeaderRow() {
     <View style={styles.careerHeader}>
       <Text style={[styles.careerHeaderText, styles.colSeason]}>TEMP.</Text>
       <Text style={[styles.careerHeaderText, styles.colCareerTeam]}>EQUIPO</Text>
+      <Text style={[styles.careerHeaderText, styles.colCareerGames]}>PJ</Text>
       <Text style={[styles.careerHeaderText, styles.colCareerStat]}>PTS</Text>
       <Text style={[styles.careerHeaderText, styles.colCareerStat]}>REB</Text>
       <Text style={[styles.careerHeaderText, styles.colCareerStat]}>AST</Text>
@@ -890,6 +891,9 @@ function CareerRow({ entry }: { entry: PlayerCareerEntry }) {
         )}
       </View>
 
+      <Text style={[styles.careerStat, styles.colCareerGames]}>
+        {stat(entry.gamesPlayed, 0)}
+      </Text>
       <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.points)}</Text>
       <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.rebounds)}</Text>
       <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.assists)}</Text>
@@ -1842,13 +1846,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   colSeason: {
-    width: 58,
+    width: 52,
   },
   colCareerTeam: {
     flex: 1,
   },
+  colCareerGames: {
+    width: 30,
+    textAlign: 'center',
+  },
   colCareerStat: {
-    width: 38,
+    width: 36,
     textAlign: 'center',
   },
   careerSeason: {

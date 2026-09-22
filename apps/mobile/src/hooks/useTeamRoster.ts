@@ -60,12 +60,6 @@ export function useTeamPalmares(teamId: string) {
   });
 }
 
-/**
- * Los lesionados de hoy.
- *
- * Solo tiene sentido sobre la plantilla vigente: en la de 2019-20 estos
- * partes no pintan nada, y de ahi el `activo`.
- */
 export function useTeamInjuries(teamId: string, activo = true) {
   return useQuery({
     queryKey: ['teamInjuries', teamId],
