@@ -27,13 +27,22 @@ import {
   useTeam,
   useTeamPalmares,
   useTeamSeasonRoster,
+  useTeamInjuries,
   useTeamSeasons,
 } from '@/hooks/useTeamRoster';
 import { useTeamGames } from '@/hooks/useTeamGames';
 import { getPositionName } from '@/constants/positions';
 import { tipoMovimiento } from '@/constants/movements';
+import { esBaja, estadoLesion, tituloLesion } from '@/constants/injuries';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { Game, Team, TeamSeason, TeamSeasonPlayer, TeamTitle } from '@/types/domain';
+import type {
+  Game,
+  PlayerInjury,
+  Team,
+  TeamSeason,
+  TeamSeasonPlayer,
+  TeamTitle,
+} from '@/types/domain';
 
 type Tab = 'roster' | 'games' | 'movements' | 'salary';
 
@@ -52,6 +61,14 @@ export default function TeamDetailScreen() {
 
   const activeSeason =
     pickedSeason ?? (season && season.length > 0 ? season : teamSeasons?.[0]?.season);
+
+  // Los partes medicos son de hoy, asi que solo valen para la plantilla
+  // vigente: puestos sobre la de hace cinco años dirian una mentira.
+  const temporadaVigente = teamSeasons?.[0]?.season;
+  const { data: lesionados } = useTeamInjuries(
+    teamId,
+    !!activeSeason && activeSeason === temporadaVigente,
+  );
   const { data: salarial, isLoading: salarialLoading } = useTeamSalary(teamId, activeSeason);
 
   const {
@@ -135,7 +152,13 @@ export default function TeamDetailScreen() {
               )}
             </View>
           }
-          renderItem={({ item }) => <RosterRow entry={item} season={activeSeason} />}
+          renderItem={({ item }) => (
+            <RosterRow
+              entry={item}
+              season={activeSeason}
+              lesion={lesionados?.[item.playerId]}
+            />
+          )}
         />
       ) : activeTab === 'games' ? (
         <FlatList
@@ -617,8 +640,18 @@ function FilaSalario({ jugador, nomina }: { jugador: TeamSalaryPlayer; nomina: n
   );
 }
 
-function RosterRow({ entry, season }: { entry: TeamSeasonPlayer; season?: string }) {
+function RosterRow({
+  entry,
+  season,
+  lesion,
+}: {
+  entry: TeamSeasonPlayer;
+  season?: string;
+  lesion?: PlayerInjury;
+}) {
   const hasStats = (entry.gamesPlayed ?? 0) > 0;
+  const baja = esBaja(lesion?.status);
+  const estado = estadoLesion(lesion?.status);
 
   return (
     <Pressable
@@ -647,6 +680,16 @@ function RosterRow({ entry, season }: { entry: TeamSeasonPlayer; season?: string
           )}
           {entry.wonChampionship && <Trophy award="champion" season="" size={16} />}
         </View>
+
+        {lesion && (
+          <View style={styles.rowLesion}>
+            <Ionicons name="medkit" size={12} color={colors.danger} />
+            <Text style={styles.rowLesionTexto} numberOfLines={1}>
+              {tituloLesion(lesion.injuryType, lesion.side)}
+            </Text>
+          </View>
+        )}
+
         {hasStats && (
           <View style={styles.statsInline}>
             <Text style={styles.statInlineValue}>{(entry.points ?? 0).toFixed(1)}</Text>
@@ -658,6 +701,16 @@ function RosterRow({ entry, season }: { entry: TeamSeasonPlayer; season?: string
           </View>
         )}
       </View>
+
+      {/* La baja va en rojo lleno y el dia a dia solo perfilado: una es un
+          no y la otra una duda, y asi se separan sin leer. */}
+      {estado && (
+        <View style={[styles.rowEstado, baja ? styles.rowEstadoBaja : styles.rowEstadoDuda]}>
+          <Text style={[styles.rowEstadoTexto, !baja && styles.rowEstadoTextoDuda]}>
+            {estado}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -1005,6 +1058,43 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.sm,
   },
+  rowLesion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 3,
+  },
+  rowLesionTexto: {
+    flexShrink: 1,
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.medium,
+  },
+  rowEstado: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    // El ancho del estado mas largo, "Baja toda la temporada" aparte, para
+    // que las etiquetas formen columna en la lista.
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  rowEstadoBaja: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  rowEstadoDuda: {
+    backgroundColor: 'transparent',
+    borderColor: colors.danger,
+  },
+  rowEstadoTexto: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    textAlign: 'center',
+  },
+  rowEstadoTextoDuda: { color: colors.danger },
   statsInline: {
     flexDirection: 'row',
     alignItems: 'center',

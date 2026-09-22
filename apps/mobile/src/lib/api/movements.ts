@@ -119,3 +119,48 @@ export async function fetchPlayerInjuries(playerId: string): Promise<PlayerInjur
     teamLogoUrl: row.team_logo_url ?? undefined,
   }));
 }
+
+/**
+ * Las lesiones abiertas de un equipo, indexadas por jugador.
+ *
+ * Quien lo usa es la plantilla, que se pinta fila a fila: en un array
+ * habria que buscar en cada jugador. `is_current` lo apaga la
+ * sincronizacion cuando el parte desaparece del feed de ESPN, asi que
+ * aqui solo queda lo que sigue abierto hoy.
+ */
+export async function fetchTeamInjuries(
+  teamId: string,
+): Promise<Record<string, PlayerInjury>> {
+  const { data, error } = await supabase
+    .from('player_injuries')
+    .select('id, player_id, status, injury_type, side, return_date, reported_at, is_current')
+    .eq('team_id', teamId)
+    .eq('is_current', true)
+    .order('reported_at', { ascending: false });
+
+  if (error) throw error;
+
+  const porJugador: Record<string, PlayerInjury> = {};
+
+  for (const row of data ?? []) {
+    // ESPN cruza por nombre y alguno puede quedarse sin identificar; sin
+    // jugador al que colgarlo, el parte no se puede pintar.
+    if (!row.player_id) continue;
+    // Ordenados de la mas reciente a la mas antigua: con dos partes
+    // abiertos del mismo jugador manda el primero que sale.
+    if (porJugador[row.player_id]) continue;
+
+    porJugador[row.player_id] = {
+      id: row.id,
+      status: row.status ?? undefined,
+      injuryType: row.injury_type ?? undefined,
+      side: row.side ?? undefined,
+      returnDate: row.return_date ? new Date(row.return_date) : undefined,
+      reportedAt: row.reported_at ? new Date(row.reported_at) : undefined,
+      isCurrent: row.is_current ?? false,
+      teamId,
+    };
+  }
+
+  return porJugador;
+}
