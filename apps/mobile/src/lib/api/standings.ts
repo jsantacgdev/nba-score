@@ -42,5 +42,15 @@ export async function fetchStandingsBySeason(season: string): Promise<LeagueStan
     winPercentage: Number(row.win_percentage ?? 0),
     pointDifferential: Number(row.point_differential ?? 0),
     wonChampionship: row.won_championship ?? false,
+    homeWins: row.home_wins ?? 0,
+    homeLosses: row.home_losses ?? 0,
+    awayWins: row.away_wins ?? 0,
+    awayLosses: row.away_losses ?? 0,
+    streak: row.streak ?? 0,
+    last10Wins: row.last10_wins ?? 0,
+    last10Losses: row.last10_losses ?? 0,
+    lastResults: (row.last_results ?? []).filter(
+      (r): r is 'W' | 'L' => r === 'W' || r === 'L',
+    ),
   }));
 }

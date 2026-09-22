@@ -164,6 +164,14 @@ export type LeagueStanding = {
   winPercentage: number;
   pointDifferential: number;
   wonChampionship: boolean;
+  homeWins: number;
+  homeLosses: number;
+  awayWins: number;
+  awayLosses: number;
+  streak: number;
+  last10Wins: number;
+  last10Losses: number;
+  lastResults: ('W' | 'L')[];
 };
 
 export type StandingsSeason = {
