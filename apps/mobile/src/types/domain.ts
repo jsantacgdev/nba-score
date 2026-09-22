@@ -583,17 +583,11 @@ export type FeedEntry = {
   injurySide?: string;
 };
 
-// ============================================
-// Cara a cara
-// ============================================
-
-/** Un enfrentamiento anterior entre los dos mismos equipos. */
 export type HeadToHeadGame = {
   id: string;
   startsAt: Date;
   season: string;
   seasonType: string;
-  /** Quien jugaba en casa aquel dia, que no tiene por que ser el de hoy. */
   homeTeamId: string;
   awayTeamId: string;
   scoreHome: number;
@@ -601,46 +595,26 @@ export type HeadToHeadGame = {
   winnerTeamId: string;
 };
 
-/** Lo que uno de los dos equipos hizo en esos partidos. */
 export type HeadToHeadSide = {
   teamId: string;
   wins: number;
-  /** Victorias jugando en su propia cancha. */
   winsAtHome: number;
-  /** Media de puntos anotados. */
   pointsAvg: number;
-  /** La victoria mas holgada, si gano alguna. */
   biggestWin?: { gameId: string; margin: number; startsAt: Date };
 };
 
-/**
- * El historial entre los dos equipos de un partido.
- *
- * `home` y `away` son el local y el visitante de ESE partido, no de cada
- * enfrentamiento: la pestaña los usa como lados fijos para que el balance
- * se pueda leer de un vistazo.
- */
 export type HeadToHead = {
-  /** Del mas reciente al mas antiguo. */
   games: HeadToHeadGame[];
   home: HeadToHeadSide;
   away: HeadToHeadSide;
-  /** Temporada del enfrentamiento mas antiguo que consta. */
   firstSeason?: string;
-  /** Quien llega ganando los ultimos seguidos. */
   streak?: { teamId: string; wins: number };
 };
 
-// ============================================
-// Como llegan
-// ============================================
-
-/** El estado de un equipo al llegar a un partido. */
 export type TeamForm = {
   teamId: string;
   wins: number;
   losses: number;
-  /** Puesto en su conferencia; sin partidos jugados no hay puesto. */
   conferenceRank?: number;
   pointsFor: number;
   pointsAgainst: number;
@@ -648,19 +622,10 @@ export type TeamForm = {
   homeLosses: number;
   awayWins: number;
   awayLosses: number;
-  /** Positiva si son victorias seguidas, negativa si son derrotas. */
   streak: number;
-  /** Los ultimos cinco, del mas antiguo al mas reciente. */
   lastResults: ('W' | 'L')[];
 };
 
-/**
- * Como llegan los dos equipos de un partido.
- *
- * Los numeros son los de la fecha del partido, no los de hoy. Si esa
- * temporada aun no habia empezado son los de la anterior, y entonces
- * `previousSeason` avisa para poder titularlo como lo que es.
- */
 export type GameTeamForm = {
   season: string;
   previousSeason: boolean;

@@ -209,9 +209,6 @@ function LesionRow({ entry }: { entry: FeedEntry }) {
           </View>
         </View>
 
-        {/* El escudo va pegado al nombre y a la lesion, que es de lo que
-            habla la fila. El estado se queda al final y a su altura: la
-            fila los centra a los tres. */}
         {entry.team ? (
           <TeamLogo
             logoUrl={entry.team.logoUrl}
@@ -423,8 +420,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
     backgroundColor: colors.danger,
-    // Todos igual de anchos, el que mide "Día a día": si no, el escudo
-    // de al lado bailaria de sitio en cada fila segun el estado.
     minWidth: 72,
     alignItems: 'center',
   },

@@ -38,13 +38,6 @@ function mapear(fila: Fila): TeamForm {
   };
 }
 
-/**
- * Como llegan los dos equipos, a fecha del partido.
- *
- * El calculo entero esta en la funcion game_team_form: el puesto en la
- * conferencia sale del balance de los quince equipos de ese lado, y eso
- * no se puede traer al movil.
- */
 export async function fetchGameTeamForm(gameId: string): Promise<GameTeamForm | null> {
   const { data, error } = await supabase.rpc('game_team_form', { target_game_id: gameId });
 
@@ -58,8 +51,6 @@ export async function fetchGameTeamForm(gameId: string): Promise<GameTeamForm | 
   const home = mapear(local);
   const away = mapear(visitante);
 
-  // Un partido de la primera temporada que consta no tiene nada detras:
-  // mejor no enseñar la seccion que enseñarla a ceros.
   const sinNada =
     home.lastResults.length === 0 &&
     away.lastResults.length === 0 &&

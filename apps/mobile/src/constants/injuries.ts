@@ -79,15 +79,6 @@ export function tituloLesion(zona?: string, lado?: string): string {
   return `${nombre} ${raiz}${terminacion}`;
 }
 
-/**
- * Si el jugador esta descartado o solo pendiente de ver como amanece.
- *
- * ESPN dice "Out", "Out For Season" y "Out For Year" para lo primero;
- * todo lo demas -"Day-To-Day", "Questionable", "Doubtful"...- es un
- * "ya veremos". Se separan porque no se leen igual: una baja es un no y
- * el resto es una duda, y en una lista conviene distinguirlas de un
- * vistazo.
- */
 export function esBaja(valor?: string): boolean {
   return !!valor && valor.startsWith('Out');
 }

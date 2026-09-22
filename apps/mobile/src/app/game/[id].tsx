@@ -162,8 +162,6 @@ export default function GameDetailScreen() {
           />
         </View>
 
-        {/* Toggle entre equipos. El cara a cara habla de los dos a la vez,
-            asi que alli no pinta nada. */}
         {vista !== 'h2h' && (
           <View style={styles.teamToggleRow}>
             <TeamToggle

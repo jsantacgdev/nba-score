@@ -1,30 +1,3 @@
--- ============================================
--- Como llegan los dos equipos a un partido
--- ============================================
--- La pestaña de cara a cara cuenta el pasado entre dos equipos, pero no
--- dice como llegan: balance, puesto, puntos y las ultimas cinco. Eso son
--- numeros de toda la liga, no del emparejamiento, y por eso no se puede
--- resolver desde el movil: el puesto en la conferencia obliga a saber el
--- balance de los quince equipos de ese lado en esa fecha, y eso son mas
--- de mil filas que el REST ademas cortaria.
---
--- Todo se calcula A FECHA DEL PARTIDO, no a dia de hoy. Mirando un
--- partido de diciembre lo que importa es como llegaban aquel dia; si se
--- enseñara la clasificacion actual, un partido de hace tres temporadas
--- saldria con el puesto de ahora.
---
--- Cuando la temporada del partido todavia no ha empezado -en septiembre
--- los partidos de octubre ya estan en la base- no hay nada que contar y
--- la seccion se quedaria vacia justo cuando mas se mira, antes de un
--- partido. En ese caso se devuelve la temporada anterior entera con
--- previous_season a true, para que la pantalla pueda titularlo como lo
--- que es: como acabaron.
---
--- Balance, puntos y puesto son de liga regular, que es lo que ordena la
--- clasificacion. Las ultimas cinco y la racha si cuentan playoffs: un
--- equipo que llega de ganar tres partidos de una serie llega lanzado,
--- diga lo que diga su balance de la regular.
-
 create or replace function game_team_form(target_game_id text)
 returns table (
   team_id text,
@@ -51,7 +24,6 @@ as $$
     from games g
     where g.id = target_game_id
   ),
-  -- ¿Se ha jugado ya algo de esta temporada antes de este partido?
   jugados as (
     select count(*) as n
     from games g, partido p
@@ -69,8 +41,6 @@ as $$
     select
       case when j.n > 0 then p.season else a.season end as season,
       (j.n = 0) as previous_season,
-      -- De la temporada anterior se coge entera, de la de este partido
-      -- solo lo anterior a el.
       case when j.n > 0 then p.starts_at else 'infinity'::timestamptz end as hasta
     from partido p, jugados j, anterior a
   ),
@@ -85,8 +55,6 @@ as $$
       and g.season_type <> 'preseason'
       and g.starts_at < v.hasta
   ),
-  -- Una fila por equipo y partido: asi el balance, los puntos y la racha
-  -- salen igual sin tener que mirar quien era el local.
   lineas as (
     select
       pa.home_team_id as team_id,
@@ -122,9 +90,6 @@ as $$
     where l.season_type = 'regular'
     group by l.team_id
   ),
-  -- El puesto sale del porcentaje, como la clasificacion de verdad. Los
-  -- desempates finos de la NBA (enfrentamientos directos, division) no se
-  -- reproducen: para situar a un equipo en su conferencia sobra.
   clasificacion as (
     select
       b.team_id,
@@ -147,15 +112,11 @@ as $$
   ultimos as (
     select
       o.team_id,
-      -- Del mas antiguo al mas reciente, que es como se lee una tira de
-      -- resultados: el ultimo partido queda pegado al de hoy.
       array_agg(case when o.gano then 'W' else 'L' end order by o.rn desc)
         filter (where o.rn <= 5) as last_results
     from ordenados o
     group by o.team_id
   ),
-  -- Cuantos seguidos lleva con el mismo signo que el ultimo partido:
-  -- los que hay por delante del primer resultado distinto.
   racha as (
     select
       o.team_id,
@@ -203,7 +164,6 @@ as $$
   left join clasificacion c on c.team_id = x.team_id
   left join ultimos u on u.team_id = x.team_id
   left join racha r on r.team_id = x.team_id
-  -- El local primero, como en el marcador de la pantalla.
   order by case when x.side = 'home' then 0 else 1 end;
 $$;
 
