@@ -640,3 +640,23 @@ export type GameTeamForm = {
   home: TeamForm;
   away: TeamForm;
 };
+
+export type WinProbability = {
+  homeTeamId: string;
+  awayTeamId: string;
+  probHome: number;
+  probHomeNoInjuries: number;
+  ratingHome: number;
+  ratingAway: number;
+  homeAdvantage: number;
+  restEffect: number;
+  restDaysHome: number;
+  restDaysAway: number;
+  injuriesHome: number;
+  injuriesAway: number;
+  injuryAdjustment: number;
+  expectedMargin: number;
+  gamesHome: number;
+  gamesAway: number;
+  season: string;
+};

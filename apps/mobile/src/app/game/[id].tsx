@@ -12,9 +12,11 @@ import { GameDetailSkeleton } from '@/components/ui/Skeleton';
 import { CourtLineup } from '@/components/game/CourtLineup';
 import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
+import { Probabilidad } from '@/components/game/Probabilidad';
 import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
 import { useHeadToHead } from '@/hooks/useHeadToHead';
 import { useGameTeamForm } from '@/hooks/useGameTeamForm';
+import { useWinProbability } from '@/hooks/useWinProbability';
 import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -32,6 +34,11 @@ export default function GameDetailScreen() {
     vista === 'h2h',
   );
   const { data: forma, isLoading: cargandoForma } = useGameTeamForm(id, vista === 'h2h');
+  const porJugar = data?.game.status === 'scheduled';
+  const { data: pronostico, isLoading: cargandoPronostico } = useWinProbability(
+    id,
+    vista === 'h2h' && porJugar,
+  );
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
@@ -179,6 +186,14 @@ export default function GameDetailScreen() {
 
         {vista === 'h2h' ? (
           <>
+            {porJugar && (
+              <Probabilidad
+                home={game.homeTeam}
+                away={game.awayTeam}
+                data={pronostico}
+                isLoading={cargandoPronostico}
+              />
+            )}
             <ComoLlegan
               home={game.homeTeam}
               away={game.awayTeam}
