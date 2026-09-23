@@ -1230,6 +1230,28 @@ export type Database = {
           team_logo_url: string
         }[]
       }
+      game_win_probability: {
+        Args: { target_game_id: string }
+        Returns: {
+          ajuste_bajas: number
+          away_team_id: string
+          bajas_away: number
+          bajas_home: number
+          dias_away: number
+          dias_home: number
+          efecto_descanso: number
+          home_team_id: string
+          margen_esperado: number
+          partidos_away: number
+          partidos_home: number
+          prob_home: number
+          prob_home_sin_bajas: number
+          rating_away: number
+          rating_home: number
+          temporada: string
+          ventaja_campo: number
+        }[]
+      }
       game_team_form: {
         Args: { target_game_id: string }
         Returns: {
