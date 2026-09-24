@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { Team, WinProbability } from '@/types/domain';
+import type { ModelRecord, Team, WinProbability } from '@/types/domain';
 
 type Props = {
   home: Team;
   away: Team;
   data?: WinProbability | null;
+  record?: ModelRecord | null;
   isLoading: boolean;
 };
 
@@ -25,16 +26,29 @@ function dias(n: number): string {
   return `${n} ${n === 1 ? 'día' : 'días'}`;
 }
 
-export function Probabilidad({ home, away, data, isLoading }: Props) {
-  if (isLoading || !data) return null;
+const MEDIDOS_MINIMO = 10;
+
+export function Probabilidad({ home, away, data, record, isLoading }: Props) {
+  if (isLoading) return null;
+
+  if (!data) return null;
 
   const probLocal = data.probHome;
   const probVisitante = 1 - probLocal;
   const favorito = probLocal >= 0.5 ? home : away;
   const sinJugar = data.gamesHome === 0 && data.gamesAway === 0;
-  const caption = sinJugar
-    ? 'La temporada no ha empezado: el nivel sale de la anterior'
-    : `Temporada ${data.season}, con ${data.gamesHome} y ${data.gamesAway} partidos jugados`;
+  const pretemporada = data.seasonType === 'preseason';
+  const acierto =
+    record && record.resolved >= MEDIDOS_MINIMO
+      ? `Esta temporada lleva ${record.hits} de ${record.resolved} (${Math.round(
+          record.accuracy * 100,
+        )}%). Es una estimación, no una apuesta.`
+      : 'Acierta el 66% de los partidos de las tres últimas temporadas y el 68% entre 2006 y 2016. Es una estimación, no una apuesta.';
+  const caption = pretemporada
+    ? 'Pretemporada: el nivel sale de la temporada pasada y los titulares jugarán poco'
+    : sinJugar
+      ? 'La temporada no ha empezado: el nivel sale de la anterior'
+      : `Temporada ${data.season}, con ${data.gamesHome} y ${data.gamesAway} partidos jugados`;
 
   return (
     <View style={styles.seccion}>
@@ -98,10 +112,7 @@ export function Probabilidad({ home, away, data, isLoading }: Props) {
         </View>
       </View>
 
-      <Text style={styles.nota}>
-        Acierta el 66% de los partidos de las tres últimas temporadas y el 68% entre 2006 y
-        2016. Es una estimación, no una apuesta.
-      </Text>
+      <Text style={styles.nota}>{acierto}</Text>
     </View>
   );
 }

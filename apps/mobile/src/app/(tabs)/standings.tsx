@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { TeamLogo } from '@/components/ui/TeamLogo';
 import { Trophy } from '@/components/ui/Trophy';
 import { SeasonButton, SeasonPicker } from '@/components/ui/SeasonPicker';
@@ -60,6 +61,13 @@ export default function StandingsScreen() {
           onPress={() => setPickerOpen(true)}
           champion={seasonInfo?.champion}
         />
+        <Pressable
+          onPress={() => router.push({ pathname: '/playoffs', params: { season: season ?? '' } })}
+          style={({ pressed }) => [styles.cuadroBoton, pressed && styles.cuadroBotonPressed]}
+        >
+          <Ionicons name="git-network-outline" size={14} color={colors.primary} />
+          <Text style={styles.cuadroTexto}>Playoffs</Text>
+        </Pressable>
       </View>
 
       <View style={styles.vistaRow}>
@@ -362,8 +370,27 @@ const styles = StyleSheet.create({
   seasonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
+  },
+  cuadroBoton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cuadroBotonPressed: { opacity: 0.6 },
+  cuadroTexto: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displaySemibold,
   },
   vistaRow: {
     flexDirection: 'row',

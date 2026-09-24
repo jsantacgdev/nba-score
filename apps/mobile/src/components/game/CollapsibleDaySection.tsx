@@ -11,9 +11,15 @@ type Props = {
   date: Date;
   games: Game[];
   defaultExpanded?: boolean;
+  probabilidades?: Record<string, number>;
 };
 
-export function CollapsibleDaySection({ date, games, defaultExpanded = false }: Props) {
+export function CollapsibleDaySection({
+  date,
+  games,
+  defaultExpanded = false,
+  probabilidades,
+}: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
@@ -44,7 +50,7 @@ export function CollapsibleDaySection({ date, games, defaultExpanded = false }: 
           style={styles.gamesList}
         >
           {games.map((g, i) => (
-            <GameCard key={g.id} game={g} index={i} />
+            <GameCard key={g.id} game={g} index={i} probHome={probabilidades?.[g.id]} />
           ))}
         </Animated.View>
       )}

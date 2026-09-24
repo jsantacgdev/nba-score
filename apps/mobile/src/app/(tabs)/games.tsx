@@ -14,6 +14,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { CollapsibleDaySection } from '@/components/game/CollapsibleDaySection';
 import { useGameCounts } from '@/hooks/useGameCounts';
+import { useWinProbabilities } from '@/hooks/useWinProbabilities';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
@@ -31,6 +32,12 @@ export default function GamesScreen() {
   const { data: recentDays } = useRecentDays(selectedDate, 4);
   const { data: upcomingDays } = useUpcomingDays(selectedDate, 4);
   const { data: gameCounts } = useGameCounts(today, 60, 60);
+
+  const idsPorJugar = [
+    ...scheduledGames.map((g) => g.id),
+    ...(upcomingDays ?? []).flatMap((d) => d.games.map((g) => g.id)),
+  ];
+  const { data: probabilidades } = useWinProbabilities(idsPorJugar);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -90,6 +97,7 @@ export default function GamesScreen() {
                     key={day.date.toISOString()}
                     date={day.date}
                     games={day.games}
+                    probabilidades={probabilidades}
                   />
                 ))}
               </View>
@@ -114,7 +122,7 @@ export default function GamesScreen() {
             {scheduledGames.length > 0 && (
               <Section title="Próximos" count={scheduledGames.length}>
                 {scheduledGames.map((g, i) => (
-                  <GameCard key={g.id} game={g} index={i} />
+                  <GameCard key={g.id} game={g} index={i} probHome={probabilidades?.[g.id]} />
                 ))}
               </Section>
             )}
