@@ -1230,6 +1230,13 @@ export type Database = {
           team_logo_url: string
         }[]
       }
+      games_win_probability: {
+        Args: { target_ids: string[] }
+        Returns: {
+          game_id: string
+          prob_home: number
+        }[]
+      }
       game_win_probability: {
         Args: { target_game_id: string }
         Returns: {
@@ -1249,6 +1256,7 @@ export type Database = {
           rating_away: number
           rating_home: number
           temporada: string
+          tipo: string
           ventaja_campo: number
         }[]
       }
@@ -1270,6 +1278,16 @@ export type Database = {
           streak: number
           team_id: string
           wins: number
+        }[]
+      }
+      model_record: {
+        Args: never
+        Returns: {
+          acierto: number
+          aciertos: number
+          pendientes: number
+          resueltos: number
+          season: string
         }[]
       }
       nombre_desde_slug: { Args: { slug: string }; Returns: string }
@@ -1298,6 +1316,26 @@ export type Database = {
           title: string
         }[]
       }
+      playoff_bracket: {
+        Args: { target_season: string }
+        Returns: {
+          campeon: boolean
+          conferencia: string
+          decidida: boolean
+          orden: number
+          ronda: number
+          team_a_abbreviation: string
+          team_a_id: string
+          team_a_logo_url: string
+          team_a_name: string
+          team_b_abbreviation: string
+          team_b_id: string
+          team_b_logo_url: string
+          team_b_name: string
+          wins_a: number
+          wins_b: number
+        }[]
+      }
       player_career: {
         Args: { target_player_id: string }
         Returns: {

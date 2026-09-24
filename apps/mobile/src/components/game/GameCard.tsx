@@ -18,9 +18,10 @@ type Props = {
   game: Game;
   index?: number;
   showDate?: boolean;
+  probHome?: number;
 };
 
-export function GameCard({ game, index = 0, showDate = false }: Props) {
+export function GameCard({ game, index = 0, showDate = false, probHome }: Props) {
   const isLive = game.status === 'live';
   const isFinal = game.status === 'final';
   const isScheduled = game.status === 'scheduled';
@@ -90,12 +91,16 @@ export function GameCard({ game, index = 0, showDate = false }: Props) {
             score={game.scoreAway}
             isWinning={awayWinning}
             showScore={!isScheduled}
+            prob={isScheduled && probHome !== undefined ? 1 - probHome : undefined}
+            probFavorita={probHome !== undefined && probHome < 0.5}
           />
           <TeamRow
             team={game.homeTeam}
             score={game.scoreHome}
             isWinning={homeWinning}
             showScore={!isScheduled}
+            prob={isScheduled && probHome !== undefined ? probHome : undefined}
+            probFavorita={probHome !== undefined && probHome >= 0.5}
           />
         </View>
       </Pressable>
@@ -108,11 +113,15 @@ function TeamRow({
   score,
   isWinning,
   showScore,
+  prob,
+  probFavorita = false,
 }: {
   team: Game['homeTeam'];
   score: number;
   isWinning: boolean;
   showScore: boolean;
+  prob?: number;
+  probFavorita?: boolean;
 }) {
   return (
     <View style={styles.teamRow}>
@@ -135,6 +144,11 @@ function TeamRow({
         </View>
       </View>
       {showScore && <Text style={[styles.score, isWinning && styles.scoreWinning]}>{score}</Text>}
+      {!showScore && prob !== undefined && (
+        <Text style={[styles.prob, probFavorita && styles.probFavorita]}>
+          {Math.round(prob * 100)}%
+        </Text>
+      )}
     </View>
   );
 }
@@ -236,6 +250,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displayBold,
     minWidth: 50,
     textAlign: 'right',
+  },
+  prob: {
+    color: colors.textMuted,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  probFavorita: {
+    color: colors.primary,
   },
   scoreWinning: {
     color: colors.text,

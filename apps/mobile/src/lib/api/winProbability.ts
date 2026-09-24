@@ -29,5 +29,6 @@ export async function fetchWinProbability(gameId: string): Promise<WinProbabilit
     gamesHome: fila.partidos_home,
     gamesAway: fila.partidos_away,
     season: fila.temporada,
+    seasonType: fila.tipo,
   };
 }

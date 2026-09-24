@@ -36,6 +36,13 @@ jobs:
           BALLDONTLIE_API_KEY: ${{ secrets.BALLDONTLIE_API_KEY }}
         run: python -m src.jobs.sync_upcoming_games
 
+      - name: Snapshot win probabilities
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.snapshot_predictions
+        continue-on-error: true
+
       # Los movimientos se quedan aqui: la NBA publica el feed de golpe y
       # una vez al dia basta. Los titulares y las lesiones, que cambian a
       # todas horas, van en sync_espn.yml cada seis.

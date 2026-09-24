@@ -659,4 +659,23 @@ export type WinProbability = {
   gamesHome: number;
   gamesAway: number;
   season: string;
+  seasonType: string;
+};
+
+export type ModelRecord = {
+  season: string;
+  resolved: number;
+  hits: number;
+  accuracy: number;
+  pending: number;
+};
+
+export type PlayoffSeries = {
+  round: number;
+  conference: string;
+  order: number;
+  teamA: TeamRef & { wins: number };
+  teamB: TeamRef & { wins: number };
+  decided: boolean;
+  champion: boolean;
 };

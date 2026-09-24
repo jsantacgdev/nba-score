@@ -17,6 +17,7 @@ import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
 import { useHeadToHead } from '@/hooks/useHeadToHead';
 import { useGameTeamForm } from '@/hooks/useGameTeamForm';
 import { useWinProbability } from '@/hooks/useWinProbability';
+import { useModelRecord } from '@/hooks/useModelRecord';
 import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -39,6 +40,7 @@ export default function GameDetailScreen() {
     id,
     vista === 'h2h' && porJugar,
   );
+  const { data: balanceModelo } = useModelRecord(vista === 'h2h' && porJugar);
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
 
@@ -191,6 +193,7 @@ export default function GameDetailScreen() {
                 home={game.homeTeam}
                 away={game.awayTeam}
                 data={pronostico}
+                record={balanceModelo}
                 isLoading={cargandoPronostico}
               />
             )}
@@ -588,7 +591,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
     borderWidth: 2,
     borderColor: colors.primary,
   },
@@ -793,6 +795,7 @@ const styles = StyleSheet.create({
   vistaRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
   vistaTab: {
