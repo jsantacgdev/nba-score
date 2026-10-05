@@ -93,13 +93,12 @@ export async function fetchRecentGameDays(
   before: Date,
   daysCount: number,
 ): Promise<{ date: Date; games: Game[] }[]> {
-  const beforeIso = new Date(before);
-  beforeIso.setHours(0, 0, 0, 0);
+  const limite = startOfDay(before);
 
   const { data, error } = await supabase
     .from('games')
     .select(SELECT_WITH_TEAMS)
-    .lt('starts_at', beforeIso.toISOString())
+    .lt('starts_at', limite.toISOString())
     .eq('status', 'final')
     .order('starts_at', { ascending: false })
     .limit(200);
@@ -129,13 +128,12 @@ export async function fetchUpcomingGameDays(
   after: Date,
   daysCount: number,
 ): Promise<{ date: Date; games: Game[] }[]> {
-  const afterIso = new Date(after);
-  afterIso.setHours(23, 59, 59, 999);
+  const limite = startOfDay(addDays(after, 1));
 
   const { data, error } = await supabase
     .from('games')
     .select(SELECT_WITH_TEAMS)
-    .gt('starts_at', afterIso.toISOString())
+    .gte('starts_at', limite.toISOString())
     .neq('status', 'final')
     .order('starts_at', { ascending: true })
     .limit(200);
