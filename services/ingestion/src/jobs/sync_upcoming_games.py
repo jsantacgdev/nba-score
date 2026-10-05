@@ -18,11 +18,11 @@ def sync_upcoming_games(
     client = get_supabase_client()
     valid_ids = {row["id"] for row in client.table("teams").select("id").execute().data}
 
-    try:
-        partidos = get_season_schedule(CURRENT_SEASON)
-    except Exception as e:
-        print(f"Error: {e}")
-        return
+    partidos = get_season_schedule(CURRENT_SEASON)
+    if not partidos:
+        raise RuntimeError(
+            f"El calendario de {CURRENT_SEASON} vino vacio: no se sincroniza nada."
+        )
 
     if full_season:
         print(f"Sincronizando la temporada {CURRENT_SEASON} completa...")
