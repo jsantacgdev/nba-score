@@ -42,6 +42,24 @@ export default function GamesScreen() {
   ];
   const { data: probabilidades } = useWinProbabilities(idsPorJugar);
 
+  const hayPartidosHoy = safeGames.length > 0;
+  const proximosDias =
+    showRecentDays && upcomingDays && upcomingDays.length > 0 ? (
+      <View style={styles.recentDaysSection}>
+        <View style={styles.recentDaysHeader}>
+          <Text style={styles.recentDaysTitle}>Próximos partidos</Text>
+        </View>
+        {upcomingDays.map((day) => (
+          <CollapsibleDaySection
+            key={day.date.toISOString()}
+            date={day.date}
+            games={day.games}
+            probabilidades={probabilidades}
+          />
+        ))}
+      </View>
+    ) : null;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topBar}>
@@ -88,23 +106,7 @@ export default function GamesScreen() {
               />
             )}
 
-            {/* Fuera de temporada lo util es saber cuando se vuelve a jugar,
-                asi que los proximos van antes que los pasados. */}
-            {showRecentDays && upcomingDays && upcomingDays.length > 0 && (
-              <View style={styles.recentDaysSection}>
-                <View style={styles.recentDaysHeader}>
-                  <Text style={styles.recentDaysTitle}>Próximos partidos</Text>
-                </View>
-                {upcomingDays.map((day) => (
-                  <CollapsibleDaySection
-                    key={day.date.toISOString()}
-                    date={day.date}
-                    games={day.games}
-                    probabilidades={probabilidades}
-                  />
-                ))}
-              </View>
-            )}
+            {!hayPartidosHoy && proximosDias}
 
             {liveGames.length > 0 && (
               <Section title="En vivo" count={liveGames.length} showLiveIndicator>
@@ -129,6 +131,8 @@ export default function GamesScreen() {
                 ))}
               </Section>
             )}
+
+            {hayPartidosHoy && proximosDias}
 
             {showRecentDays && recentDays && recentDays.length > 0 && (
               <View style={styles.recentDaysSection}>
