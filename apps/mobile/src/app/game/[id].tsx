@@ -13,7 +13,13 @@ import { CourtLineup } from '@/components/game/CourtLineup';
 import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { Probabilidad } from '@/components/game/Probabilidad';
-import { useLiveLineup, useStartingLineups } from '@/hooks/useLive';
+import { boxScoreDesdeDirecto } from '@/lib/api/live';
+import {
+  fusionarDirecto,
+  useLiveLineup,
+  useLiveScoreboard,
+  useStartingLineups,
+} from '@/hooks/useLive';
 import { useHeadToHead } from '@/hooks/useHeadToHead';
 import { useGameTeamForm } from '@/hooks/useGameTeamForm';
 import { useWinProbability } from '@/hooks/useWinProbability';
@@ -27,7 +33,10 @@ export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
   const [vista, setVista] = useState<'stats' | 'court' | 'h2h'>('stats');
-  const enJuego = data?.game.status === 'live';
+  const { data: marcadorVivo } = useLiveScoreboard();
+  const vivo = marcadorVivo?.find((g) => g.gameId === id);
+  const partido = data?.game ? fusionarDirecto(data.game, vivo) : undefined;
+  const enJuego = partido?.status === 'live';
   const { data: enPista } = useLiveLineup(id, enJuego);
   const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
   const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
@@ -35,7 +44,7 @@ export default function GameDetailScreen() {
     vista === 'h2h',
   );
   const { data: forma, isLoading: cargandoForma } = useGameTeamForm(id, vista === 'h2h');
-  const porJugar = data?.game.status === 'scheduled';
+  const porJugar = partido?.status === 'scheduled';
   const { data: pronostico, isLoading: cargandoPronostico } = useWinProbability(
     id,
     vista === 'h2h' && porJugar,
@@ -68,7 +77,24 @@ export default function GameDetailScreen() {
     );
   }
 
-  const { game, homeRoster, awayRoster, mvp } = data;
+  const { mvp } = data;
+  const game = partido ?? data.game;
+
+  const invertido =
+    !!enPista &&
+    enPista.home.abbreviation !== game.homeTeam.abbreviation &&
+    enPista.away.abbreviation === game.homeTeam.abbreviation;
+  const vivoLocal = invertido ? enPista?.away : enPista?.home;
+  const vivoVisitante = invertido ? enPista?.home : enPista?.away;
+
+  const homeRoster =
+    enJuego && vivoLocal
+      ? boxScoreDesdeDirecto(vivoLocal, game.homeTeam.id)
+      : data.homeRoster;
+  const awayRoster =
+    enJuego && vivoVisitante
+      ? boxScoreDesdeDirecto(vivoVisitante, game.awayTeam.id)
+      : data.awayRoster;
   const homeLineup = data.homeLineup ?? [];
   const awayLineup = data.awayLineup ?? [];
   const jugado = game.status === 'final' || game.status === 'live';
@@ -80,6 +106,15 @@ export default function GameDetailScreen() {
   function suplentesDe(lado: 'home' | 'away'): GameBoxScoreEntry[] {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
     const plantel = lado === 'home' ? homeRoster : awayRoster;
+
+    if (enJuego) {
+      const equipo = lado === 'home' ? vivoLocal : vivoVisitante;
+      const enCancha = new Set(
+        (equipo?.players ?? []).filter((p) => p.onCourt).map((p) => p.playerId),
+      );
+      return plantel.filter((p) => !enCancha.has(p.playerId));
+    }
+
     const titulares = new Set(
       ((quintetos ?? []).find((q) => q.teamId === teamId)?.players ?? []).map((p) => p.playerId),
     );
@@ -90,7 +125,7 @@ export default function GameDetailScreen() {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
 
     if (enJuego) {
-      const equipo = lado === 'home' ? enPista?.home : enPista?.away;
+      const equipo = lado === 'home' ? vivoLocal : vivoVisitante;
       return (equipo?.players ?? [])
         .filter((p) => p.onCourt)
         .map((p) => ({

@@ -434,16 +434,29 @@ export type LiveScoreboardGame = {
 export type LivePlayer = {
   playerId: string;
   name: string;
+  firstName: string;
+  lastName: string;
   jerseyNumber?: string;
   starter: boolean;
   onCourt: boolean;
   played: boolean;
   minutes: string;
+  minutosJugados: number;
   points: number;
   rebounds: number;
+  reboundsOffensive: number;
+  reboundsDefensive: number;
   assists: number;
   steals: number;
   blocks: number;
+  turnovers: number;
+  fouls: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
   plusMinus: number;
 };
 

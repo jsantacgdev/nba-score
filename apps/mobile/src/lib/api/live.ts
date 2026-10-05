@@ -1,4 +1,10 @@
-import type { LiveGame, LivePlayer, LiveScoreboardGame } from '@/types/domain';
+import type {
+  GameBoxScoreEntry,
+  LiveGame,
+  LivePlayer,
+  LiveScoreboardGame,
+  LiveTeam,
+} from '@/types/domain';
 
 const BASE = 'https://cdn.nba.com/static/json/liveData';
 
@@ -40,21 +46,84 @@ export async function fetchLiveScoreboard(): Promise<LiveScoreboardGame[]> {
   }));
 }
 
+export function minutosJugados(iso?: string): number {
+  if (!iso) return 0;
+  const encontrado = /PT(\d+)M([\d.]+)S/.exec(iso);
+  if (!encontrado) return 0;
+  return Number(encontrado[1]) + Number(encontrado[2]) / 60;
+}
+
 function mapearJugadores(equipo: any): LivePlayer[] {
-  return (equipo?.players ?? []).map((p: any) => ({
-    playerId: String(p.personId),
-    name: String(p.name ?? ''),
-    jerseyNumber: p.jerseyNum ? String(p.jerseyNum) : undefined,
-    starter: p.starter === '1',
-    onCourt: p.oncourt === '1',
-    played: p.played === '1',
-    minutes: String(p.statistics?.minutes ?? ''),
-    points: p.statistics?.points ?? 0,
-    rebounds: p.statistics?.reboundsTotal ?? 0,
-    assists: p.statistics?.assists ?? 0,
-    steals: p.statistics?.steals ?? 0,
-    blocks: p.statistics?.blocks ?? 0,
-    plusMinus: p.statistics?.plusMinusPoints ?? 0,
+  return (equipo?.players ?? []).map((p: any) => {
+    const s = p.statistics ?? {};
+    return {
+      playerId: String(p.personId),
+      name: String(p.name ?? ''),
+      firstName: String(p.firstName ?? ''),
+      lastName: String(p.familyName ?? ''),
+      jerseyNumber: p.jerseyNum ? String(p.jerseyNum) : undefined,
+      starter: p.starter === '1',
+      onCourt: p.oncourt === '1',
+      played: p.played === '1',
+      minutes: String(s.minutes ?? ''),
+      minutosJugados: minutosJugados(s.minutes),
+      points: s.points ?? 0,
+      rebounds: s.reboundsTotal ?? 0,
+      reboundsOffensive: s.reboundsOffensive ?? 0,
+      reboundsDefensive: s.reboundsDefensive ?? 0,
+      assists: s.assists ?? 0,
+      steals: s.steals ?? 0,
+      blocks: s.blocks ?? 0,
+      turnovers: s.turnovers ?? 0,
+      fouls: s.foulsPersonal ?? 0,
+      fgMade: s.fieldGoalsMade ?? 0,
+      fgAttempted: s.fieldGoalsAttempted ?? 0,
+      fg3Made: s.threePointersMade ?? 0,
+      fg3Attempted: s.threePointersAttempted ?? 0,
+      ftMade: s.freeThrowsMade ?? 0,
+      ftAttempted: s.freeThrowsAttempted ?? 0,
+      plusMinus: s.plusMinusPoints ?? 0,
+    };
+  });
+}
+
+function gameScore(p: LivePlayer): number {
+  return (
+    p.points +
+    0.4 * p.fgMade -
+    0.7 * p.fgAttempted -
+    0.4 * (p.ftAttempted - p.ftMade) +
+    0.7 * p.reboundsOffensive +
+    0.3 * p.reboundsDefensive +
+    p.steals +
+    0.7 * p.assists +
+    0.7 * p.blocks -
+    0.4 * p.fouls -
+    p.turnovers
+  );
+}
+
+export function boxScoreDesdeDirecto(equipo: LiveTeam, teamId: string): GameBoxScoreEntry[] {
+  return equipo.players.map((p) => ({
+    playerId: p.playerId,
+    firstName: p.firstName || p.name.split(' ')[0] || '',
+    lastName: p.lastName || p.name.split(' ').slice(1).join(' ') || p.name,
+    teamId,
+    minutes: p.minutosJugados,
+    points: p.points,
+    rebounds: p.rebounds,
+    assists: p.assists,
+    steals: p.steals,
+    blocks: p.blocks,
+    turnovers: p.turnovers,
+    fgMade: p.fgMade,
+    fgAttempted: p.fgAttempted,
+    fg3Made: p.fg3Made,
+    fg3Attempted: p.fg3Attempted,
+    ftMade: p.ftMade,
+    ftAttempted: p.ftAttempted,
+    plusMinus: p.plusMinus,
+    gameScore: gameScore(p),
   }));
 }
 

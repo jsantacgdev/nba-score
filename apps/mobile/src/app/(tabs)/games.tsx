@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import { GameCard } from '@/components/game/GameCard';
 import { DateSelector } from '@/components/game/DateSelector';
 import { useGamesByDate } from '@/hooks/useGamesByDate';
@@ -15,13 +16,15 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { CollapsibleDaySection } from '@/components/game/CollapsibleDaySection';
 import { useGameCounts } from '@/hooks/useGameCounts';
 import { useWinProbabilities } from '@/hooks/useWinProbabilities';
+import { useGamesConDirecto } from '@/hooks/useLive';
 
 export default function GamesScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
 
   const { data: games, isLoading, isRefetching, refetch, error } = useGamesByDate(selectedDate);
 
-  const safeGames = games ?? [];
+  const enPantalla = useIsFocused();
+  const safeGames = useGamesConDirecto(games, enPantalla);
   const liveGames = safeGames.filter((g) => g.status === 'live');
   const finalGames = safeGames.filter((g) => g.status === 'final');
   const scheduledGames = safeGames.filter((g) => g.status === 'scheduled');
