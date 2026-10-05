@@ -3,19 +3,17 @@ import time
 from src.clients.nba import CURRENT_SEASON, REQUEST_DELAY, get_box_score
 from src.clients.supabase import get_supabase_client
 
-def get_games_with_box_scores(client) -> set[str]:
+def get_games_with_box_scores(client, season: str | None = None) -> set[str]:
     """Devuelve el conjunto de game_ids que YA tienen box score cargado."""
     loaded: set[str] = set()
     page_size = 1000
     offset = 0
 
     while True:
-        result = (
-            client.table("player_game_log")
-            .select("game_id")
-            .range(offset, offset + page_size - 1)
-            .execute()
-        )
+        query = client.table("player_game_log").select("game_id")
+        if season:
+            query = query.eq("season", season)
+        result = query.range(offset, offset + page_size - 1).execute()
         if not result.data:
             break
         for row in result.data:
@@ -125,7 +123,7 @@ def sync_box_scores(
     # 2. Filtrar los que ya tienen box score
     pending_ids: list[dict]
     if skip_existing:
-        loaded = get_games_with_box_scores(client)
+        loaded = get_games_with_box_scores(client, season)
         print(f"   {len(loaded)} partidos ya tienen box score cargado")
         pending_ids = [g for g in all_game_ids if g["id"] not in loaded]
     else:

@@ -2,6 +2,7 @@
 import sys
 import time
 
+from src.clients.nba import CURRENT_SEASON
 from src.clients.starters import get_game_starters
 from src.clients.supabase import get_supabase_client
 
@@ -87,7 +88,9 @@ def sync_starters(season: str | None = None, rehacer: bool = False) -> None:
         print(f"   Jugadores no dados de alta: {descartados}")
 
 if __name__ == "__main__":
-    temporada = None
+    temporada = CURRENT_SEASON
     if "--season" in sys.argv:
         temporada = sys.argv[sys.argv.index("--season") + 1]
+    if "--todas" in sys.argv:
+        temporada = None
     sync_starters(season=temporada, rehacer="--all" in sys.argv)
