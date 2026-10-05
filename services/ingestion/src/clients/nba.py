@@ -11,6 +11,8 @@ from nba_api.stats.endpoints import boxscoretraditionalv3
 from datetime import date, datetime
 import re
 import time
+
+import httpx
 from nba_api.stats.library.http import NBAStatsHTTP
 
 CURRENT_SEASON = "2026-27"
@@ -411,7 +413,67 @@ def get_league_games(
 
 ESTADO_POR_CODIGO = {1: "scheduled", 2: "live", 3: "final"}
 
+URL_CALENDARIO_CDN = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV2_1.json"
+
+CABECERAS_CDN = {
+    "Referer": "https://www.nba.com/",
+    "Origin": "https://www.nba.com",
+    "User-Agent": "Mozilla/5.0",
+}
+
+
+def get_season_schedule_cdn() -> list[dict]:
+    respuesta = httpx.get(URL_CALENDARIO_CDN, headers=CABECERAS_CDN, timeout=90)
+    respuesta.raise_for_status()
+    calendario = respuesta.json().get("leagueSchedule") or {}
+    season = str(calendario.get("seasonYear") or CURRENT_SEASON)
+
+    partidos = []
+    for dia in calendario.get("gameDates") or []:
+        for g in dia.get("games") or []:
+            game_id = _id(g.get("gameId"))
+            local = g.get("homeTeam") or {}
+            visitante = g.get("awayTeam") or {}
+            home_id = _id(local.get("teamId"))
+            away_id = _id(visitante.get("teamId"))
+
+            if not game_id or not home_id or not away_id:
+                continue
+            if home_id == "0" or away_id == "0":
+                continue
+
+            try:
+                codigo = int(g.get("gameStatus"))
+            except (TypeError, ValueError):
+                codigo = 1
+
+            partidos.append(
+                {
+                    "id": game_id,
+                    "starts_at": str(g.get("gameDateTimeUTC")),
+                    "season": season,
+                    "home_team_id": home_id,
+                    "away_team_id": away_id,
+                    "score_home": int(local.get("score") or 0),
+                    "score_away": int(visitante.get("score") or 0),
+                    "status": ESTADO_POR_CODIGO.get(codigo, "scheduled"),
+                    "season_type": season_type_from_id(game_id),
+                }
+            )
+
+    return partidos
+
+
 def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
+    if season == CURRENT_SEASON:
+        try:
+            partidos = get_season_schedule_cdn()
+            if partidos:
+                return partidos
+            print("   el calendario del CDN vino vacio, se prueba con stats.nba.com")
+        except Exception as e:
+            print(f"   CDN no disponible ({type(e).__name__}), se prueba con stats.nba.com")
+
     df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=60).get_data_frames()[0]
 
     partidos = []
@@ -443,6 +505,93 @@ def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
         )
 
     return partidos
+
+
+URL_BOX_SCORE_CDN = "https://cdn.nba.com/static/json/liveData/boxscore/boxscore_{game_id}.json"
+
+
+def _partido_cdn(game_id: str) -> dict | None:
+    respuesta = httpx.get(
+        URL_BOX_SCORE_CDN.format(game_id=game_id), headers=CABECERAS_CDN, timeout=45
+    )
+    if respuesta.status_code == 404:
+        return None
+    respuesta.raise_for_status()
+    return respuesta.json().get("game")
+
+
+def _minutos_cdn(valor) -> float:
+    encontrado = re.search(r"PT(\d+)M([\d.]+)S", str(valor or ""))
+    if not encontrado:
+        return 0.0
+    return round(float(encontrado.group(1)) + float(encontrado.group(2)) / 60, 1)
+
+
+def get_box_score_cdn(game_id: str) -> list[dict]:
+    partido = _partido_cdn(game_id)
+    if not partido:
+        return []
+
+    entradas = []
+    for lado in ("homeTeam", "awayTeam"):
+        for jugador in (partido.get(lado) or {}).get("players") or []:
+            if jugador.get("played") != "1":
+                continue
+            s = jugador.get("statistics") or {}
+
+            def _entero(campo: str) -> int:
+                try:
+                    return int(s.get(campo) or 0)
+                except (TypeError, ValueError):
+                    return 0
+
+            entradas.append(
+                {
+                    "player_id": _id(jugador.get("personId")),
+                    "game_id": str(game_id),
+                    "minutes": _minutos_cdn(s.get("minutes")),
+                    "points": _entero("points"),
+                    "rebounds": _entero("reboundsTotal"),
+                    "assists": _entero("assists"),
+                    "steals": _entero("steals"),
+                    "blocks": _entero("blocks"),
+                    "turnovers": _entero("turnovers"),
+                    "fg_made": _entero("fieldGoalsMade"),
+                    "fg_attempted": _entero("fieldGoalsAttempted"),
+                    "fg3_made": _entero("threePointersMade"),
+                    "fg3_attempted": _entero("threePointersAttempted"),
+                    "ft_made": _entero("freeThrowsMade"),
+                    "ft_attempted": _entero("freeThrowsAttempted"),
+                    "plus_minus": _entero("plusMinusPoints"),
+                }
+            )
+
+    return entradas
+
+
+def get_game_starters_cdn(game_id: str) -> list[dict]:
+    partido = _partido_cdn(game_id)
+    if not partido:
+        return []
+
+    titulares = []
+    for lado in ("homeTeam", "awayTeam"):
+        equipo = partido.get(lado) or {}
+        team_id = _id(equipo.get("teamId"))
+        cinco = [p for p in equipo.get("players") or [] if p.get("starter") == "1"]
+        for spot, jugador in enumerate(sorted(cinco, key=lambda p: p.get("order") or 0)):
+            titulares.append(
+                {
+                    "game_id": str(game_id),
+                    "team_id": team_id,
+                    "player_id": _id(jugador.get("personId")),
+                    "spot": spot,
+                    "position": str(jugador.get("position") or "").strip() or None,
+                }
+            )
+
+    return titulares
+
 
 def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> list[dict]:
     """Obtiene los partidos programados para una fecha concreta."""
@@ -487,6 +636,13 @@ def get_scoreboard_for_date(date: datetime, season: str = CURRENT_SEASON) -> lis
     return games
 
 def get_box_score(game_id: str) -> list[dict]:
+    try:
+        entradas = get_box_score_cdn(game_id)
+        if entradas:
+            return entradas
+    except Exception as e:
+        print(f"        CDN no disponible ({type(e).__name__}), se prueba con stats.nba.com")
+
     """
     Obtiene el box score de un partido: stats por jugador de ambos equipos.
     Una sola llamada trae los ~25-30 jugadores que participaron.
