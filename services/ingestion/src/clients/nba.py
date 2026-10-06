@@ -418,8 +418,33 @@ URL_CALENDARIO_CDN = "https://cdn.nba.com/static/json/staticData/scheduleLeagueV
 CABECERAS_CDN = {
     "Referer": "https://www.nba.com/",
     "Origin": "https://www.nba.com",
-    "User-Agent": "Mozilla/5.0",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
 }
+
+INTENTOS_CDN = 3
+
+
+def _pedir_cdn(url: str, timeout: int = 60):
+    ultimo = None
+    for intento in range(INTENTOS_CDN):
+        try:
+            respuesta = httpx.get(url, headers=CABECERAS_CDN, timeout=timeout)
+            if respuesta.status_code < 500 and respuesta.status_code != 429:
+                return respuesta
+            ultimo = f"HTTP {respuesta.status_code}"
+        except Exception as e:
+            ultimo = f"{type(e).__name__}: {e}"
+        if intento < INTENTOS_CDN - 1:
+            time.sleep(2 ** intento)
+    raise RuntimeError(f"El CDN no respondio tras {INTENTOS_CDN} intentos ({ultimo})")
 
 
 def _detalle_error(e: Exception) -> str:
@@ -431,7 +456,7 @@ def _detalle_error(e: Exception) -> str:
 
 
 def get_season_schedule_cdn() -> list[dict]:
-    respuesta = httpx.get(URL_CALENDARIO_CDN, headers=CABECERAS_CDN, timeout=90)
+    respuesta = _pedir_cdn(URL_CALENDARIO_CDN, timeout=90)
     respuesta.raise_for_status()
     calendario = respuesta.json().get("leagueSchedule") or {}
     season = str(calendario.get("seasonYear") or CURRENT_SEASON)
@@ -519,9 +544,7 @@ URL_BOX_SCORE_CDN = "https://cdn.nba.com/static/json/liveData/boxscore/boxscore_
 
 
 def _partido_cdn(game_id: str) -> dict | None:
-    respuesta = httpx.get(
-        URL_BOX_SCORE_CDN.format(game_id=game_id), headers=CABECERAS_CDN, timeout=45
-    )
+    respuesta = _pedir_cdn(URL_BOX_SCORE_CDN.format(game_id=game_id), timeout=45)
     if respuesta.status_code == 404:
         return None
     respuesta.raise_for_status()
