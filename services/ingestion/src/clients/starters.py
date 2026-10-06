@@ -1,7 +1,7 @@
 
 from nba_api.stats.endpoints import boxscoretraditionalv3
 
-from src.clients.nba import get_game_starters_cdn
+from src.clients.nba import _detalle_error, get_game_starters_cdn
 
 def _id(value) -> str:
     try:
@@ -15,7 +15,7 @@ def get_game_starters(game_id: str) -> list[dict]:
         if titulares:
             return titulares
     except Exception as e:
-        print(f"        CDN no disponible ({type(e).__name__}), se prueba con stats.nba.com")
+        print(f"        CDN no disponible ({_detalle_error(e)}), se prueba con stats.nba.com")
 
     box = boxscoretraditionalv3.BoxScoreTraditionalV3(game_id=game_id, timeout=45)
     df = box.player_stats.get_data_frame()

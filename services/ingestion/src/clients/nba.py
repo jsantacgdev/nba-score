@@ -422,6 +422,14 @@ CABECERAS_CDN = {
 }
 
 
+def _detalle_error(e: Exception) -> str:
+    respuesta = getattr(e, "response", None)
+    if respuesta is None:
+        return f"{type(e).__name__}: {e}"
+    cuerpo = " ".join((respuesta.text or "")[:200].split())
+    return f"HTTP {respuesta.status_code} | {cuerpo}"
+
+
 def get_season_schedule_cdn() -> list[dict]:
     respuesta = httpx.get(URL_CALENDARIO_CDN, headers=CABECERAS_CDN, timeout=90)
     respuesta.raise_for_status()
@@ -472,7 +480,7 @@ def get_season_schedule(season: str = CURRENT_SEASON) -> list[dict]:
                 return partidos
             print("   el calendario del CDN vino vacio, se prueba con stats.nba.com")
         except Exception as e:
-            print(f"   CDN no disponible ({type(e).__name__}), se prueba con stats.nba.com")
+            print(f"   CDN no disponible ({_detalle_error(e)}), se prueba con stats.nba.com")
 
     df = scheduleleaguev2.ScheduleLeagueV2(season=season, timeout=60).get_data_frames()[0]
 
@@ -641,7 +649,7 @@ def get_box_score(game_id: str) -> list[dict]:
         if entradas:
             return entradas
     except Exception as e:
-        print(f"        CDN no disponible ({type(e).__name__}), se prueba con stats.nba.com")
+        print(f"        CDN no disponible ({_detalle_error(e)}), se prueba con stats.nba.com")
 
     """
     Obtiene el box score de un partido: stats por jugador de ambos equipos.
