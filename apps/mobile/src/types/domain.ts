@@ -39,6 +39,11 @@ export type Game = {
   scoreAway: number;
   period?: number;
   timeRemaining?: string;
+  /**
+   * Cuando se leyo por ultima vez el marcador en vivo. Sirve para saber
+   * si el reloj del partido avanza o esta parado.
+   */
+  liveUpdatedAt?: number;
   seasonType?: 'preseason' | 'regular' | 'allstar' | 'playoffs' | 'playin';
   seriesWins?: { home: number; away: number };
   playoffRound?: number;

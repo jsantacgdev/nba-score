@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import type { Game } from '@/types/domain';
 import { formatShortDate, formatTime } from '@/lib/format';
+import { useRelojVivo } from '@/hooks/useRelojVivo';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
 
 type Props = {
@@ -23,6 +24,7 @@ type Props = {
 
 export function GameCard({ game, index = 0, showDate = false, probHome }: Props) {
   const isLive = game.status === 'live';
+  const reloj = useRelojVivo(game.timeRemaining, game.liveUpdatedAt, isLive);
   const isFinal = game.status === 'final';
   const isScheduled = game.status === 'scheduled';
 
@@ -78,9 +80,9 @@ export function GameCard({ game, index = 0, showDate = false, probHome }: Props)
               {formatTime(game.startsAt)}
             </Text>
           )}
-          {isLive && game.timeRemaining && (
+          {isLive && reloj && (
             <Text style={styles.periodText}>
-              Q{game.period} · {game.timeRemaining}
+              Q{game.period} · {reloj}
             </Text>
           )}
         </View>

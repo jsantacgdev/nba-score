@@ -70,7 +70,7 @@ export function fusionarDirecto(game: Game, vivo?: LiveScoreboardGame): Game {
 }
 
 export function useGamesConDirecto(games: Game[] | undefined, activo = true) {
-  const { data } = useLiveScoreboard(activo);
+  const { data, dataUpdatedAt } = useLiveScoreboard(activo);
 
   return useMemo(() => {
     if (!games?.length) return games ?? [];
@@ -95,9 +95,10 @@ export function useGamesConDirecto(games: Game[] | undefined, activo = true) {
       const vivo = candidatos.find(
         (v) => Math.abs(v.startsAt.getTime() - g.startsAt.getTime()) < MARGEN_CRUCE_MS,
       );
-      return fusionarDirecto(g, vivo);
+      if (!vivo) return g;
+      return { ...fusionarDirecto(g, vivo), liveUpdatedAt: dataUpdatedAt };
     });
-  }, [games, data]);
+  }, [games, data, dataUpdatedAt]);
 }
 
 export function useLiveGame(gameId?: string, activo = true) {
