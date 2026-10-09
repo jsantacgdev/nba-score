@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  claveEnfrentamiento,
   fetchLiveGame,
   fetchLiveScoreboard,
   fetchPlayerPeriods,
@@ -14,17 +15,37 @@ const REFRESCO_PARTIDO = 15_000;
 const REFRESCO_ALINEACION = 60_000;
 const REFRESCO_CUARTOS = 90_000;
 
+/** Si la consulta falla se reintenta a este ritmo en vez de rendirse. */
+const REFRESCO_TRAS_FALLO = 30_000;
+
+/**
+ * Margen para dar por bueno el cruce entre un partido en directo y el
+ * nuestro. ESPN usa sus propios identificadores, asi que se cruzan por
+ * equipos; la hora evita confundir dos enfrentamientos iguales de dias
+ * distintos.
+ */
+const MARGEN_CRUCE_MS = 12 * 60 * 60 * 1000;
+
 export function useLiveScoreboard(activo = true) {
   return useQuery({
     queryKey: ['liveScoreboard'],
     queryFn: fetchLiveScoreboard,
     enabled: activo,
     refetchInterval: (query) => {
-      const partidos = query.state.data ?? [];
+      // Sin datos por un error: hay que seguir intentandolo. Antes esta
+      // rama devolvia false y el directo se apagaba para siempre tras el
+      // primer fallo de red.
+      if (query.state.status === 'error' || !query.state.data) {
+        return REFRESCO_TRAS_FALLO;
+      }
+      const partidos = query.state.data;
       if (partidos.some((g) => g.status === 'live')) return REFRESCO_MARCADOR;
       if (partidos.some((g) => g.status === 'scheduled')) return REFRESCO_ESPERA;
-      return false;
+      return REFRESCO_ESPERA;
     },
+    refetchIntervalInBackground: false,
+    retry: 3,
+    retryDelay: (intento) => Math.min(1000 * 2 ** intento, 15_000),
     staleTime: 0,
   });
 }
@@ -32,6 +53,7 @@ export function useLiveScoreboard(activo = true) {
 export function fusionarDirecto(game: Game, vivo?: LiveScoreboardGame): Game {
   if (!vivo) return game;
 
+  // Si el cruce fuera al reves, local y visitante irian cambiados
   const invertido =
     vivo.homeAbbr !== game.homeTeam.abbreviation &&
     vivo.awayAbbr === game.homeTeam.abbreviation;
@@ -52,8 +74,28 @@ export function useGamesConDirecto(games: Game[] | undefined, activo = true) {
   return useMemo(() => {
     if (!games?.length) return games ?? [];
     if (!data?.length) return games;
-    const porId = new Map(data.map((g) => [g.gameId, g]));
-    return games.map((g) => fusionarDirecto(g, porId.get(g.id)));
+
+    // El cruce va por enfrentamiento y no por identificador: los de ESPN
+    // son suyos y no coinciden con los de la NBA.
+    const porEnfrentamiento = new Map<string, LiveScoreboardGame[]>();
+    for (const vivo of data) {
+      const clave = claveEnfrentamiento(vivo.awayAbbr, vivo.homeAbbr);
+      const lista = porEnfrentamiento.get(clave);
+      if (lista) lista.push(vivo);
+      else porEnfrentamiento.set(clave, [vivo]);
+    }
+
+    return games.map((g) => {
+      const candidatos = porEnfrentamiento.get(
+        claveEnfrentamiento(g.awayTeam.abbreviation, g.homeTeam.abbreviation),
+      );
+      if (!candidatos?.length) return g;
+
+      const vivo = candidatos.find(
+        (v) => Math.abs(v.startsAt.getTime() - g.startsAt.getTime()) < MARGEN_CRUCE_MS,
+      );
+      return fusionarDirecto(g, vivo);
+    });
   }, [games, data]);
 }
 

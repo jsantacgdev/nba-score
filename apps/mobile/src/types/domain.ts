@@ -420,7 +420,10 @@ export type PlayerInjury = {
 };
 
 export type LiveScoreboardGame = {
+  /** Identificador de ESPN, que no se parece al de la NBA. */
   gameId: string;
+  /** Hace falta para cruzar con nuestros partidos, que no comparten id. */
+  startsAt: Date;
   status: 'scheduled' | 'live' | 'final';
   statusText: string;
   period: number;

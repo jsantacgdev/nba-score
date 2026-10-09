@@ -8,6 +8,8 @@ import type {
 
 const BASE = 'https://cdn.nba.com/static/json/liveData';
 
+// El CDN de la NBA solo acepta peticiones con pinta de navegador. Sigue
+// usandose para el box score en vivo, que ESPN no da en este formato.
 const CABECERAS = {
   Referer: 'https://www.nba.com/',
   Origin: 'https://www.nba.com',
@@ -21,10 +23,51 @@ const CABECERAS = {
   'Sec-Fetch-Site': 'same-site',
 };
 
+/**
+ * El marcador en directo viene de ESPN, no del CDN de la NBA.
+ *
+ * El CDN de la NBA responde 403 a la app pase lo que pase: se probaron seis
+ * juegos de cabeceras distintos desde el movil, incluido el que funciona
+ * desde un PC, y los seis fueron rechazados. El bloqueo no mira las
+ * cabeceras sino la pila HTTP de Android. ESPN responde sin pedir nada.
+ */
+const BASE_ESPN = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
+
+/**
+ * ESPN abrevia seis equipos de otra forma que la NBA.
+ *
+ * Importa porque sus identificadores de partido son suyos y no se parecen
+ * a los de la NBA, asi que los partidos se cruzan por equipos y fecha.
+ */
+const ABREVIATURAS_ESPN: Record<string, string> = {
+  GS: 'GSW',
+  NO: 'NOP',
+  NY: 'NYK',
+  SA: 'SAS',
+  UTAH: 'UTA',
+  WSH: 'WAS',
+};
+
+function abreviatura(valor?: string): string {
+  const limpia = String(valor ?? '').toUpperCase();
+  return ABREVIATURAS_ESPN[limpia] ?? limpia;
+}
+
+/** Clave para cruzar un partido en directo con el de nuestra base. */
+export function claveEnfrentamiento(awayAbbr: string, homeAbbr: string): string {
+  return `${awayAbbr}@${homeAbbr}`;
+}
+
 async function pedirJson<T>(url: string): Promise<T> {
   const respuesta = await fetch(url, { headers: CABECERAS });
   if (!respuesta.ok) throw new Error(`La NBA respondio ${respuesta.status}`);
   return JSON.parse(await respuesta.text()) as T;
+}
+
+async function pedirEspn<T>(url: string): Promise<T> {
+  const respuesta = await fetch(url);
+  if (!respuesta.ok) throw new Error(`ESPN respondio ${respuesta.status}`);
+  return (await respuesta.json()) as T;
 }
 
 export function relojLegible(iso?: string): string | undefined {
@@ -37,21 +80,55 @@ export function relojLegible(iso?: string): string | undefined {
   return `${minutos}:${String(segundos).padStart(2, '0')}`;
 }
 
-export async function fetchLiveScoreboard(): Promise<LiveScoreboardGame[]> {
-  const datos = await pedirJson<any>(`${BASE}/scoreboard/todaysScoreboard_00.json`);
-  const partidos = datos?.scoreboard?.games ?? [];
+/**
+ * Estado de ESPN al nuestro.
+ *
+ * Solo 'STATUS_SCHEDULED' y 'STATUS_FINAL' son definitivos; el descanso y
+ * el fin de cuarto son nombres propios que siguen siendo partido en juego,
+ * asi que cualquier otro estado cuenta como en vivo.
+ */
+function estadoEspn(nombre: string): 'scheduled' | 'live' | 'final' {
+  if (nombre === 'STATUS_SCHEDULED') return 'scheduled';
+  if (nombre === 'STATUS_FINAL') return 'final';
+  if (nombre === 'STATUS_POSTPONED' || nombre === 'STATUS_CANCELED') return 'scheduled';
+  return 'live';
+}
 
-  return partidos.map((g: any) => ({
-    gameId: String(g.gameId),
-    status: g.gameStatus === 2 ? 'live' : g.gameStatus === 3 ? 'final' : 'scheduled',
-    statusText: String(g.gameStatusText ?? '').trim(),
-    period: g.period ?? 0,
-    clock: relojLegible(g.gameClock),
-    homeAbbr: String(g.homeTeam?.teamTricode ?? ''),
-    awayAbbr: String(g.awayTeam?.teamTricode ?? ''),
-    homeScore: g.homeTeam?.score ?? 0,
-    awayScore: g.awayTeam?.score ?? 0,
-  }));
+export async function fetchLiveScoreboard(): Promise<LiveScoreboardGame[]> {
+  const datos = await pedirEspn<any>(`${BASE_ESPN}/scoreboard`);
+
+  return (datos?.events ?? []).map((evento: any) => {
+    const competicion = evento?.competitions?.[0] ?? {};
+    const estado = competicion?.status ?? {};
+    const tipo = estado?.type ?? {};
+
+    const equipos: Record<string, any> = {};
+    for (const competidor of competicion?.competitors ?? []) {
+      equipos[competidor.homeAway] = competidor;
+    }
+    const local = equipos.home ?? {};
+    const visitante = equipos.away ?? {};
+
+    const estadoPartido = estadoEspn(String(tipo.name ?? ''));
+    // En un partido terminado ESPN sigue mandando "12:00": solo vale el
+    // reloj mientras se juega
+    const reloj =
+      estadoPartido === 'live' ? String(estado.displayClock ?? '').trim() : '';
+
+    return {
+      gameId: String(evento.id),
+      startsAt: new Date(evento.date ?? competicion.date ?? Date.now()),
+      status: estadoPartido,
+      statusText: String(tipo.shortDetail ?? tipo.description ?? '').trim(),
+      period: Number(estado.period ?? 0),
+      // ESPN manda "0.0" cuando no hay reloj que enseñar
+      clock: reloj && reloj !== '0.0' ? reloj : undefined,
+      homeAbbr: abreviatura(local?.team?.abbreviation),
+      awayAbbr: abreviatura(visitante?.team?.abbreviation),
+      homeScore: Number(local?.score ?? 0),
+      awayScore: Number(visitante?.score ?? 0),
+    } satisfies LiveScoreboardGame;
+  });
 }
 
 export function minutosJugados(iso?: string): number {

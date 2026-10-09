@@ -34,7 +34,14 @@ export default function GameDetailScreen() {
   const { data, isLoading, error, refetch } = useGameDetail(id);
   const [vista, setVista] = useState<'stats' | 'court' | 'h2h'>('stats');
   const { data: marcadorVivo } = useLiveScoreboard();
-  const vivo = marcadorVivo?.find((g) => g.gameId === id);
+  // El identificador de ESPN no es el de la NBA: se cruza por equipos
+  const vivo = marcadorVivo?.find(
+    (g) =>
+      data?.game &&
+      g.homeAbbr === data.game.homeTeam.abbreviation &&
+      g.awayAbbr === data.game.awayTeam.abbreviation &&
+      Math.abs(g.startsAt.getTime() - data.game.startsAt.getTime()) < 12 * 60 * 60 * 1000,
+  );
   const partido = data?.game ? fusionarDirecto(data.game, vivo) : undefined;
   const enJuego = partido?.status === 'live';
   const { data: enPista } = useLiveLineup(id, enJuego);
