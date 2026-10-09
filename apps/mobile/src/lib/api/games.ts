@@ -16,6 +16,21 @@ function pickTeam(t: TeamRow | TeamRow[] | null): TeamRow | null {
   return Array.isArray(t) ? (t[0] ?? null) : t;
 }
 
+const HORAS_MAXIMAS_EN_JUEGO = 4;
+function estadoCorregido(
+  status: Game['status'],
+  startsAt: Date,
+  scoreHome: number,
+  scoreAway: number,
+): Game['status'] {
+  if (status !== 'live') return status;
+
+  const horas = (Date.now() - startsAt.getTime()) / 3_600_000;
+  if (horas <= HORAS_MAXIMAS_EN_JUEGO) return status;
+
+  return scoreHome > 0 || scoreAway > 0 ? 'final' : 'scheduled';
+}
+
 function mapGame(row: GameWithTeams): Game | null {
   const home = pickTeam(row.home_team);
   const away = pickTeam(row.away_team);
@@ -42,7 +57,12 @@ function mapGame(row: GameWithTeams): Game | null {
       logoUrl: away.logo_url ?? undefined,
     },
     startsAt: new Date(row.starts_at),
-    status: row.status as Game['status'],
+    status: estadoCorregido(
+      row.status as Game['status'],
+      new Date(row.starts_at),
+      row.score_home ?? 0,
+      row.score_away ?? 0,
+    ),
     scoreHome: row.score_home ?? 0,
     scoreAway: row.score_away ?? 0,
     period: row.period ?? undefined,
