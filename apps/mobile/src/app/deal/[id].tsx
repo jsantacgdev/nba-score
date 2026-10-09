@@ -10,6 +10,7 @@ import { useDealDetail } from '@/hooks/useMovements';
 import { formatDateDMY } from '@/lib/format';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { DealEntry } from '@/types/domain';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 /**
  * Como se nombra una eleccion de draft.
@@ -52,6 +53,7 @@ function iniciales(nombre: string): string {
 }
 
 export default function DealScreen() {
+  const paddingInferior = usePaddingInferior();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: piezas, isLoading } = useDealDetail(id);
 
@@ -90,7 +92,7 @@ export default function DealScreen() {
       <FlatList
         data={bloques}
         keyExtractor={(b) => b[0]?.toTeam?.id ?? 'sin-equipo'}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, paddingInferior]}
         renderItem={({ item }) => <BloqueEquipo piezas={item} />}
       />
     </SafeAreaView>

@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { usePlayoffBracket } from '@/hooks/usePlayoffBracket';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { PlayoffSeries } from '@/types/domain';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 const ANCHO_TARJETA = 112;
 const HUECO = 12;
@@ -150,6 +151,7 @@ function construirCuadro(series: PlayoffSeries[]) {
 }
 
 export default function PlayoffsScreen() {
+  const paddingInferior = usePaddingInferior();
   const { season } = useLocalSearchParams<{ season?: string }>();
   const { data, isLoading } = usePlayoffBracket(season);
 
@@ -163,7 +165,7 @@ export default function PlayoffsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: `Playoffs ${season ?? ''}` }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.vertical}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.vertical, paddingInferior]}>
         {isLoading && <LoadingState message="Cargando el cuadro..." />}
 
         {!isLoading && series.length === 0 && (

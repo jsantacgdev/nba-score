@@ -21,8 +21,10 @@ import { Image } from 'expo-image';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 export default function SearchScreen() {
+  const paddingInferior = usePaddingInferior();
   const [query, setQuery] = useState('');
   const { data, isLoading, isFetching, error, refetch } = useSearch(query);
 
@@ -81,7 +83,7 @@ export default function SearchScreen() {
         <FlatList
           data={[]}
           renderItem={null}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <View>

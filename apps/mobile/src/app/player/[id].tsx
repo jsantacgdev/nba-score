@@ -39,6 +39,7 @@ import { getPositionName } from '@/constants/positions';
 import { estadoLesion, tituloLesion } from '@/constants/injuries';
 import { sentidoMovimiento, tipoMovimiento } from '@/constants/movements';
 import { formatDateDMY, formatDayMonth, formatMinutes } from '@/lib/format';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
   CareerHigh,
@@ -91,6 +92,7 @@ function stat(value: number | null, decimals = 1): string {
 }
 
 export default function PlayerDetailScreen() {
+  const paddingInferior = usePaddingInferior();
   const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
   const playerId = id ?? '';
 
@@ -218,7 +220,7 @@ export default function PlayerDetailScreen() {
           if (item.kind === 'injury') return item.injury.id;
           return `${item.contract.startSeason}-${item.contract.teamName}`;
         }}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, paddingInferior]}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}

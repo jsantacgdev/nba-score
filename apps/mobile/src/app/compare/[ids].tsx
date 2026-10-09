@@ -8,8 +8,10 @@ import type { Player } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 export default function CompareScreen() {
+  const paddingInferior = usePaddingInferior();
   const { ids } = useLocalSearchParams<{ ids: string }>();
   const parts = (ids ?? '').split('-vs-');
   const id1 = parts[0] ?? '';
@@ -44,7 +46,7 @@ export default function CompareScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, paddingInferior]}>
       {/* Cabecera con ambos jugadores */}
       <View style={styles.playersHeader}>
         <PlayerHeader player={p1} />

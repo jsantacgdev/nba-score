@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useDraftClass, useDraftYears } from '@/hooks/useDraft';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { DraftPick } from '@/types/domain';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 function roundTitle(round: number | null): string {
   if (round === null || round === 0) return 'Elecciones territoriales';
@@ -25,6 +26,7 @@ type Row =
   | { kind: 'pick'; pick: DraftPick };
 
 export default function DraftScreen() {
+  const paddingInferior = usePaddingInferior();
   const { year } = useLocalSearchParams<{ year?: string }>();
 
   const { data: years } = useDraftYears();
@@ -84,7 +86,7 @@ export default function DraftScreen() {
             ? `h-${r.round}`
             : `p-${r.pick.playerId}-${r.pick.overallPick}`
         }
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, paddingInferior]}
         renderItem={({ item }) =>
           item.kind === 'header' ? (
             <View style={styles.roundHeader}>

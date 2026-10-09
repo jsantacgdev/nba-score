@@ -34,6 +34,7 @@ import { useTeamGames } from '@/hooks/useTeamGames';
 import { getPositionName } from '@/constants/positions';
 import { tipoMovimiento } from '@/constants/movements';
 import { esBaja, estadoLesion, tituloLesion } from '@/constants/injuries';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type {
   Game,
@@ -47,6 +48,7 @@ import type {
 type Tab = 'roster' | 'games' | 'movements' | 'salary';
 
 export default function TeamDetailScreen() {
+  const paddingInferior = usePaddingInferior();
   const { id, season } = useLocalSearchParams<{ id: string; season?: string }>();
   const teamId = id ?? '';
   const [activeTab, setActiveTab] = useState<Tab>('roster');
@@ -120,7 +122,7 @@ export default function TeamDetailScreen() {
           style={styles.container}
           data={rosterRows}
           keyExtractor={(p) => p.playerId}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -160,7 +162,7 @@ export default function TeamDetailScreen() {
           style={styles.container}
           data={[]}
           renderItem={null}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -213,7 +215,7 @@ export default function TeamDetailScreen() {
           style={styles.container}
           data={movimientos ?? []}
           keyExtractor={(m) => m.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -251,7 +253,7 @@ export default function TeamDetailScreen() {
           style={styles.container}
           data={salarial?.players ?? []}
           keyExtractor={(p) => p.playerId}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

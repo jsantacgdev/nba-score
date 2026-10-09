@@ -30,8 +30,10 @@ import type { JugadorEnPista } from '@/components/game/CourtLineup';
 import { useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 export default function GameDetailScreen() {
+  const paddingInferior = usePaddingInferior();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, error, refetch } = useGameDetail(id);
   const [vista, setVista] = useState<'stats' | 'court' | 'h2h'>('stats');
@@ -181,7 +183,7 @@ export default function GameDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, paddingInferior]}>
         {/* Marcador */}
         <View style={styles.scoreboard}>
           <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>

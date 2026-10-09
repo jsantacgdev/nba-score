@@ -11,8 +11,10 @@ import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme
 import type { SearchResultPlayer } from '@/types/domain';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 
 export default function SelectOpponentScreen() {
+  const paddingInferior = usePaddingInferior();
   const { playerId } = useLocalSearchParams<{ playerId: string }>();
   const [query, setQuery] = useState('');
   const { data, isLoading } = useSearch(query);
@@ -80,7 +82,7 @@ export default function SelectOpponentScreen() {
         <FlatList
           data={players}
           keyExtractor={(p) => p.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, paddingInferior]}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
             <OpponentRow player={item} onSelect={() => handleSelect(item.id)} />
