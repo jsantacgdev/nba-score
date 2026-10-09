@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   claveEnfrentamiento,
+  fetchLiveBoxScore,
   fetchLiveGame,
   fetchLiveScoreboard,
   fetchPlayerPeriods,
@@ -137,5 +138,26 @@ export function useStartingLineups(gameId?: string) {
     queryFn: () => fetchStartingLineups(gameId!),
     enabled: !!gameId,
     staleTime: Infinity,
+  });
+}
+
+/**
+ * Box score en vivo desde ESPN.
+ *
+ * Hace falta el identificador de ESPN del partido, que sale del marcador
+ * en directo: el nuestro es el de la NBA y no vale aqui.
+ */
+export function useLiveBoxScore(espnEventId?: string, activo = true) {
+  return useQuery({
+    queryKey: ['liveBoxScore', espnEventId],
+    queryFn: () => fetchLiveBoxScore(espnEventId!),
+    enabled: !!espnEventId && activo,
+    refetchInterval: (query) =>
+      query.state.status === 'error' || !query.state.data
+        ? REFRESCO_TRAS_FALLO
+        : REFRESCO_PARTIDO,
+    retry: 3,
+    retryDelay: (intento) => Math.min(1000 * 2 ** intento, 15_000),
+    staleTime: 0,
   });
 }

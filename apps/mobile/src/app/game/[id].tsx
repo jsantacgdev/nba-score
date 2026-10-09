@@ -14,9 +14,11 @@ import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { Probabilidad } from '@/components/game/Probabilidad';
 import { boxScoreDesdeDirecto } from '@/lib/api/live';
+import { boxScoreDesdeEspn } from '@/lib/liveBoxScore';
 import {
   fusionarDirecto,
   useLiveLineup,
+  useLiveBoxScore,
   useLiveScoreboard,
   useStartingLineups,
 } from '@/hooks/useLive';
@@ -45,6 +47,8 @@ export default function GameDetailScreen() {
   const partido = data?.game ? fusionarDirecto(data.game, vivo) : undefined;
   const enJuego = partido?.status === 'live';
   const { data: enPista } = useLiveLineup(id, enJuego);
+  // El box score en vivo viene de ESPN, que si responde al movil
+  const { data: enVivoEspn } = useLiveBoxScore(vivo?.gameId, enJuego);
   const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
   const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
     data?.game,
@@ -94,16 +98,37 @@ export default function GameDetailScreen() {
   const vivoLocal = invertido ? enPista?.away : enPista?.home;
   const vivoVisitante = invertido ? enPista?.home : enPista?.away;
 
-  const homeRoster =
-    enJuego && vivoLocal
-      ? boxScoreDesdeDirecto(vivoLocal, game.homeTeam.id)
-      : data.homeRoster;
-  const awayRoster =
-    enJuego && vivoVisitante
-      ? boxScoreDesdeDirecto(vivoVisitante, game.awayTeam.id)
-      : data.awayRoster;
   const homeLineup = data.homeLineup ?? [];
   const awayLineup = data.awayLineup ?? [];
+
+  /**
+   * De donde salen las estadisticas, por orden de preferencia:
+   *
+   *   1. El CDN de la NBA, que es el mas rico, cuando responde.
+   *   2. ESPN, que responde siempre desde el movil.
+   *   3. Lo que haya en la base, que durante el partido esta vacio
+   *      porque el job solo carga partidos terminados.
+   */
+  const rosterEnVivo = (
+    equipo: 'home' | 'away',
+  ): ReturnType<typeof boxScoreDesdeDirecto> | undefined => {
+    const desdeCdn = equipo === 'home' ? vivoLocal : vivoVisitante;
+    const nuestro = equipo === 'home' ? game.homeTeam : game.awayTeam;
+
+    if (desdeCdn) return boxScoreDesdeDirecto(desdeCdn, nuestro.id);
+    if (enVivoEspn?.length) {
+      return boxScoreDesdeEspn(
+        enVivoEspn,
+        equipo === 'home' ? homeLineup : awayLineup,
+        nuestro.abbreviation,
+        nuestro.id,
+      );
+    }
+    return undefined;
+  };
+
+  const homeRoster = (enJuego ? rosterEnVivo('home') : undefined) ?? data.homeRoster;
+  const awayRoster = (enJuego ? rosterEnVivo('away') : undefined) ?? data.awayRoster;
   const jugado = game.status === 'final' || game.status === 'live';
   const homeWinning = jugado && game.scoreHome > game.scoreAway;
   const awayWinning = jugado && game.scoreAway > game.scoreHome;

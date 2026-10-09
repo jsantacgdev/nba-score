@@ -695,3 +695,29 @@ export type PlayoffSeries = {
   decided: boolean;
   champion: boolean;
 };
+
+/**
+ * Un jugador en el box score en vivo de ESPN.
+ *
+ * Lleva el identificador de ESPN porque no coincide con el de la NBA: el
+ * cruce con nuestros jugadores se hace por nombre.
+ */
+export type JugadorEnVivoEspn = {
+  nombre: string;
+  espnId: string;
+  teamAbbr: string;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
+  plusMinus: number;
+};

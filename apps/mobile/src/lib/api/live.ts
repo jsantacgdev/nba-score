@@ -1,5 +1,6 @@
 import type {
   GameBoxScoreEntry,
+  JugadorEnVivoEspn,
   LiveGame,
   LivePlayer,
   LiveScoreboardGame,
@@ -129,6 +130,77 @@ export async function fetchLiveScoreboard(): Promise<LiveScoreboardGame[]> {
       awayScore: Number(visitante?.score ?? 0),
     } satisfies LiveScoreboardGame;
   });
+}
+
+
+/**
+ * Box score por jugador desde ESPN, para los partidos en juego.
+ *
+ * El del CDN de la NBA no sirve desde el movil (403), y la base no tiene
+ * nada hasta que el partido termina y pasa el job, asi que sin esto las
+ * estadisticas salen vacias justo cuando mas interesan.
+ */
+
+function entero(valor?: string): number {
+  const n = Number(String(valor ?? '').replace('+', '').trim());
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** ESPN manda los tiros como "6-17": anotados y lanzados juntos. */
+function tiros(valor?: string): [number, number] {
+  const partes = String(valor ?? '').split('-');
+  return [entero(partes[0]), entero(partes[1])];
+}
+
+export async function fetchLiveBoxScore(eventId: string): Promise<JugadorEnVivoEspn[]> {
+  const datos = await pedirEspn<any>(`${BASE_ESPN}/summary?event=${eventId}`);
+
+  const jugadores: JugadorEnVivoEspn[] = [];
+  for (const equipo of datos?.boxscore?.players ?? []) {
+    const abreviatura_ = abreviatura(equipo?.team?.abbreviation);
+    const bloqueEstadisticas = equipo?.statistics?.[0] ?? {};
+    const etiquetas: string[] = bloqueEstadisticas.labels ?? [];
+
+    // Se busca cada dato por su etiqueta y no por su posicion, que ESPN
+    // podria reordenar sin avisar
+    const indice = (etiqueta: string) => etiquetas.indexOf(etiqueta);
+
+    for (const atleta of bloqueEstadisticas.athletes ?? []) {
+      const valores: string[] = atleta?.stats ?? [];
+      if (!valores.length) continue;
+
+      const dato = (etiqueta: string) => {
+        const i = indice(etiqueta);
+        return i >= 0 ? valores[i] : undefined;
+      };
+
+      const [fgM, fgA] = tiros(dato('FG'));
+      const [fg3M, fg3A] = tiros(dato('3PT'));
+      const [ftM, ftA] = tiros(dato('FT'));
+
+      jugadores.push({
+        nombre: String(atleta?.athlete?.displayName ?? '').trim(),
+        espnId: String(atleta?.athlete?.id ?? ''),
+        teamAbbr: abreviatura_,
+        minutes: entero(dato('MIN')),
+        points: entero(dato('PTS')),
+        rebounds: entero(dato('REB')),
+        assists: entero(dato('AST')),
+        steals: entero(dato('STL')),
+        blocks: entero(dato('BLK')),
+        turnovers: entero(dato('TO')),
+        fgMade: fgM,
+        fgAttempted: fgA,
+        fg3Made: fg3M,
+        fg3Attempted: fg3A,
+        ftMade: ftM,
+        ftAttempted: ftA,
+        plusMinus: entero(dato('+/-')),
+      });
+    }
+  }
+
+  return jugadores;
 }
 
 export function minutosJugados(iso?: string): number {
