@@ -430,7 +430,7 @@ function TeamLineup({
             <PlayerAvatar
               photoUrl={p.photoUrl}
               initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
-              size={32}
+              size={26}
             />
             <Text style={styles.playerName} numberOfLines={1}>
               {p.firstName[0]}. {p.lastName}
@@ -526,7 +526,7 @@ function TeamBoxScore({
             <PlayerAvatar
               photoUrl={p.photoUrl}
               initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
-              size={32}
+              size={26}
             />
             <Text style={styles.playerName} numberOfLines={1}>
               {p.firstName[0]}. {p.lastName}
@@ -646,8 +646,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginTop: spacing.md,
-    paddingHorizontal: 0, // antes: spacing.md
+    marginTop: spacing.sm,
+    paddingHorizontal: 0,
     width: '100%',
     gap: spacing.sm,
   },
@@ -667,11 +667,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     flex: 1,
-    maxWidth: 120,
+    maxWidth: 104,
   },
   scoreLogo: {
-    width: 56,
-    height: 56,
+    width: 42,
+    height: 42,
   },
   teamAbbr: {
     color: colors.text,
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   bigScore: {
     color: colors.textSecondary,
-    fontSize: 36,
+    fontSize: 22,
     fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
@@ -698,9 +698,9 @@ const styles = StyleSheet.create({
   // MVP card
   mvpCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginTop: spacing.md,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
     borderWidth: 2,
     borderColor: colors.primary,
   },
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: radius.sm,
     gap: 4,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   mvpBadgeText: {
     color: colors.background,
@@ -725,12 +725,12 @@ const styles = StyleSheet.create({
   mvpContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   mvpInfo: { flex: 1 },
   mvpName: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
   },
   mvpStatsRow: {
@@ -777,21 +777,21 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
   },
   boxScoreSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   boxScoreHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.md,
-    paddingBottom: spacing.sm,
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  boxScoreLogo: { width: 28, height: 28 },
+  boxScoreLogo: { width: 24, height: 24 },
   boxScoreTitle: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
   },
   statsHeader: {
@@ -811,7 +811,7 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: 5,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
   },
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
   teamCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -905,12 +905,12 @@ const styles = StyleSheet.create({
   vistaRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   vistaTab: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 6,
     borderRadius: radius.full,
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -931,12 +931,12 @@ const styles = StyleSheet.create({
   teamToggleRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
   teamToggle: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 5,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.full,
