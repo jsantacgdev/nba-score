@@ -48,10 +48,15 @@ export default function GameDetailScreen() {
   );
   const partido = data?.game ? fusionarDirecto(data.game, vivo) : undefined;
   const enJuego = partido?.status === 'live';
+  // Recien terminado nuestra base aun no tiene el box score: el job tarda
+  // hasta quince minutos. Mientras tanto se sigue tirando de ESPN.
+  const sinBoxScore =
+    !!data && data.homeRoster.length === 0 && data.awayRoster.length === 0;
+  const usarDirecto = enJuego || (partido?.status === 'final' && sinBoxScore);
   const { data: enPista } = useLiveLineup(id, enJuego);
   // El box score en vivo viene de ESPN, que si responde al movil
-  const { data: enVivoEspn } = useLiveBoxScore(vivo?.gameId, enJuego);
-  const { data: quintetos } = useStartingLineups(enJuego ? undefined : id);
+  const { data: enVivoEspn } = useLiveBoxScore(vivo?.gameId, usarDirecto);
+  const { data: quintetos } = useStartingLineups(usarDirecto ? undefined : id);
   const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
     data?.game,
     vista === 'h2h',
@@ -129,8 +134,8 @@ export default function GameDetailScreen() {
     return undefined;
   };
 
-  const homeRoster = (enJuego ? rosterEnVivo('home') : undefined) ?? data.homeRoster;
-  const awayRoster = (enJuego ? rosterEnVivo('away') : undefined) ?? data.awayRoster;
+  const homeRoster = (usarDirecto ? rosterEnVivo('home') : undefined) ?? data.homeRoster;
+  const awayRoster = (usarDirecto ? rosterEnVivo('away') : undefined) ?? data.awayRoster;
   const jugado = game.status === 'final' || game.status === 'live';
   const homeWinning = jugado && game.scoreHome > game.scoreAway;
   const awayWinning = jugado && game.scoreAway > game.scoreHome;
@@ -146,7 +151,20 @@ export default function GameDetailScreen() {
       const enCancha = new Set(
         (equipo?.players ?? []).filter((p) => p.onCourt).map((p) => p.playerId),
       );
-      return plantel.filter((p) => !enCancha.has(p.playerId));
+      if (enCancha.size) return plantel.filter((p) => !enCancha.has(p.playerId));
+    }
+
+    if (usarDirecto) {
+      const abreviatura =
+        lado === 'home' ? game.homeTeam.abbreviation : game.awayTeam.abbreviation;
+      const nombres = new Set(
+        (enVivoEspn ?? [])
+          .filter((p) => p.teamAbbr === abreviatura && p.starter)
+          .map((p) => p.nombre),
+      );
+      if (nombres.size) {
+        return plantel.filter((p) => !nombres.has(`${p.firstName} ${p.lastName}`.trim()));
+      }
     }
 
     const titulares = new Set(
@@ -160,14 +178,37 @@ export default function GameDetailScreen() {
 
     if (enJuego) {
       const equipo = lado === 'home' ? vivoLocal : vivoVisitante;
-      return (equipo?.players ?? [])
-        .filter((p) => p.onCourt)
-        .map((p) => ({
+      const enCancha = (equipo?.players ?? []).filter((p) => p.onCourt);
+      if (enCancha.length) {
+        return enCancha.map((p) => ({
           playerId: p.playerId,
           name: p.name,
           jerseyNumber: p.jerseyNumber,
           points: p.points,
         }));
+      }
+    }
+
+    if (usarDirecto) {
+      const abreviatura =
+        lado === 'home' ? game.homeTeam.abbreviation : game.awayTeam.abbreviation;
+      const titularesEspn = (enVivoEspn ?? []).filter(
+        (p) => p.teamAbbr === abreviatura && p.starter,
+      );
+      if (titularesEspn.length) {
+        const plantel = lado === 'home' ? homeRoster : awayRoster;
+        return titularesEspn.map((p) => {
+          const nuestro = plantel.find(
+            (x) => `${x.firstName} ${x.lastName}`.trim() === p.nombre,
+          );
+          return {
+            playerId: nuestro?.playerId ?? p.espnId,
+            name: p.nombre,
+            photoUrl: nuestro?.photoUrl,
+            points: p.points,
+          };
+        });
+      }
     }
 
     const guardado = (quintetos ?? []).find((q) => q.teamId === teamId);

@@ -182,6 +182,7 @@ export async function fetchLiveBoxScore(eventId: string): Promise<JugadorEnVivoE
         nombre: String(atleta?.athlete?.displayName ?? '').trim(),
         espnId: String(atleta?.athlete?.id ?? ''),
         teamAbbr: abreviatura_,
+        starter: atleta?.starter === true,
         minutes: entero(dato('MIN')),
         points: entero(dato('PTS')),
         rebounds: entero(dato('REB')),

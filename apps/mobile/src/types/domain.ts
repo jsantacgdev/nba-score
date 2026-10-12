@@ -711,6 +711,7 @@ export type JugadorEnVivoEspn = {
   nombre: string;
   espnId: string;
   teamAbbr: string;
+  starter: boolean;
   minutes: number;
   points: number;
   rebounds: number;
