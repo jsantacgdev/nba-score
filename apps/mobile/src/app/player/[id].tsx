@@ -236,14 +236,14 @@ export default function PlayerDetailScreen() {
               <PlayerAvatar
                 photoUrl={player.photoUrl}
                 initials={`${player.firstName[0] ?? ''}${player.lastName[0] ?? ''}`}
-                size={120}
+                size={88}
               />
               <View style={styles.nameRow}>
                 <Text style={styles.playerName}>
                   {player.firstName} {player.lastName}
                 </Text>
                 {/* Lesionado ahora mismo segun el parte diario */}
-                {lesionado && <Ionicons name="medkit" size={22} color={colors.danger} />}
+                {lesionado && <Ionicons name="medkit" size={18} color={colors.danger} />}
               </View>
 
               {/* El equipo va bajo el nombre, no como una etiqueta mas:
@@ -258,7 +258,7 @@ export default function PlayerDetailScreen() {
                   <TeamLogo
                     logoUrl={equipoActual.logoUrl}
                     abbreviation={equipoActual.abbreviation}
-                    size={22}
+                    size={18}
                   />
                   <Text style={styles.equipoNombre}>{equipoActual.fullName}</Text>
                 </Pressable>
@@ -577,7 +577,7 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
                     award={primero.award}
                     season={ultima}
                     seasons={temporadas}
-                    size={52}
+                    size={48}
                   />
                   {lista.length > 1 && (
                     <View style={styles.palmaresBadge}>
@@ -588,7 +588,7 @@ function Palmares({ awards }: { awards: PlayerAward[] }) {
                 <Text style={styles.palmaresLabel} numberOfLines={2}>
                   {awardLabel(primero.award)}
                 </Text>
-                <Text style={styles.palmaresSeasons} numberOfLines={2}>
+                <Text style={styles.palmaresSeasons} numberOfLines={3}>
                   {temporadas.join(', ')}
                 </Text>
               </View>
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
   // Cabecera del jugador
   header: {
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
   },
   equipoLinea: {
     flexDirection: 'row',
@@ -1314,8 +1314,8 @@ const styles = StyleSheet.create({
   datosFila: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.xl,
-    marginTop: spacing.lg,
+    gap: spacing.lg,
+    marginTop: spacing.md,
   },
   dato: { alignItems: 'center' },
   datoValor: {
@@ -1335,7 +1335,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   seccionPartidos: {
     paddingTop: spacing.lg,
@@ -1544,24 +1544,24 @@ const styles = StyleSheet.create({
 
   playerName: {
     color: colors.text,
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xl,
     fontFamily: fontFamily.displayBold,
     textAlign: 'center',
   },
   headerMeta: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   metaBadge: {
     backgroundColor: colors.surfaceLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
     borderRadius: radius.full,
   },
   metaBadgeText: {
     color: colors.text,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontFamily: fontFamily.semibold,
   },
 
@@ -1730,9 +1730,9 @@ const styles = StyleSheet.create({
 
   palmaresCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    marginTop: spacing.lg,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1741,20 +1741,20 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   palmaresRow: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingHorizontal: spacing.md,
   },
   palmaresItem: {
-    width: 96,
+    width: 86,
     alignItems: 'center',
   },
   palmaresArt: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1780,7 +1780,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontFamily: fontFamily.semibold,
     textAlign: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   palmaresSeasons: {
     color: colors.textMuted,
