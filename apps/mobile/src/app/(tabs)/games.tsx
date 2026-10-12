@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
   },
   emptySubtitle: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
     flex: 1,
   },
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   recentDaysTitle: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
   },
   daySection: {

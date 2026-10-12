@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   arrowButton: {
     width: 32,
-    height: 72,
+    height: 58,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   dayItem: {
     width: DAY_ITEM_WIDTH,
-    height: 72,
+    height: 58,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     alignItems: 'center',

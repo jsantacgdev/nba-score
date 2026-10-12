@@ -158,9 +158,10 @@ function TeamRow({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   liveBadge: {
     flexDirection: 'row',
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displaySemibold,
   },
   teamsContainer: {
-    gap: spacing.sm,
+    gap: 4,
   },
   teamRow: {
     flexDirection: 'row',
@@ -217,16 +218,16 @@ const styles = StyleSheet.create({
   teamInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     flex: 1,
   },
   teamLogo: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
   },
   teamLogoPlaceholder: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     borderRadius: radius.full,
     backgroundColor: colors.surfaceLight,
     alignItems: 'center',
@@ -239,25 +240,27 @@ const styles = StyleSheet.create({
   },
   teamCity: {
     color: colors.textMuted,
-    fontSize: fontSize.xs,
+    fontSize: 10,
+    lineHeight: 13,
   },
   teamName: {
     color: colors.text,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
+    lineHeight: 18,
   },
   score: {
     color: colors.textSecondary,
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xl,
     fontFamily: fontFamily.displayBold,
-    minWidth: 50,
+    minWidth: 38,
     textAlign: 'right',
   },
   prob: {
     color: colors.textMuted,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
-    minWidth: 50,
+    minWidth: 38,
     textAlign: 'right',
   },
   probFavorita: {
