@@ -727,3 +727,14 @@ export type JugadorEnVivoEspn = {
   ftAttempted: number;
   plusMinus: number;
 };
+
+export type AwardHistoryEntry = {
+  season: string;
+  playerId?: string;
+  playerName?: string;
+  photoUrl?: string;
+  teamId?: string;
+  teamName?: string;
+  teamAbbreviation?: string;
+  teamLogoUrl?: string;
+};

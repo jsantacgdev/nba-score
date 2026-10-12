@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import type { ImageStyle, StyleProp } from 'react-native';
+import { useAwardHistory } from '@/hooks/useAwards';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
-import type { AwardCode } from '@/types/domain';
+import type { AwardCode, AwardHistoryEntry } from '@/types/domain';
 
 export type TrophyCode = AwardCode | 'nba_cup';
 
@@ -100,6 +103,7 @@ export function Trophy({
   interactive?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [verHistorico, setVerHistorico] = useState(false);
 
   const art = TROPHIES[award];
   const source = trophyArt(award, season);
@@ -131,7 +135,13 @@ export function Trophy({
         animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => {
+            setOpen(false);
+            setVerHistorico(false);
+          }}
+        >
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             <Image
               source={source}
@@ -152,6 +162,25 @@ export function Trophy({
               season.length > 0 && <Text style={styles.cardSeason}>{season}</Text>
             )}
             <Text style={styles.cardText}>{art.description}</Text>
+
+            <Pressable
+              onPress={() => setVerHistorico((v) => !v)}
+              style={({ pressed }) => [styles.verBoton, pressed && styles.verBotonPressed]}
+            >
+              <Ionicons
+                name={verHistorico ? 'chevron-up' : 'time-outline'}
+                size={15}
+                color={colors.primary}
+              />
+              <Text style={styles.verBotonTexto}>
+                {verHistorico ? 'Ocultar histórico' : 'Ver histórico'}
+              </Text>
+            </Pressable>
+
+            {verHistorico && (
+              <Historico award={award} onCerrarModal={() => setOpen(false)} />
+            )}
+
             <Text style={styles.cardHint}>Toca fuera para cerrar</Text>
           </Pressable>
         </Pressable>
@@ -160,7 +189,134 @@ export function Trophy({
   );
 }
 
+function Historico({
+  award,
+  onCerrarModal,
+}: {
+  award: TrophyCode;
+  onCerrarModal: () => void;
+}) {
+  const { data, isLoading, error } = useAwardHistory(award);
+
+  if (isLoading) {
+    return (
+      <View style={styles.historicoEstado}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error || !data?.length) {
+    return (
+      <View style={styles.historicoEstado}>
+        <Text style={styles.historicoVacio}>No consta el palmarés de este premio.</Text>
+      </View>
+    );
+  }
+
+  const abrir = (fila: AwardHistoryEntry) => {
+    if (fila.playerId) {
+      onCerrarModal();
+      router.push({ pathname: '/player/[id]', params: { id: fila.playerId } });
+    } else if (fila.teamId) {
+      onCerrarModal();
+      router.push({ pathname: '/team/[id]', params: { id: fila.teamId } });
+    }
+  };
+
+  return (
+    <View style={styles.historico}>
+      <Text style={styles.historicoTitulo}>{data.length} ediciones</Text>
+      <ScrollView style={styles.historicoLista} nestedScrollEnabled>
+        {data.map((fila) => (
+          <Pressable
+            key={fila.season}
+            onPress={() => abrir(fila)}
+            style={({ pressed }) => [styles.historicoFila, pressed && styles.historicoFilaPressed]}
+          >
+            <Text style={styles.historicoTemporada}>{fila.season}</Text>
+            {fila.teamLogoUrl ? (
+              <Image
+                source={{ uri: fila.teamLogoUrl }}
+                style={styles.historicoLogo}
+                contentFit="contain"
+              />
+            ) : (
+              <View style={styles.historicoLogo} />
+            )}
+            <Text style={styles.historicoNombre} numberOfLines={1}>
+              {fila.playerName ?? fila.teamName ?? '—'}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  verBoton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  verBotonPressed: { opacity: 0.6 },
+  verBotonTexto: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  historico: {
+    width: '100%',
+    marginTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  historicoEstado: {
+    width: '100%',
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  historicoVacio: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.regular,
+    textAlign: 'center',
+  },
+  historicoTitulo: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginBottom: spacing.xs,
+  },
+  historicoLista: { maxHeight: 260 },
+  historicoFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 5,
+  },
+  historicoFilaPressed: { opacity: 0.6 },
+  historicoTemporada: {
+    width: 58,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  historicoLogo: { width: 18, height: 18 },
+  historicoNombre: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.semibold,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',

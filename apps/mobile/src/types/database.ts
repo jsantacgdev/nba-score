@@ -1149,6 +1149,19 @@ export type Database = {
       }
     }
     Functions: {
+      award_history: {
+        Args: { target_award: string }
+        Returns: {
+          photo_url: string
+          player_id: string
+          player_name: string
+          season: string
+          team_abbreviation: string
+          team_id: string
+          team_logo_url: string
+          team_name: string
+        }[]
+      }
       backfill_game_log_dates: {
         Args: never
         Returns: {
