@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { NumeroVivo } from '@/components/ui/NumeroVivo';
 import { useRelojVivo } from '@/hooks/useRelojVivo';
+import { useEstadisticasPorCuarto, useEventoEspn } from '@/hooks/useLive';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
@@ -29,7 +30,7 @@ import { useGameTeamForm } from '@/hooks/useGameTeamForm';
 import { useWinProbability } from '@/hooks/useWinProbability';
 import { useModelRecord } from '@/hooks/useModelRecord';
 import type { JugadorEnPista } from '@/components/game/CourtLineup';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { usePaddingInferior } from '@/hooks/useBottomInset';
@@ -60,6 +61,17 @@ export default function GameDetailScreen() {
   const { data: enVivoEspn } = useLiveBoxScore(vivo?.gameId, usarDirecto);
   const { data: quintetos } = useStartingLineups(usarDirecto ? undefined : id);
   const reloj = useRelojVivo(partido?.timeRemaining, partido?.liveUpdatedAt, enJuego);
+  const [cuarto, setCuarto] = useState<number | null>(null);
+  const { data: eventoResuelto } = useEventoEspn(data?.game, vivo?.gameId, vista === 'stats');
+  const eventoEspn = vivo?.gameId ?? eventoResuelto ?? undefined;
+  const { data: porCuarto } = useEstadisticasPorCuarto(eventoEspn, vista === 'stats');
+  const cuartosDisponibles = useMemo(
+    () =>
+      Object.keys(porCuarto ?? {})
+        .map(Number)
+        .sort((a, b) => a - b),
+    [porCuarto],
+  );
   const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
     data?.game,
     vista === 'h2h',
@@ -144,6 +156,20 @@ export default function GameDetailScreen() {
   const awayWinning = jugado && game.scoreAway > game.scoreHome;
 
   const title = `${game.homeTeam.name} vs ${game.awayTeam.name}`;
+
+  const rosterDeCuarto = (lado: 'home' | 'away'): GameBoxScoreEntry[] | null => {
+    if (cuarto === null) return null;
+    const jugadas = porCuarto?.[cuarto];
+    if (!jugadas?.length) return null;
+    const equipo = lado === 'home' ? game.homeTeam : game.awayTeam;
+    const plantilla = lado === 'home' ? homeLineup : awayLineup;
+    return boxScoreDesdeEspn(jugadas, plantilla, equipo.abbreviation, equipo.id)
+      .filter((p) => p.points > 0 || p.rebounds > 0 || p.assists > 0)
+      .sort((a, b) => b.points - a.points || b.rebounds - a.rebounds);
+  };
+
+  const rosterLocal = rosterDeCuarto('home') ?? homeRoster;
+  const rosterVisitante = rosterDeCuarto('away') ?? awayRoster;
 
   function suplentesDe(lado: 'home' | 'away'): GameBoxScoreEntry[] {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
@@ -319,6 +345,25 @@ export default function GameDetailScreen() {
           </View>
         )}
 
+        {vista === 'stats' && jugado && cuartosDisponibles.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.cuartosScroll}
+            contentContainerStyle={styles.cuartosFila}
+          >
+            <CuartoChip label="Partido" activo={cuarto === null} onPress={() => setCuarto(null)} />
+            {cuartosDisponibles.map((c) => (
+              <CuartoChip
+                key={c}
+                label={c > 4 ? `PR${c - 4}` : `Q${c}`}
+                activo={cuarto === c}
+                onPress={() => setCuarto(c)}
+              />
+            ))}
+          </ScrollView>
+        )}
+
         {vista === 'h2h' ? (
           <>
             {porJugar && (
@@ -360,14 +405,16 @@ export default function GameDetailScreen() {
             <TeamBoxScore
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
-              roster={homeRoster}
-              enVivo={enJuego}
+              roster={rosterLocal}
+              enVivo={enJuego && cuarto === null}
+              porCuarto={cuarto !== null}
             />
             <TeamBoxScore
               title={game.awayTeam.fullName}
               logoUrl={game.awayTeam.logoUrl}
-              roster={awayRoster}
-              enVivo={enJuego}
+              roster={rosterVisitante}
+              enVivo={enJuego && cuarto === null}
+              porCuarto={cuarto !== null}
             />
           </>
         ) : (
@@ -507,16 +554,41 @@ function MVPCard({ mvp }: { mvp: GameBoxScoreEntry }) {
   );
 }
 
+function CuartoChip({
+  label,
+  activo,
+  onPress,
+}: {
+  label: string;
+  activo: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.cuartoChip,
+        activo && styles.cuartoChipActivo,
+        pressed && styles.cuartoChipPressed,
+      ]}
+    >
+      <Text style={[styles.cuartoChipTexto, activo && styles.cuartoChipTextoActivo]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function TeamBoxScore({
   title,
   logoUrl,
   roster,
   enVivo = false,
+  porCuarto = false,
 }: {
   title: string;
   logoUrl?: string;
   roster: GameBoxScoreEntry[];
   enVivo?: boolean;
+  porCuarto?: boolean;
 }) {
   if (roster.length === 0) return null;
 
@@ -549,7 +621,7 @@ function TeamBoxScore({
           style={({ pressed }) => [
             styles.playerRow,
             pressed && styles.playerRowPressed,
-            p.minutes === 0 && styles.playerRowDnp,
+            !porCuarto && p.minutes === 0 && styles.playerRowDnp,
           ]}
         >
           <View style={[styles.colPlayer, styles.playerCol]}>
@@ -563,7 +635,7 @@ function TeamBoxScore({
             </Text>
           </View>
           <Text style={[styles.statValue, styles.colStat]}>
-            {p.minutes > 0 ? formatMinutes(p.minutes) : '-'}
+            {porCuarto ? '—' : p.minutes > 0 ? formatMinutes(p.minutes) : '-'}
           </Text>
           <NumeroVivo
             valor={p.points}
@@ -984,6 +1056,33 @@ const styles = StyleSheet.create({
   },
   vistaTabTextActive: { color: colors.background },
 
+  cuartosScroll: { flexGrow: 0, flexShrink: 0 },
+  cuartosFila: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+    gap: 6,
+    alignItems: 'center',
+  },
+  cuartoChip: {
+    minWidth: 62,
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cuartoChipActivo: { backgroundColor: colors.primary, borderColor: colors.primary },
+  cuartoChipPressed: { opacity: 0.6 },
+  cuartoChipTexto: {
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontFamily: fontFamily.displaySemibold,
+  },
+  cuartoChipTextoActivo: { color: colors.background },
   teamToggleRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing.md,

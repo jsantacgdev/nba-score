@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   claveEnfrentamiento,
+  fetchEstadisticasPorCuarto,
+  fetchEventoEspn,
   fetchLiveBoxScore,
   fetchLiveGame,
   fetchLiveScoreboard,
@@ -160,5 +162,25 @@ export function useLiveBoxScore(espnEventId?: string, activo = true) {
     retry: 3,
     retryDelay: (intento) => Math.min(1000 * 2 ** intento, 15_000),
     staleTime: 0,
+  });
+}
+
+export function useEventoEspn(game?: Game, yaConocido?: string, activo = true) {
+  return useQuery({
+    queryKey: ['eventoEspn', game?.id],
+    queryFn: () =>
+      fetchEventoEspn(game!.startsAt, game!.homeTeam.abbreviation, game!.awayTeam.abbreviation),
+    enabled: !!game && !yaConocido && activo,
+    staleTime: Infinity,
+  });
+}
+
+export function useEstadisticasPorCuarto(eventId?: string, activo = true) {
+  return useQuery({
+    queryKey: ['estadisticasPorCuarto', eventId],
+    queryFn: () => fetchEstadisticasPorCuarto(eventId!),
+    enabled: !!eventId && activo,
+    refetchInterval: (query) => (query.state.data ? REFRESCO_PARTIDO : REFRESCO_TRAS_FALLO),
+    staleTime: REFRESCO_PARTIDO,
   });
 }

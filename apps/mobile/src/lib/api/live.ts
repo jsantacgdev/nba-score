@@ -336,3 +336,116 @@ export async function fetchPlayerPeriods(
 
   return porJugador;
 }
+
+function vacio(espnId: string, nombre: string, teamAbbr: string): JugadorEnVivoEspn {
+  return {
+    nombre,
+    espnId,
+    teamAbbr,
+    starter: false,
+    minutes: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+    steals: 0,
+    blocks: 0,
+    turnovers: 0,
+    fgMade: 0,
+    fgAttempted: 0,
+    fg3Made: 0,
+    fg3Attempted: 0,
+    ftMade: 0,
+    ftAttempted: 0,
+    plusMinus: 0,
+  };
+}
+
+export async function fetchEstadisticasPorCuarto(
+  eventId: string,
+): Promise<Record<number, JugadorEnVivoEspn[]>> {
+  const datos = await pedirEspn<any>(`${BASE_ESPN}/summary?event=${eventId}`);
+
+  const ficha = new Map<string, { nombre: string; teamAbbr: string }>();
+  for (const equipo of datos?.boxscore?.players ?? []) {
+    const abrev = abreviatura(equipo?.team?.abbreviation);
+    for (const atleta of equipo?.statistics?.[0]?.athletes ?? []) {
+      const id = String(atleta?.athlete?.id ?? '');
+      if (id) {
+        ficha.set(id, {
+          nombre: String(atleta?.athlete?.displayName ?? '').trim(),
+          teamAbbr: abrev,
+        });
+      }
+    }
+  }
+
+  const porCuarto: Record<number, Map<string, JugadorEnVivoEspn>> = {};
+
+  const dame = (periodo: number, id: string) => {
+    porCuarto[periodo] ??= new Map();
+    const tabla = porCuarto[periodo];
+    const guardado = tabla.get(id);
+    if (guardado) return guardado;
+    const datosJugador = ficha.get(id);
+    const nuevo = vacio(id, datosJugador?.nombre ?? '', datosJugador?.teamAbbr ?? '');
+    tabla.set(id, nuevo);
+    return nuevo;
+  };
+
+  for (const jugada of datos?.plays ?? []) {
+    const periodo = Number(jugada?.period?.number ?? 0);
+    if (!periodo) continue;
+    const participantes = jugada?.participants ?? [];
+    const principal = String(participantes[0]?.athlete?.id ?? '');
+
+    if (jugada?.scoringPlay && principal) {
+      const anotador = dame(periodo, principal);
+      anotador.points += Number(jugada?.scoreValue ?? 0);
+      const asistente = String(participantes[1]?.athlete?.id ?? '');
+      if (asistente) dame(periodo, asistente).assists += 1;
+      continue;
+    }
+
+    if (/rebound/i.test(String(jugada?.type?.text ?? '')) && principal) {
+      dame(periodo, principal).rebounds += 1;
+    }
+  }
+
+  const salida: Record<number, JugadorEnVivoEspn[]> = {};
+  for (const [periodo, tabla] of Object.entries(porCuarto)) {
+    salida[Number(periodo)] = [...tabla.values()].filter((j) => j.teamAbbr);
+  }
+  return salida;
+}
+
+export async function fetchEventoEspn(
+  startsAt: Date,
+  homeAbbr: string,
+  awayAbbr: string,
+): Promise<string | null> {
+  const candidatas = [startsAt, new Date(startsAt.getTime() - 24 * 60 * 60 * 1000)];
+
+  for (const fecha of candidatas) {
+    const dia =
+      `${fecha.getUTCFullYear()}` +
+      `${String(fecha.getUTCMonth() + 1).padStart(2, '0')}` +
+      `${String(fecha.getUTCDate()).padStart(2, '0')}`;
+
+    const datos = await pedirEspn<any>(`${BASE_ESPN}/scoreboard?dates=${dia}`);
+
+    for (const evento of datos?.events ?? []) {
+      const competicion = evento?.competitions?.[0] ?? {};
+      const equipos: Record<string, any> = {};
+      for (const competidor of competicion?.competitors ?? []) {
+        equipos[competidor.homeAway] = competidor;
+      }
+      const local = abreviatura(equipos.home?.team?.abbreviation);
+      const visitante = abreviatura(equipos.away?.team?.abbreviation);
+      const casa = local === homeAbbr && visitante === awayAbbr;
+      const invertido = local === awayAbbr && visitante === homeAbbr;
+      if (casa || invertido) return String(evento.id);
+    }
+  }
+
+  return null;
+}
