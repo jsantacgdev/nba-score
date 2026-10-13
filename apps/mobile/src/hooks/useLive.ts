@@ -10,9 +10,9 @@ import {
 import { fetchStartingLineups } from '@/lib/api/starters';
 import type { Game, LiveScoreboardGame } from '@/types/domain';
 
-const REFRESCO_MARCADOR = 15_000;
+const REFRESCO_MARCADOR = 10_000;
 const REFRESCO_ESPERA = 60_000;
-const REFRESCO_PARTIDO = 15_000;
+const REFRESCO_PARTIDO = 10_000;
 const REFRESCO_ALINEACION = 60_000;
 const REFRESCO_CUARTOS = 90_000;
 
