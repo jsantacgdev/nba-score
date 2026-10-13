@@ -304,7 +304,7 @@ export default function GameDetailScreen() {
           />
         </View>
 
-        {vista !== 'h2h' && (
+        {vista === 'court' && (
           <View style={styles.teamToggleRow}>
             <TeamToggle
               label={game.homeTeam.abbreviation}
@@ -355,35 +355,34 @@ export default function GameDetailScreen() {
             />
             <Banquillo jugadores={suplentesDe(selectedTeam)} />
           </>
-        ) : /* Jugado: box score. Sin jugar: la plantilla convocada. */
-        selectedTeam === 'home' ? (
-          jugado ? (
+        ) : jugado ? (
+          <>
             <TeamBoxScore
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
               roster={homeRoster}
               enVivo={enJuego}
             />
-          ) : (
+            <TeamBoxScore
+              title={game.awayTeam.fullName}
+              logoUrl={game.awayTeam.logoUrl}
+              roster={awayRoster}
+              enVivo={enJuego}
+            />
+          </>
+        ) : (
+          <>
             <TeamLineup
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
               lineup={homeLineup}
             />
-          )
-        ) : jugado ? (
-          <TeamBoxScore
-            title={game.awayTeam.fullName}
-            logoUrl={game.awayTeam.logoUrl}
-            roster={awayRoster}
-            enVivo={enJuego}
-          />
-        ) : (
-          <TeamLineup
-            title={game.awayTeam.fullName}
-            logoUrl={game.awayTeam.logoUrl}
-            lineup={awayLineup}
-          />
+            <TeamLineup
+              title={game.awayTeam.fullName}
+              logoUrl={game.awayTeam.logoUrl}
+              lineup={awayLineup}
+            />
+          </>
         )}
       </ScrollView>
     </>
