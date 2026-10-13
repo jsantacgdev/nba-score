@@ -521,6 +521,10 @@ function TeamBoxScore({
 }) {
   if (roster.length === 0) return null;
 
+  const ordenado = [...roster].sort(
+    (a, b) => b.points - a.points || b.minutes - a.minutes,
+  );
+
   return (
     <View style={styles.boxScoreSection}>
       <View style={styles.boxScoreHeader}>
@@ -539,7 +543,7 @@ function TeamBoxScore({
         <Text style={[styles.statsHeaderText, styles.colStat]}>AST</Text>
       </View>
 
-      {roster.map((p) => (
+      {ordenado.map((p) => (
         <Pressable
           key={p.playerId}
           onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
