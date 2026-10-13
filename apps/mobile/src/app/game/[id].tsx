@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { NumeroVivo } from '@/components/ui/NumeroVivo';
+import { useRelojVivo } from '@/hooks/useRelojVivo';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
@@ -58,6 +59,7 @@ export default function GameDetailScreen() {
   // El box score en vivo viene de ESPN, que si responde al movil
   const { data: enVivoEspn } = useLiveBoxScore(vivo?.gameId, usarDirecto);
   const { data: quintetos } = useStartingLineups(usarDirecto ? undefined : id);
+  const reloj = useRelojVivo(partido?.timeRemaining, partido?.liveUpdatedAt, enJuego);
   const { data: historial, isLoading: cargandoHistorial } = useHeadToHead(
     data?.game,
     vista === 'h2h',
@@ -228,10 +230,16 @@ export default function GameDetailScreen() {
       <ScrollView style={styles.container} contentContainerStyle={[styles.content, paddingInferior]}>
         {/* Marcador */}
         <View style={styles.scoreboard}>
-          <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>
-          <Text style={styles.gameStatus}>
-            {game.status === 'final' ? 'FINAL' : game.status === 'live' ? 'EN VIVO' : 'PROGRAMADO'}
+          {!enJuego && <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>}
+          <Text style={[styles.gameStatus, enJuego && styles.gameStatusVivo]}>
+            {game.status === 'final' ? 'FINAL' : enJuego ? 'EN VIVO' : 'PROGRAMADO'}
           </Text>
+          {enJuego && !!game.period && (
+            <Text style={styles.gameReloj}>
+              Q{game.period}
+              {reloj ? ` · ${reloj}` : ''}
+            </Text>
+          )}
 
           <View style={styles.scoreboardRow}>
             <TeamBlock
@@ -675,6 +683,17 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.displayBold,
     letterSpacing: 1,
     marginTop: 2,
+  },
+  gameStatusVivo: {
+    color: colors.danger,
+    fontSize: fontSize.sm,
+    letterSpacing: 1.5,
+  },
+  gameReloj: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontFamily: fontFamily.displaySemibold,
+    marginTop: 3,
   },
   scoreboardRow: {
     flexDirection: 'row',
