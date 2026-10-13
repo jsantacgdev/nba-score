@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
+import { NumeroVivo } from '@/components/ui/NumeroVivo';
 import { useGameDetail } from '@/hooks/useGameDetail';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
@@ -241,14 +242,28 @@ export default function GameDetailScreen() {
 
             <View style={styles.scoresCenter}>
               {/* Sin jugar no hay marcador: un 0-0 se lee como empate */}
-              <Text style={[styles.bigScore, homeWinning && styles.bigScoreWinning]}>
-                {jugado ? game.scoreHome : '-'}
-              </Text>
+              {jugado ? (
+                <NumeroVivo
+                  valor={game.scoreHome}
+                  activo={enJuego}
+                  colorBase={homeWinning ? colors.text : colors.textSecondary}
+                  style={styles.bigScore}
+                />
+              ) : (
+                <Text style={styles.bigScore}>-</Text>
+              )}
               {/* El separador sobra sin marcador: quedarian tres guiones */}
               {jugado && <Text style={styles.scoreSeparator}>-</Text>}
-              <Text style={[styles.bigScore, awayWinning && styles.bigScoreWinning]}>
-                {jugado ? game.scoreAway : '-'}
-              </Text>
+              {jugado ? (
+                <NumeroVivo
+                  valor={game.scoreAway}
+                  activo={enJuego}
+                  colorBase={awayWinning ? colors.text : colors.textSecondary}
+                  style={styles.bigScore}
+                />
+              ) : (
+                <Text style={styles.bigScore}>-</Text>
+              )}
             </View>
 
             <TeamBlock
@@ -339,6 +354,7 @@ export default function GameDetailScreen() {
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
               roster={homeRoster}
+              enVivo={enJuego}
             />
           ) : (
             <TeamLineup
@@ -352,6 +368,7 @@ export default function GameDetailScreen() {
             title={game.awayTeam.fullName}
             logoUrl={game.awayTeam.logoUrl}
             roster={awayRoster}
+            enVivo={enJuego}
           />
         ) : (
           <TeamLineup
@@ -487,10 +504,12 @@ function TeamBoxScore({
   title,
   logoUrl,
   roster,
+  enVivo = false,
 }: {
   title: string;
   logoUrl?: string;
   roster: GameBoxScoreEntry[];
+  enVivo?: boolean;
 }) {
   if (roster.length === 0) return null;
 
@@ -535,9 +554,24 @@ function TeamBoxScore({
           <Text style={[styles.statValue, styles.colStat]}>
             {p.minutes > 0 ? formatMinutes(p.minutes) : '-'}
           </Text>
-          <Text style={[styles.statValue, styles.colStat]}>{p.points}</Text>
-          <Text style={[styles.statValue, styles.colStat]}>{p.rebounds}</Text>
-          <Text style={[styles.statValue, styles.colStat]}>{p.assists}</Text>
+          <NumeroVivo
+            valor={p.points}
+            activo={enVivo}
+            colorBase={colors.text}
+            style={[styles.statValue, styles.colStat]}
+          />
+          <NumeroVivo
+            valor={p.rebounds}
+            activo={enVivo}
+            colorBase={colors.text}
+            style={[styles.statValue, styles.colStat]}
+          />
+          <NumeroVivo
+            valor={p.assists}
+            activo={enVivo}
+            colorBase={colors.text}
+            style={[styles.statValue, styles.colStat]}
+          />
         </Pressable>
       ))}
     </View>

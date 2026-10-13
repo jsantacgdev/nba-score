@@ -10,6 +10,7 @@ import Animated, {
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
+import { NumeroVivo } from '@/components/ui/NumeroVivo';
 import type { Game } from '@/types/domain';
 import { formatShortDate, formatTime } from '@/lib/format';
 import { useRelojVivo } from '@/hooks/useRelojVivo';
@@ -93,6 +94,7 @@ export function GameCard({ game, index = 0, showDate = false, probHome }: Props)
             score={game.scoreAway}
             isWinning={awayWinning}
             showScore={!isScheduled}
+            enVivo={isLive}
             prob={isScheduled && probHome !== undefined ? 1 - probHome : undefined}
             probFavorita={probHome !== undefined && probHome < 0.5}
           />
@@ -101,6 +103,7 @@ export function GameCard({ game, index = 0, showDate = false, probHome }: Props)
             score={game.scoreHome}
             isWinning={homeWinning}
             showScore={!isScheduled}
+            enVivo={isLive}
             prob={isScheduled && probHome !== undefined ? probHome : undefined}
             probFavorita={probHome !== undefined && probHome >= 0.5}
           />
@@ -117,6 +120,7 @@ function TeamRow({
   showScore,
   prob,
   probFavorita = false,
+  enVivo = false,
 }: {
   team: Game['homeTeam'];
   score: number;
@@ -124,6 +128,7 @@ function TeamRow({
   showScore: boolean;
   prob?: number;
   probFavorita?: boolean;
+  enVivo?: boolean;
 }) {
   return (
     <View style={styles.teamRow}>
@@ -145,7 +150,14 @@ function TeamRow({
           <Text style={styles.teamName}>{team.name}</Text>
         </View>
       </View>
-      {showScore && <Text style={[styles.score, isWinning && styles.scoreWinning]}>{score}</Text>}
+      {showScore && (
+        <NumeroVivo
+          valor={score}
+          activo={enVivo}
+          colorBase={isWinning ? colors.text : colors.textSecondary}
+          style={styles.score}
+        />
+      )}
       {!showScore && prob !== undefined && (
         <Text style={[styles.prob, probFavorita && styles.probFavorita]}>
           {Math.round(prob * 100)}%
