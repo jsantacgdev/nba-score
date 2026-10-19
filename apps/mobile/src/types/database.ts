@@ -1257,6 +1257,8 @@ export type Database = {
           away_team_id: string
           bajas_away: number
           bajas_home: number
+          continuidad_away: number
+          continuidad_home: number
           dias_away: number
           dias_home: number
           efecto_descanso: number
