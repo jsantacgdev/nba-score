@@ -1,6 +1,7 @@
 
 import re
 import unicodedata
+from datetime import date, datetime
 from urllib.parse import urlsplit, urlunsplit
 
 import httpx
@@ -159,3 +160,212 @@ def get_news(limite: int = 50) -> list[dict]:
         )
 
     return noticias
+
+
+# ============================================
+# Partidos: marcador, box score y titulares
+# ============================================
+
+BASE_PARTIDOS = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba"
+
+ABREVIATURAS_ESPN = {
+    "GS": "GSW",
+    "NO": "NOP",
+    "NY": "NYK",
+    "SA": "SAS",
+    "UTAH": "UTA",
+    "WSH": "WAS",
+}
+
+ESTADOS_INCOMPLETOS = {"STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_SUSPENDED"}
+
+
+def abreviatura(valor) -> str:
+    limpia = str(valor or "").strip().upper()
+    return ABREVIATURAS_ESPN.get(limpia, limpia)
+
+
+def _fecha_utc(valor) -> datetime | None:
+    texto = str(valor or "").strip()
+    if not texto:
+        return None
+    try:
+        return datetime.fromisoformat(texto.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _entero(valor) -> int:
+    texto = str(valor or "").strip().replace("+", "")
+    if not texto or texto in ("-", "--"):
+        return 0
+    try:
+        return int(float(texto))
+    except ValueError:
+        return 0
+
+
+def get_scoreboard(dia: date) -> list[dict]:
+    respuesta = httpx.get(
+        f"{BASE_PARTIDOS}/scoreboard",
+        params={"dates": dia.strftime("%Y%m%d"), "limit": 100},
+        timeout=60,
+    )
+    respuesta.raise_for_status()
+
+    partidos = []
+    for evento in respuesta.json().get("events") or []:
+        competicion = (evento.get("competitions") or [{}])[0]
+
+        lados = {}
+        for competidor in competicion.get("competitors") or []:
+            lados[competidor.get("homeAway")] = competidor
+        local = lados.get("home")
+        visitante = lados.get("away")
+        if not local or not visitante:
+            continue
+
+        estado = (competicion.get("status") or {}).get("type") or {}
+        nombre_estado = str(estado.get("name") or "")
+        if nombre_estado in ESTADOS_INCOMPLETOS:
+            continue
+
+        fase = str(estado.get("state") or "")
+        if fase == "pre":
+            situacion = "scheduled"
+        elif fase == "in":
+            situacion = "live"
+        elif fase == "post" and estado.get("completed"):
+            situacion = "final"
+        else:
+            continue
+
+        empieza = _fecha_utc(competicion.get("date") or evento.get("date"))
+        if not empieza:
+            continue
+
+        reloj = str((competicion.get("status") or {}).get("displayClock") or "").strip()
+
+        partidos.append(
+            {
+                "espn_event_id": str(evento.get("id") or "").strip(),
+                "starts_at": empieza,
+                "home_abbr": abreviatura((local.get("team") or {}).get("abbreviation")),
+                "away_abbr": abreviatura((visitante.get("team") or {}).get("abbreviation")),
+                "score_home": _entero(local.get("score")),
+                "score_away": _entero(visitante.get("score")),
+                "status": situacion,
+                "period": _entero((competicion.get("status") or {}).get("period")),
+                "clock": reloj or None,
+            }
+        )
+
+    return [p for p in partidos if p["espn_event_id"]]
+
+
+ETIQUETAS_SIMPLES = {
+    "PTS": "points",
+    "REB": "rebounds",
+    "AST": "assists",
+    "STL": "steals",
+    "BLK": "blocks",
+    "TO": "turnovers",
+}
+
+ETIQUETAS_PARES = {
+    "FG": ("fg_made", "fg_attempted"),
+    "3PT": ("fg3_made", "fg3_attempted"),
+    "FT": ("ft_made", "ft_attempted"),
+}
+
+CAMPOS_BOX_SCORE = (
+    "points",
+    "rebounds",
+    "assists",
+    "steals",
+    "blocks",
+    "turnovers",
+    "fg_made",
+    "fg_attempted",
+    "fg3_made",
+    "fg3_attempted",
+    "ft_made",
+    "ft_attempted",
+    "plus_minus",
+)
+
+
+def _par(valor) -> tuple[int, int]:
+    texto = str(valor or "").strip()
+    if "-" not in texto:
+        return 0, 0
+    hechos, _, intentos = texto.partition("-")
+    return _entero(hechos), _entero(intentos)
+
+
+def get_box_score(espn_event_id: str) -> list[dict]:
+    respuesta = httpx.get(
+        f"{BASE_PARTIDOS}/summary",
+        params={"event": str(espn_event_id)},
+        timeout=60,
+    )
+    respuesta.raise_for_status()
+
+    jugadores = []
+    for equipo in (respuesta.json().get("boxscore") or {}).get("players") or []:
+        abbr = abreviatura((equipo.get("team") or {}).get("abbreviation"))
+        bloques = equipo.get("statistics") or []
+        if not bloques:
+            continue
+
+        etiquetas = [str(n).upper() for n in bloques[0].get("names") or []]
+        titular = 0
+
+        for atleta in bloques[0].get("athletes") or []:
+            if atleta.get("didNotPlay"):
+                continue
+
+            ficha = atleta.get("athlete") or {}
+            nombre = str(ficha.get("displayName") or "").strip()
+            if not nombre:
+                continue
+
+            valores = atleta.get("stats") or []
+            if len(valores) < len(etiquetas):
+                continue
+
+            fila = {campo: 0 for campo in CAMPOS_BOX_SCORE}
+            fila["minutes"] = 0.0
+
+            for etiqueta, valor in zip(etiquetas, valores):
+                if etiqueta == "MIN":
+                    fila["minutes"] = float(_entero(valor))
+                elif etiqueta == "+/-":
+                    fila["plus_minus"] = _entero(valor)
+                elif etiqueta in ETIQUETAS_SIMPLES:
+                    fila[ETIQUETAS_SIMPLES[etiqueta]] = _entero(valor)
+                elif etiqueta in ETIQUETAS_PARES:
+                    hechos, intentos = ETIQUETAS_PARES[etiqueta]
+                    fila[hechos], fila[intentos] = _par(valor)
+
+            es_titular = bool(atleta.get("starter"))
+            spot = titular if es_titular else None
+            if es_titular:
+                titular += 1
+
+            posicion = str((ficha.get("position") or {}).get("abbreviation") or "").strip()
+
+            jugadores.append(
+                {
+                    **fila,
+                    "espn_athlete_id": str(ficha.get("id") or "").strip() or None,
+                    "nombre": nombre,
+                    "nombre_normalizado": normalizar_nombre(nombre),
+                    "team_abbr": abbr,
+                    "starter": es_titular,
+                    "spot": spot,
+                    "position": posicion or None,
+                }
+            )
+
+    return jugadores

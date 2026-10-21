@@ -33,19 +33,21 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Sync schedule and results
+      - name: Sync results, box scores and lineups (ESPN)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python -m src.jobs.sync_upcoming_games --days-back 3 --days-ahead 30
+        run: python -m src.jobs.sync_espn_results --days-back 3 --days-ahead 2
 
-      - name: Sync box scores
+      - name: Fill box score gaps (NBA)
+        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.jobs.sync_box_scores --include-preseason
 
-      - name: Sync starting lineups
+      - name: Fill lineup gaps (NBA)
+        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

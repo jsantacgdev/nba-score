@@ -13,7 +13,13 @@ def get_games_with_box_scores(client, season: str | None = None) -> set[str]:
         query = client.table("player_game_log").select("game_id")
         if season:
             query = query.eq("season", season)
-        result = query.range(offset, offset + page_size - 1).execute()
+        result = (
+            query
+            .order("game_id")
+            .order("player_id")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
         if not result.data:
             break
         for row in result.data:
@@ -44,6 +50,7 @@ def get_all_final_game_ids(
         result = (
             query
             .order("starts_at", desc=False)
+            .order("id")
             .range(offset, offset + page_size - 1)
             .execute()
         )
@@ -77,6 +84,7 @@ def get_existing_player_ids(client) -> set[str]:
         result = (
             client.table("players")
             .select("id")
+            .order("id")
             .range(offset, offset + page_size - 1)
             .execute()
         )

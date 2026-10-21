@@ -64,7 +64,13 @@ def sync_draft() -> None:
     conocidos: set[str] = set()
     offset = 0
     while True:
-        r = client.table("players").select("id").range(offset, offset + 999).execute()
+        r = (
+            client.table("players")
+            .select("id")
+            .order("id")
+            .range(offset, offset + 999)
+            .execute()
+        )
         if not r.data:
             break
         conocidos.update(x["id"] for x in r.data)

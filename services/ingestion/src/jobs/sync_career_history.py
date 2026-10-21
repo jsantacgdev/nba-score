@@ -23,7 +23,10 @@ def _fetch_all(client, table: str, columns: str) -> list[dict]:
     rows: list[dict] = []
     offset = 0
     while True:
-        result = client.table(table).select(columns).range(offset, offset + 999).execute()
+        consulta = client.table(table).select(columns)
+        for columna in columns.split(","):
+            consulta = consulta.order(columna.strip())
+        result = consulta.range(offset, offset + 999).execute()
         if not result.data:
             break
         rows.extend(result.data)
