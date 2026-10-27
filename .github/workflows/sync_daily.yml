@@ -54,6 +54,24 @@ jobs:
         run: python -m src.jobs.sync_transactions
         continue-on-error: true
 
+      # ESPN corrige box scores hasta varios dias despues del partido
+      # (robos, rebotes, asistencias). sync_scores solo lee los partidos sin
+      # detalle, asi que esas correcciones solo entran por esta relectura
+      # diaria. Despues se recalculan las medias con los datos ya corregidos.
+      - name: Re-read recent box scores (ESPN stat corrections)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_espn_results --days-back 7 --days-ahead 0 --refresh
+        continue-on-error: true
+
+      - name: Recompute current season averages
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_season_averages
+        continue-on-error: true
+
       # - name: Sync finalized games
       #   env:
       #     SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

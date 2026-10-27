@@ -56,7 +56,9 @@ def _clave(away_abbr: str, home_abbr: str) -> str:
     return f"{away_abbr}@{home_abbr}"
 
 
-def sync_espn_results(days_back: int = 3, days_ahead: int = 2) -> None:
+def sync_espn_results(
+    days_back: int = 3, days_ahead: int = 2, refrescar: bool = False
+) -> None:
     print("Sincronizando resultados desde ESPN...")
 
     client = get_supabase_client()
@@ -187,14 +189,22 @@ def sync_espn_results(days_back: int = 3, days_ahead: int = 2) -> None:
         .data
     }
 
-    pendientes = [
-        d for d in finales if d["id"] not in con_log or d["id"] not in con_titulares
-    ]
+    if refrescar:
+        pendientes = finales
+    else:
+        pendientes = [
+            d
+            for d in finales
+            if d["id"] not in con_log or d["id"] not in con_titulares
+        ]
     if not pendientes:
         print(f"\n{len(finales)} partidos finalizados, todos con detalle.")
         return
 
-    print(f"\n{len(pendientes)} partidos finalizados sin detalle")
+    if refrescar:
+        print(f"\n{len(pendientes)} partidos finalizados, releyendo por correcciones")
+    else:
+        print(f"\n{len(pendientes)} partidos finalizados sin detalle")
 
     jugadores = _paginado(client, "players", "id, first_name, last_name, team_id", "id")
     por_nombre: dict[str, list[dict]] = {}
@@ -256,7 +266,7 @@ def sync_espn_results(days_back: int = 3, days_ahead: int = 2) -> None:
                     }
                 )
 
-        if filas_log and d["id"] not in con_log:
+        if filas_log and (refrescar or d["id"] not in con_log):
             client.table("player_game_log").upsert(filas_log).execute()
             total_log += len(filas_log)
 
@@ -284,4 +294,5 @@ if __name__ == "__main__":
     sync_espn_results(
         days_back=_arg("--days-back", 3),
         days_ahead=_arg("--days-ahead", 2),
+        refrescar="--refresh" in sys.argv,
     )

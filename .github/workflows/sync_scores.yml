@@ -52,3 +52,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.jobs.sync_starters
+
+      # Las medias de la temporada en curso se recalculan desde las lineas
+      # de box score, asi que se refrescan en cuanto entra un partido nuevo.
+      - name: Recompute current season averages
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.jobs.sync_season_averages
