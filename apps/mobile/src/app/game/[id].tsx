@@ -253,7 +253,7 @@ export default function GameDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title }} />
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, paddingInferior]}>
+      <ScrollView style={styles.container} decelerationRate="fast" contentContainerStyle={[styles.content, paddingInferior]}>
         {/* Marcador */}
         <View style={styles.scoreboard}>
           {!enJuego && <Text style={styles.gameDate}>{formatDateDMY(game.startsAt)}</Text>}
