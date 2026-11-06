@@ -245,12 +245,24 @@ def sync_espn_results(
                 sin_cruzar.append(f"{j['nombre']} ({j['team_abbr']})")
                 continue
 
+            en_casa = j["team_abbr"] == evento["home_abbr"]
+            rival = evento["away_abbr"] if en_casa else evento["home_abbr"]
+            propios = evento["score_home"] if en_casa else evento["score_away"]
+            ajenos = evento["score_away"] if en_casa else evento["score_home"]
+
             filas_log.append(
                 {
                     "player_id": elegido["id"],
                     "game_id": d["id"],
                     "season": d["season"],
                     "game_date": d["starts_at"],
+                    "is_home": en_casa,
+                    "opponent_abbreviation": rival,
+                    "matchup": f"{j['team_abbr']} "
+                    f"{'vs.' if en_casa else '@'} {rival}",
+                    "win_loss": None if propios == ajenos else (
+                        "W" if propios > ajenos else "L"
+                    ),
                     **{campo: j[campo] for campo in CAMPOS_LOG},
                 }
             )
