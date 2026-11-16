@@ -55,6 +55,15 @@ def _id(value) -> str:
             return str(int(value))
     return str(value)
 
+def _texto(valor) -> str | None:
+    if valor is None:
+        return None
+    if isinstance(valor, float) and valor != valor:
+        return None
+    texto = str(valor).strip()
+    return None if texto in ("", "nan", "None", "NaN", "NaT", "<NA>") else texto
+
+
 def build_team_logo_url(abbreviation: str) -> str:
     """URL del logo del equipo (PNG vía ESPN CDN) con parseo de excepciones."""
     abbr_lower = abbreviation.lower()
@@ -137,12 +146,8 @@ def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
         first_name = parts[0]
         last_name = parts[1] if len(parts) > 1 else ""
 
-        # El dorsal a veces viene vacío o como NaN
-        jersey = str(row.get("NUM", "")).strip()
-        if jersey in ("", "nan", "None"):
-            jersey = None
-
-        position = str(row.get("POSITION", "")).strip() or None
+        jersey = _texto(row.get("NUM"))
+        position = _texto(row.get("POSITION"))
 
         players.append(
             {
@@ -154,12 +159,12 @@ def get_team_roster(team_id: str, season: str = CURRENT_SEASON) -> list[dict]:
                 "jersey_number": jersey,
                 "photo_url": build_player_photo_url(_id(row["PLAYER_ID"])),
                 "is_active": True,
-                "height": str(row.get("HEIGHT") or "").strip() or None,
+                "height": _texto(row.get("HEIGHT")),
                 "height_cm": _altura_cm(row.get("HEIGHT")),
                 "weight_kg": _peso_kg(row.get("WEIGHT")),
                 "birth_date": _fecha_nacimiento(row.get("BIRTH_DATE")),
                 "experience": _experiencia(row.get("EXP")),
-                "college": str(row.get("SCHOOL") or "").strip() or None,
+                "college": _texto(row.get("SCHOOL")),
             }
         )
 
