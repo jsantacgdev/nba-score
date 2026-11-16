@@ -57,7 +57,7 @@ type TabKey = 'games' | 'career' | 'movements' | 'injuries' | 'contract';
 type ListRow =
   | { kind: 'section'; label: string }
   | { kind: 'game'; game: PlayerGameLogEntry }
-  | { kind: 'career'; career: PlayerCareerEntry }
+  | { kind: 'careerTable'; entries: PlayerCareerEntry[] }
   | { kind: 'movement'; movement: PlayerMovement }
   | { kind: 'injury'; injury: PlayerInjury }
   | { kind: 'contract'; contract: SalaryStint };
@@ -89,6 +89,10 @@ function filasDePartidos(log: PlayerGameLogEntry[]): ListRow[] {
 
 function stat(value: number | null, decimals = 1): string {
   return value === null ? '—' : value.toFixed(decimals);
+}
+
+function pct(value: number | null): string {
+  return value === null ? '—' : (value * 100).toFixed(1);
 }
 
 export default function PlayerDetailScreen() {
@@ -169,7 +173,10 @@ export default function PlayerDetailScreen() {
   if (tab === 'games') {
     rows = filasDePartidos(gameLog ?? []);
   } else if (tab === 'career') {
-    rows = (career ?? []).map((entry) => ({ kind: 'career', career: entry }) as ListRow);
+    rows =
+      career && career.length > 0
+        ? [{ kind: 'careerTable', entries: career } as ListRow]
+        : [];
   } else if (tab === 'movements') {
     rows = (movimientos ?? []).map((m) => ({ kind: 'movement', movement: m }) as ListRow);
   } else if (tab === 'injuries') {
@@ -215,7 +222,7 @@ export default function PlayerDetailScreen() {
         keyExtractor={(item, index) => {
           if (item.kind === 'section') return `seccion-${item.label}-${index}`;
           if (item.kind === 'game') return item.game.gameId;
-          if (item.kind === 'career') return `${item.career.season}-${item.career.teamId}`;
+          if (item.kind === 'careerTable') return 'tabla-carrera';
           if (item.kind === 'movement') return item.movement.id;
           if (item.kind === 'injury') return item.injury.id;
           return `${item.contract.startSeason}-${item.contract.teamName}`;
@@ -475,7 +482,6 @@ export default function PlayerDetailScreen() {
               </>
             ) : tab === 'career' ? (
               <>
-                {career && career.length > 0 && <CareerHeaderRow />}
                 {(!career || career.length === 0) && (
                   <EmptyState
                     icon="time-outline"
@@ -523,7 +529,7 @@ export default function PlayerDetailScreen() {
         renderItem={({ item }) => {
           if (item.kind === 'section') return <SeccionPartidos label={item.label} />;
           if (item.kind === 'game') return <GameLogRow entry={item.game} equipos={equiposEnTemporada} />;
-          if (item.kind === 'career') return <CareerRow entry={item.career} />;
+          if (item.kind === 'careerTable') return <CareerTable entries={item.entries} />;
           if (item.kind === 'movement') return <MovementRow entry={item.movement} />;
           if (item.kind === 'injury') return <InjuryRow entry={item.injury} />;
           return (
@@ -860,48 +866,96 @@ function DetailTab({
   );
 }
 
-function CareerHeaderRow() {
-  return (
-    <View style={styles.careerHeader}>
-      <Text style={[styles.careerHeaderText, styles.colSeason]}>TEMP.</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerTeam]}>EQUIPO</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerGames]}>PJ</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>PTS</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>REB</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>AST</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>ROB</Text>
-      <Text style={[styles.careerHeaderText, styles.colCareerStat]}>TAP</Text>
-    </View>
-  );
+const COLUMNAS_CARRERA = [
+  { clave: 'gamesPlayed', etiqueta: 'PJ', ancho: 34 },
+  { clave: 'minutes', etiqueta: 'MIN', ancho: 44 },
+  { clave: 'points', etiqueta: 'PTS', ancho: 44 },
+  { clave: 'rebounds', etiqueta: 'REB', ancho: 44 },
+  { clave: 'assists', etiqueta: 'AST', ancho: 44 },
+  { clave: 'steals', etiqueta: 'ROB', ancho: 44 },
+  { clave: 'blocks', etiqueta: 'TAP', ancho: 44 },
+  { clave: 'turnovers', etiqueta: 'PÉR', ancho: 44 },
+  { clave: 'fieldGoalPct', etiqueta: 'TC%', ancho: 48 },
+  { clave: 'threePointPct', etiqueta: 'T3%', ancho: 48 },
+  { clave: 'freeThrowPct', etiqueta: 'TL%', ancho: 48 },
+] as const;
+
+function celdaCarrera(entry: PlayerCareerEntry, clave: (typeof COLUMNAS_CARRERA)[number]['clave']) {
+  if (clave === 'gamesPlayed') return stat(entry.gamesPlayed, 0);
+  if (clave === 'fieldGoalPct' || clave === 'threePointPct' || clave === 'freeThrowPct') {
+    return pct(entry[clave]);
+  }
+  return stat(entry[clave]);
 }
 
-function CareerRow({ entry }: { entry: PlayerCareerEntry }) {
-  return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/team/[id]', params: { id: entry.teamId } })}
-      style={({ pressed }) => [styles.careerRow, pressed && styles.careerRowPressed]}
-    >
-      <Text style={[styles.careerSeason, styles.colSeason]}>{entry.season}</Text>
+function CareerTable({ entries }: { entries: PlayerCareerEntry[] }) {
+  const irAlEquipo = (teamId: string) =>
+    router.push({ pathname: '/team/[id]', params: { id: teamId } });
 
-      <View style={[styles.colCareerTeam, styles.careerTeamCell]}>
-        <TeamLogo logoUrl={entry.teamLogoUrl} abbreviation={entry.teamAbbreviation} size={20} />
-        <Text style={styles.careerTeamText} numberOfLines={1}>
-          {entry.teamAbbreviation}
-        </Text>
-        {entry.wonChampionship && (
-          <Trophy award="champion" season={entry.season} size={16} />
-        )}
+  return (
+    <View style={styles.careerTable}>
+      <View style={styles.careerFijo}>
+        <View style={styles.careerHeader}>
+          <Text style={[styles.careerHeaderText, styles.colSeason]}>TEMP.</Text>
+          <Text style={[styles.careerHeaderText, styles.colCareerTeam]}>EQUIPO</Text>
+        </View>
+
+        {entries.map((entry) => (
+          <Pressable
+            key={`${entry.season}-${entry.teamId}`}
+            onPress={() => irAlEquipo(entry.teamId)}
+            style={({ pressed }) => [styles.careerRow, pressed && styles.careerRowPressed]}
+          >
+            <Text style={[styles.careerSeason, styles.colSeason]}>{entry.season}</Text>
+            <View style={[styles.colCareerTeam, styles.careerTeamCell]}>
+              <TeamLogo
+                logoUrl={entry.teamLogoUrl}
+                abbreviation={entry.teamAbbreviation}
+                size={20}
+              />
+              <Text style={styles.careerTeamText} numberOfLines={1}>
+                {entry.teamAbbreviation}
+              </Text>
+              {entry.wonChampionship && (
+                <Trophy award="champion" season={entry.season} size={16} />
+              )}
+            </View>
+          </Pressable>
+        ))}
       </View>
 
-      <Text style={[styles.careerStat, styles.colCareerGames]}>
-        {stat(entry.gamesPlayed, 0)}
-      </Text>
-      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.points)}</Text>
-      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.rebounds)}</Text>
-      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.assists)}</Text>
-      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.steals)}</Text>
-      <Text style={[styles.careerStat, styles.colCareerStat]}>{stat(entry.blocks)}</Text>
-    </Pressable>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View>
+          <View style={styles.careerHeader}>
+            {COLUMNAS_CARRERA.map((c) => (
+              <Text
+                key={c.clave}
+                style={[styles.careerHeaderText, styles.careerCelda, { width: c.ancho }]}
+              >
+                {c.etiqueta}
+              </Text>
+            ))}
+          </View>
+
+          {entries.map((entry) => (
+            <Pressable
+              key={`${entry.season}-${entry.teamId}`}
+              onPress={() => irAlEquipo(entry.teamId)}
+              style={({ pressed }) => [styles.careerRow, pressed && styles.careerRowPressed]}
+            >
+              {COLUMNAS_CARRERA.map((c) => (
+                <Text
+                  key={c.clave}
+                  style={[styles.careerStat, styles.careerCelda, { width: c.ancho }]}
+                >
+                  {celdaCarrera(entry, c.clave)}
+                </Text>
+              ))}
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1072,6 +1126,9 @@ function GameLogRow({
     </Pressable>
   );
 }
+
+const ALTO_CABECERA_CARRERA = 32;
+const ALTO_FILA_CARRERA = 40;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
@@ -1824,12 +1881,24 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
+  careerTable: {
+    flexDirection: 'row',
+  },
+  careerFijo: {
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    paddingRight: spacing.xs,
+    marginRight: spacing.xs,
+  },
   careerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    height: ALTO_CABECERA_CARRERA,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  careerCelda: {
+    textAlign: 'center',
   },
   careerHeaderText: {
     color: colors.textMuted,
@@ -1840,7 +1909,7 @@ const styles = StyleSheet.create({
   careerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    height: ALTO_FILA_CARRERA,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1851,15 +1920,7 @@ const styles = StyleSheet.create({
     width: 52,
   },
   colCareerTeam: {
-    flex: 1,
-  },
-  colCareerGames: {
-    width: 30,
-    textAlign: 'center',
-  },
-  colCareerStat: {
-    width: 36,
-    textAlign: 'center',
+    width: 86,
   },
   careerSeason: {
     color: colors.textSecondary,
