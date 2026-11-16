@@ -65,3 +65,18 @@ export function boxScoreDesdeEspn(
     })
     .sort((a, b) => b.minutes - a.minutes);
 }
+
+export function puntosPorCuarto(
+  porCuarto: Record<number, JugadorEnVivoEspn[]> | undefined,
+  nombre: string,
+): { periodo: number; points: number }[] {
+  if (!porCuarto) return [];
+  const buscado = normalizar(nombre);
+
+  return Object.entries(porCuarto)
+    .map(([periodo, jugadores]) => ({
+      periodo: Number(periodo),
+      points: jugadores.find((j) => normalizar(j.nombre) === buscado)?.points ?? 0,
+    }))
+    .sort((a, b) => a.periodo - b.periodo);
+}

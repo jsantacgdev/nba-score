@@ -7,9 +7,11 @@ import { NumeroVivo } from '@/components/ui/NumeroVivo';
 import { useRelojVivo } from '@/hooks/useRelojVivo';
 import { useEstadisticasPorCuarto, useEventoEspn } from '@/hooks/useLive';
 import { useGameDetail } from '@/hooks/useGameDetail';
+import { useTeamInjuries } from '@/hooks/useTeamRoster';
+import { esBaja, estadoLesion, tituloLesion } from '@/constants/injuries';
 import { formatDateDMY, formatMinutes } from '@/lib/format';
 import { colors, fontSize, fontFamily, radius, spacing } from '@/constants/theme';
-import type { GameBoxScoreEntry, GameLineupPlayer } from '@/types/domain';
+import type { GameBoxScoreEntry, GameLineupPlayer, PlayerInjury } from '@/types/domain';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { GameDetailSkeleton } from '@/components/ui/Skeleton';
 import { CourtLineup } from '@/components/game/CourtLineup';
@@ -17,7 +19,8 @@ import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { Probabilidad } from '@/components/game/Probabilidad';
 import { boxScoreDesdeDirecto } from '@/lib/api/live';
-import { boxScoreDesdeEspn } from '@/lib/liveBoxScore';
+import { boxScoreDesdeEspn, puntosPorCuarto } from '@/lib/liveBoxScore';
+import { PlayerGameStats } from '@/components/game/PlayerGameStats';
 import {
   fusionarDirecto,
   useLiveLineup,
@@ -83,8 +86,20 @@ export default function GameDetailScreen() {
     vista === 'h2h' && porJugar,
   );
   const { data: balanceModelo } = useModelRecord(vista === 'h2h' && porJugar);
+  const { data: lesionesLocal } = useTeamInjuries(
+    data?.game?.homeTeam.id ?? '',
+    porJugar,
+  );
+  const { data: lesionesVisitante } = useTeamInjuries(
+    data?.game?.awayTeam.id ?? '',
+    porJugar,
+  );
 
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
+  const [detalle, setDetalle] = useState<{
+    jugador: GameBoxScoreEntry;
+    lado: 'home' | 'away';
+  } | null>(null);
 
   if (isLoading) {
     return (
@@ -162,7 +177,12 @@ export default function GameDetailScreen() {
     const jugadas = porCuarto?.[cuarto];
     if (!jugadas?.length) return null;
     const equipo = lado === 'home' ? game.homeTeam : game.awayTeam;
-    const plantilla = lado === 'home' ? homeLineup : awayLineup;
+    const plantel = lado === 'home' ? homeRoster : awayRoster;
+    const plantilla = plantel.length
+      ? plantel
+      : lado === 'home'
+        ? homeLineup
+        : awayLineup;
     return boxScoreDesdeEspn(jugadas, plantilla, equipo.abbreviation, equipo.id)
       .filter((p) => p.points > 0 || p.rebounds > 0 || p.assists > 0)
       .sort((a, b) => b.points - a.points || b.rebounds - a.rebounds);
@@ -170,6 +190,12 @@ export default function GameDetailScreen() {
 
   const rosterLocal = rosterDeCuarto('home') ?? homeRoster;
   const rosterVisitante = rosterDeCuarto('away') ?? awayRoster;
+  const abrirDetalle = (lado: 'home' | 'away', jugador: GameBoxScoreEntry) => {
+    const completo = (lado === 'home' ? homeRoster : awayRoster).find(
+      (p) => p.playerId === jugador.playerId,
+    );
+    setDetalle({ jugador: completo ?? jugador, lado });
+  };
 
   function suplentesDe(lado: 'home' | 'away'): GameBoxScoreEntry[] {
     const teamId = lado === 'home' ? game.homeTeam.id : game.awayTeam.id;
@@ -402,12 +428,16 @@ export default function GameDetailScreen() {
           </>
         ) : jugado ? (
           <>
+            <Text style={styles.pistaDetalle}>
+              Mantén pulsado un jugador para ver su detalle.
+            </Text>
             <TeamBoxScore
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
               roster={rosterLocal}
               enVivo={enJuego && cuarto === null}
               porCuarto={cuarto !== null}
+              onDetalle={(p) => abrirDetalle('home', p)}
             />
             <TeamBoxScore
               title={game.awayTeam.fullName}
@@ -415,6 +445,7 @@ export default function GameDetailScreen() {
               roster={rosterVisitante}
               enVivo={enJuego && cuarto === null}
               porCuarto={cuarto !== null}
+              onDetalle={(p) => abrirDetalle('away', p)}
             />
           </>
         ) : (
@@ -423,15 +454,38 @@ export default function GameDetailScreen() {
               title={game.homeTeam.fullName}
               logoUrl={game.homeTeam.logoUrl}
               lineup={homeLineup}
+              lesiones={lesionesLocal}
             />
             <TeamLineup
               title={game.awayTeam.fullName}
               logoUrl={game.awayTeam.logoUrl}
               lineup={awayLineup}
+              lesiones={lesionesVisitante}
             />
           </>
         )}
       </ScrollView>
+
+      <PlayerGameStats
+        jugador={detalle?.jugador ?? null}
+        equipoAbbr={
+          detalle?.lado === 'away'
+            ? game.awayTeam.abbreviation
+            : game.homeTeam.abbreviation
+        }
+        equipoLogo={
+          detalle?.lado === 'away' ? game.awayTeam.logoUrl : game.homeTeam.logoUrl
+        }
+        porCuarto={
+          detalle
+            ? puntosPorCuarto(
+                porCuarto,
+                `${detalle.jugador.firstName} ${detalle.jugador.lastName}`,
+              )
+            : []
+        }
+        onCerrar={() => setDetalle(null)}
+      />
     </>
   );
 }
@@ -464,10 +518,12 @@ function TeamLineup({
   title,
   logoUrl,
   lineup,
+  lesiones,
 }: {
   title: string;
   logoUrl?: string;
   lineup?: GameLineupPlayer[];
+  lesiones?: Record<string, PlayerInjury>;
 }) {
   if (!lineup || lineup.length === 0) {
     return (
@@ -480,6 +536,8 @@ function TeamLineup({
     );
   }
 
+  const bajas = lineup.filter((p) => esBaja(lesiones?.[p.playerId]?.status)).length;
+
   return (
     <View style={styles.boxScoreSection}>
       <View style={styles.boxScoreHeader}>
@@ -487,29 +545,67 @@ function TeamLineup({
           <Image source={{ uri: logoUrl }} style={styles.boxScoreLogo} contentFit="contain" />
         )}
         <Text style={styles.boxScoreTitle}>{title}</Text>
+        {bajas > 0 && (
+          <View style={styles.bajasChip}>
+            <Ionicons name="medkit" size={11} color={colors.danger} />
+            <Text style={styles.bajasChipTexto}>
+              {bajas} {bajas === 1 ? 'baja' : 'bajas'}
+            </Text>
+          </View>
+        )}
         <Text style={styles.lineupCount}>{lineup.length}</Text>
       </View>
 
-      {lineup.map((p) => (
-        <Pressable
-          key={p.playerId}
-          onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
-          style={({ pressed }) => [styles.playerRow, pressed && styles.playerRowPressed]}
-        >
-          <Text style={styles.lineupJersey}>{p.jerseyNumber ?? '-'}</Text>
-          <View style={[styles.colPlayer, styles.playerCol]}>
-            <PlayerAvatar
-              photoUrl={p.photoUrl}
-              initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
-              size={26}
-            />
-            <Text style={styles.playerName} numberOfLines={1}>
-              {p.firstName[0]}. {p.lastName}
-            </Text>
-          </View>
-          {p.position && <Text style={styles.lineupPosition}>{p.position}</Text>}
-        </Pressable>
-      ))}
+      {lineup.map((p) => {
+        const lesion = lesiones?.[p.playerId];
+        const baja = esBaja(lesion?.status);
+        const estado = estadoLesion(lesion?.status);
+        const parte = [tituloLesion(lesion?.injuryType, lesion?.side), estado]
+          .filter(Boolean)
+          .join(' · ');
+
+        return (
+          <Pressable
+            key={p.playerId}
+            onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
+            style={({ pressed }) => [
+              styles.playerRow,
+              styles.lineupRow,
+              pressed && styles.playerRowPressed,
+            ]}
+          >
+            <Text style={styles.lineupJersey}>{p.jerseyNumber ?? '-'}</Text>
+            <View style={[styles.colPlayer, styles.playerCol]}>
+              <PlayerAvatar
+                photoUrl={p.photoUrl}
+                initials={`${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`}
+                size={26}
+              />
+              <View style={styles.lineupTextos}>
+                <Text style={styles.playerName} numberOfLines={1}>
+                  {p.firstName[0]}. {p.lastName}
+                </Text>
+                {lesion && (
+                  <View style={styles.lineupLesion}>
+                    <Ionicons
+                      name="medkit"
+                      size={11}
+                      color={baja ? colors.danger : colors.warning}
+                    />
+                    <Text
+                      style={[styles.lineupLesionTexto, !baja && styles.lineupLesionDuda]}
+                      numberOfLines={1}
+                    >
+                      {parte}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            {p.position && <Text style={styles.lineupPosition}>{p.position}</Text>}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -583,12 +679,14 @@ function TeamBoxScore({
   roster,
   enVivo = false,
   porCuarto = false,
+  onDetalle,
 }: {
   title: string;
   logoUrl?: string;
   roster: GameBoxScoreEntry[];
   enVivo?: boolean;
   porCuarto?: boolean;
+  onDetalle?: (jugador: GameBoxScoreEntry) => void;
 }) {
   if (roster.length === 0) return null;
 
@@ -618,6 +716,8 @@ function TeamBoxScore({
         <Pressable
           key={p.playerId}
           onPress={() => router.push({ pathname: '/player/[id]', params: { id: p.playerId } })}
+          onLongPress={onDetalle ? () => onDetalle(p) : undefined}
+          delayLongPress={300}
           style={({ pressed }) => [
             styles.playerRow,
             pressed && styles.playerRowPressed,
@@ -903,6 +1003,44 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
     fontFamily: fontFamily.semibold,
+  },
+  pistaDetalle: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.semibold,
+    marginBottom: spacing.sm,
+  },
+  lineupRow: {
+    alignItems: 'center',
+  },
+  lineupTextos: {
+    flex: 1,
+  },
+  lineupLesion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
+  },
+  lineupLesionTexto: {
+    color: colors.danger,
+    fontSize: 10,
+    fontFamily: fontFamily.semibold,
+    flexShrink: 1,
+  },
+  lineupLesionDuda: {
+    color: colors.warning,
+  },
+  bajasChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: spacing.sm,
+  },
+  bajasChipTexto: {
+    color: colors.danger,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displaySemibold,
   },
   boxScoreSection: {
     marginBottom: spacing.md,
