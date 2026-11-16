@@ -395,19 +395,50 @@ export async function fetchEstadisticasPorCuarto(
   for (const jugada of datos?.plays ?? []) {
     const periodo = Number(jugada?.period?.number ?? 0);
     if (!periodo) continue;
+
     const participantes = jugada?.participants ?? [];
     const principal = String(participantes[0]?.athlete?.id ?? '');
+    const secundario = String(participantes[1]?.athlete?.id ?? '');
+    const texto = String(jugada?.text ?? '').toLowerCase();
+    const tipo = String(jugada?.type?.text ?? '').toLowerCase();
+    const anota = !!jugada?.scoringPlay;
 
-    if (jugada?.scoringPlay && principal) {
-      const anotador = dame(periodo, principal);
-      anotador.points += Number(jugada?.scoreValue ?? 0);
-      const asistente = String(participantes[1]?.athlete?.id ?? '');
-      if (asistente) dame(periodo, asistente).assists += 1;
-      continue;
+    if (anota && principal) {
+      dame(periodo, principal).points += Number(jugada?.scoreValue ?? 0);
     }
 
-    if (/rebound/i.test(String(jugada?.type?.text ?? '')) && principal) {
+    if (jugada?.shootingPlay && principal && !tipo.includes('heave')) {
+      const intentados = Number(jugada?.pointsAttempted ?? 0);
+      const tirador = dame(periodo, principal);
+
+      if (intentados === 1) {
+        tirador.ftAttempted += 1;
+        if (anota) tirador.ftMade += 1;
+      } else if (intentados >= 2) {
+        tirador.fgAttempted += 1;
+        if (anota) tirador.fgMade += 1;
+        if (intentados === 3) {
+          tirador.fg3Attempted += 1;
+          if (anota) tirador.fg3Made += 1;
+        }
+        if (anota && secundario && texto.includes('assists')) {
+          dame(periodo, secundario).assists += 1;
+        }
+        if (secundario && texto.includes('blocks')) {
+          dame(periodo, secundario).blocks += 1;
+        }
+      }
+    }
+
+    if (tipo.includes('rebound') && principal) {
       dame(periodo, principal).rebounds += 1;
+    }
+
+    if ((tipo.includes('turnover') || tipo === 'traveling') && principal) {
+      dame(periodo, principal).turnovers += 1;
+      if (secundario && texto.includes('steals')) {
+        dame(periodo, secundario).steals += 1;
+      }
     }
   }
 

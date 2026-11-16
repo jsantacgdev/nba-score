@@ -19,7 +19,7 @@ import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { Probabilidad } from '@/components/game/Probabilidad';
 import { boxScoreDesdeDirecto } from '@/lib/api/live';
-import { boxScoreDesdeEspn, puntosPorCuarto } from '@/lib/liveBoxScore';
+import { boxScoreDesdeEspn, lineasPorCuarto } from '@/lib/liveBoxScore';
 import { PlayerGameStats } from '@/components/game/PlayerGameStats';
 import {
   fusionarDirecto,
@@ -478,7 +478,7 @@ export default function GameDetailScreen() {
         }
         porCuarto={
           detalle
-            ? puntosPorCuarto(
+            ? lineasPorCuarto(
                 porCuarto,
                 `${detalle.jugador.firstName} ${detalle.jugador.lastName}`,
               )

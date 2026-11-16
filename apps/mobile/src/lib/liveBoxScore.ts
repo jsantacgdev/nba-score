@@ -66,17 +66,47 @@ export function boxScoreDesdeEspn(
     .sort((a, b) => b.minutes - a.minutes);
 }
 
-export function puntosPorCuarto(
+export type LineaCuarto = {
+  periodo: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgMade: number;
+  fgAttempted: number;
+  fg3Made: number;
+  fg3Attempted: number;
+  ftMade: number;
+  ftAttempted: number;
+};
+
+export function lineasPorCuarto(
   porCuarto: Record<number, JugadorEnVivoEspn[]> | undefined,
   nombre: string,
-): { periodo: number; points: number }[] {
+): LineaCuarto[] {
   if (!porCuarto) return [];
   const buscado = normalizar(nombre);
 
   return Object.entries(porCuarto)
-    .map(([periodo, jugadores]) => ({
-      periodo: Number(periodo),
-      points: jugadores.find((j) => normalizar(j.nombre) === buscado)?.points ?? 0,
-    }))
+    .map(([periodo, jugadores]) => {
+      const suyo = jugadores.find((j) => normalizar(j.nombre) === buscado);
+      return {
+        periodo: Number(periodo),
+        points: suyo?.points ?? 0,
+        rebounds: suyo?.rebounds ?? 0,
+        assists: suyo?.assists ?? 0,
+        steals: suyo?.steals ?? 0,
+        blocks: suyo?.blocks ?? 0,
+        turnovers: suyo?.turnovers ?? 0,
+        fgMade: suyo?.fgMade ?? 0,
+        fgAttempted: suyo?.fgAttempted ?? 0,
+        fg3Made: suyo?.fg3Made ?? 0,
+        fg3Attempted: suyo?.fg3Attempted ?? 0,
+        ftMade: suyo?.ftMade ?? 0,
+        ftAttempted: suyo?.ftAttempted ?? 0,
+      };
+    })
     .sort((a, b) => a.periodo - b.periodo);
 }

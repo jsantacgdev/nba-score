@@ -2,18 +2,93 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { PlayerAvatar } from '@/components/ui/PlayerAvatar';
 import { TeamLogo } from '@/components/ui/TeamLogo';
+import { usePaddingInferior } from '@/hooks/useBottomInset';
 import { formatMinutes } from '@/lib/format';
+import type { LineaCuarto } from '@/lib/liveBoxScore';
 import { colors, fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { GameBoxScoreEntry } from '@/types/domain';
 
-type PuntosCuarto = { periodo: number; points: number };
+const ALTO_FILA = 30;
+const ANCHO_ETIQUETA = 46;
+const ANCHO_CUARTO = 54;
+const ANCHO_TOTAL = 62;
+
+type Fila = {
+  etiqueta: string;
+  cuarto: (c: LineaCuarto) => string;
+  total: (j: GameBoxScoreEntry) => string;
+  suma: (c: LineaCuarto) => number;
+  oficial: (j: GameBoxScoreEntry) => number;
+};
+
+const FILAS: Fila[] = [
+  {
+    etiqueta: 'PTS',
+    cuarto: (c) => `${c.points}`,
+    total: (j) => `${j.points}`,
+    suma: (c) => c.points,
+    oficial: (j) => j.points,
+  },
+  {
+    etiqueta: 'REB',
+    cuarto: (c) => `${c.rebounds}`,
+    total: (j) => `${j.rebounds}`,
+    suma: (c) => c.rebounds,
+    oficial: (j) => j.rebounds,
+  },
+  {
+    etiqueta: 'AST',
+    cuarto: (c) => `${c.assists}`,
+    total: (j) => `${j.assists}`,
+    suma: (c) => c.assists,
+    oficial: (j) => j.assists,
+  },
+  {
+    etiqueta: 'ROB',
+    cuarto: (c) => `${c.steals}`,
+    total: (j) => `${j.steals}`,
+    suma: (c) => c.steals,
+    oficial: (j) => j.steals,
+  },
+  {
+    etiqueta: 'TAP',
+    cuarto: (c) => `${c.blocks}`,
+    total: (j) => `${j.blocks}`,
+    suma: (c) => c.blocks,
+    oficial: (j) => j.blocks,
+  },
+  {
+    etiqueta: 'PÉR',
+    cuarto: (c) => `${c.turnovers}`,
+    total: (j) => `${j.turnovers}`,
+    suma: (c) => c.turnovers,
+    oficial: (j) => j.turnovers,
+  },
+  {
+    etiqueta: 'TC',
+    cuarto: (c) => `${c.fgMade}-${c.fgAttempted}`,
+    total: (j) => `${j.fgMade}-${j.fgAttempted}`,
+    suma: (c) => c.fgAttempted,
+    oficial: (j) => j.fgAttempted,
+  },
+  {
+    etiqueta: 'T3',
+    cuarto: (c) => `${c.fg3Made}-${c.fg3Attempted}`,
+    total: (j) => `${j.fg3Made}-${j.fg3Attempted}`,
+    suma: (c) => c.fg3Attempted,
+    oficial: (j) => j.fg3Attempted,
+  },
+  {
+    etiqueta: 'TL',
+    cuarto: (c) => `${c.ftMade}-${c.ftAttempted}`,
+    total: (j) => `${j.ftMade}-${j.ftAttempted}`,
+    suma: (c) => c.ftAttempted,
+    oficial: (j) => j.ftAttempted,
+  },
+];
 
 function etiquetaCuarto(periodo: number): string {
   return periodo > 4 ? `PR${periodo - 4}` : `Q${periodo}`;
-}
-
-function porcentaje(hechos: number, intentos: number): string {
-  return intentos > 0 ? `${((hechos / intentos) * 100).toFixed(1)}%` : '—';
 }
 
 export function PlayerGameStats({
@@ -26,35 +101,47 @@ export function PlayerGameStats({
   jugador: GameBoxScoreEntry | null;
   equipoAbbr?: string;
   equipoLogo?: string;
-  porCuarto: PuntosCuarto[];
+  porCuarto: LineaCuarto[];
   onCerrar: () => void;
 }) {
+  const paddingInferior = usePaddingInferior();
+
   if (!jugador) return null;
 
   const jugo = jugador.minutes > 0;
-  const maximo = Math.max(...porCuarto.map((c) => c.points), 1);
-  const sumaCuartos = porCuarto.reduce((total, c) => total + c.points, 0);
+  const descuadra = porCuarto.length
+    ? FILAS.some(
+        (f) => porCuarto.reduce((t, c) => t + f.suma(c), 0) !== f.oficial(jugador),
+      )
+    : false;
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onCerrar}>
       <Pressable style={styles.backdrop} onPress={onCerrar}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <Pressable
+          style={[styles.sheet, paddingInferior]}
+          onPress={(e) => e.stopPropagation()}
+        >
           <View style={styles.handle} />
 
           <View style={styles.cabecera}>
             <PlayerAvatar
               photoUrl={jugador.photoUrl}
               initials={`${jugador.firstName[0] ?? ''}${jugador.lastName[0] ?? ''}`}
-              size={48}
+              size={44}
             />
             <View style={styles.cabeceraTextos}>
               <Text style={styles.nombre} numberOfLines={1}>
                 {jugador.firstName} {jugador.lastName}
               </Text>
               <View style={styles.cabeceraMeta}>
-                {equipoAbbr && <TeamLogo logoUrl={equipoLogo} abbreviation={equipoAbbr} size={16} />}
+                {equipoAbbr && (
+                  <TeamLogo logoUrl={equipoLogo} abbreviation={equipoAbbr} size={16} />
+                )}
                 {equipoAbbr && <Text style={styles.metaTexto}>{equipoAbbr}</Text>}
-                {jugo && <Text style={styles.metaTexto}>· {formatMinutes(jugador.minutes)} min</Text>}
+                {jugo && (
+                  <Text style={styles.metaTexto}>· {formatMinutes(jugador.minutes)} min</Text>
+                )}
               </View>
             </View>
             <Pressable onPress={onCerrar} hitSlop={10}>
@@ -62,38 +149,57 @@ export function PlayerGameStats({
             </Pressable>
           </View>
 
-          {jugo ? (
+          {!jugo ? (
+            <View style={styles.cuerpo}>
+              <Text style={styles.nota}>Este jugador no disputó ningún minuto.</Text>
+            </View>
+          ) : (
             <ScrollView contentContainerStyle={styles.cuerpo}>
-              <View style={styles.grandes}>
-                <Grande valor={jugador.points} etiqueta="PTS" />
-                <Grande valor={jugador.rebounds} etiqueta="REB" />
-                <Grande valor={jugador.assists} etiqueta="AST" />
-              </View>
-
-              <Text style={styles.seccion}>Puntos por cuarto</Text>
               {porCuarto.length > 0 ? (
                 <>
-                  <View style={styles.cuartos}>
-                    {porCuarto.map((c) => (
-                      <View key={c.periodo} style={styles.cuarto}>
-                        <Text style={styles.cuartoValor}>{c.points}</Text>
-                        <View style={styles.cuartoCarril}>
-                          <View
-                            style={[
-                              styles.cuartoBarra,
-                              { height: `${(c.points / maximo) * 100}%` },
-                              c.points === 0 && styles.cuartoBarraVacia,
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.cuartoEtiqueta}>{etiquetaCuarto(c.periodo)}</Text>
+                  <View style={styles.tabla}>
+                    <View>
+                      <View style={[styles.fila, styles.filaCabecera]}>
+                        <Text style={[styles.etiqueta, styles.cabeceraCelda]}> </Text>
                       </View>
-                    ))}
+                      {FILAS.map((f) => (
+                        <View key={f.etiqueta} style={styles.fila}>
+                          <Text style={styles.etiqueta}>{f.etiqueta}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View>
+                        <View style={[styles.fila, styles.filaCabecera]}>
+                          {porCuarto.map((c) => (
+                            <Text key={c.periodo} style={[styles.cabeceraCelda, styles.celda]}>
+                              {etiquetaCuarto(c.periodo)}
+                            </Text>
+                          ))}
+                          <Text style={[styles.cabeceraCelda, styles.celdaTotal]}>TOTAL</Text>
+                        </View>
+
+                        {FILAS.map((f) => (
+                          <View key={f.etiqueta} style={styles.fila}>
+                            {porCuarto.map((c) => (
+                              <Text key={c.periodo} style={[styles.valor, styles.celda]}>
+                                {f.cuarto(c)}
+                              </Text>
+                            ))}
+                            <Text style={[styles.valor, styles.celdaTotal, styles.valorTotal]}>
+                              {f.total(jugador)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
                   </View>
-                  {sumaCuartos !== jugador.points && (
+
+                  {descuadra && (
                     <Text style={styles.nota}>
-                      El desglose suma {sumaCuartos} de los {jugador.points} puntos: al relato de
-                      jugadas de ESPN le faltan algunas.
+                      El desglose por cuartos sale del relato de jugadas de ESPN y el total de su
+                      box score. Alguna jugada no cuadra entre los dos.
                     </Text>
                   )}
                 </>
@@ -104,42 +210,15 @@ export function PlayerGameStats({
                 </Text>
               )}
 
-              <Text style={styles.seccion}>Tiros</Text>
-              <View style={styles.tiros}>
-                <FilaTiro
-                  etiqueta="Tiros de campo"
-                  hechos={jugador.fgMade}
-                  intentos={jugador.fgAttempted}
-                />
-                <FilaTiro
-                  etiqueta="Triples"
-                  hechos={jugador.fg3Made}
-                  intentos={jugador.fg3Attempted}
-                />
-                <FilaTiro
-                  etiqueta="Tiros libres"
-                  hechos={jugador.ftMade}
-                  intentos={jugador.ftAttempted}
-                />
-              </View>
-
-              <Text style={styles.seccion}>Resto</Text>
-              <View style={styles.rejilla}>
-                <Pequeno valor={jugador.steals} etiqueta="ROB" />
-                <Pequeno valor={jugador.blocks} etiqueta="TAP" />
-                <Pequeno valor={jugador.turnovers} etiqueta="PÉR" />
-                <Pequeno
-                  valor={jugador.plusMinus}
+              <View style={styles.pie}>
+                <Suelto etiqueta="MIN" valor={formatMinutes(jugador.minutes)} />
+                <Suelto
                   etiqueta="+/-"
-                  texto={jugador.plusMinus > 0 ? `+${jugador.plusMinus}` : `${jugador.plusMinus}`}
+                  valor={jugador.plusMinus > 0 ? `+${jugador.plusMinus}` : `${jugador.plusMinus}`}
                 />
-                <Pequeno valor={jugador.gameScore} etiqueta="VAL" texto={jugador.gameScore.toFixed(1)} />
+                <Suelto etiqueta="VAL" valor={jugador.gameScore.toFixed(1)} />
               </View>
             </ScrollView>
-          ) : (
-            <View style={styles.cuerpo}>
-              <Text style={styles.nota}>Este jugador no disputó ningún minuto.</Text>
-            </View>
           )}
         </Pressable>
       </Pressable>
@@ -147,48 +226,11 @@ export function PlayerGameStats({
   );
 }
 
-function Grande({ valor, etiqueta }: { valor: number; etiqueta: string }) {
+function Suelto({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
-    <View style={styles.grande}>
-      <Text style={styles.grandeValor}>{valor}</Text>
-      <Text style={styles.grandeEtiqueta}>{etiqueta}</Text>
-    </View>
-  );
-}
-
-function Pequeno({
-  valor,
-  etiqueta,
-  texto,
-}: {
-  valor: number;
-  etiqueta: string;
-  texto?: string;
-}) {
-  return (
-    <View style={styles.pequeno}>
-      <Text style={styles.pequenoValor}>{texto ?? valor}</Text>
-      <Text style={styles.pequenoEtiqueta}>{etiqueta}</Text>
-    </View>
-  );
-}
-
-function FilaTiro({
-  etiqueta,
-  hechos,
-  intentos,
-}: {
-  etiqueta: string;
-  hechos: number;
-  intentos: number;
-}) {
-  return (
-    <View style={styles.filaTiro}>
-      <Text style={styles.filaTiroEtiqueta}>{etiqueta}</Text>
-      <Text style={styles.filaTiroIntentos}>
-        {hechos}-{intentos}
-      </Text>
-      <Text style={styles.filaTiroPct}>{porcentaje(hechos, intentos)}</Text>
+    <View style={styles.suelto}>
+      <Text style={styles.sueltoValor}>{valor}</Text>
+      <Text style={styles.sueltoEtiqueta}>{etiqueta}</Text>
     </View>
   );
 }
@@ -203,8 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
-    paddingBottom: spacing.xl,
-    maxHeight: '85%',
+    maxHeight: '88%',
   },
   handle: {
     alignSelf: 'center',
@@ -229,7 +270,7 @@ const styles = StyleSheet.create({
   },
   nombre: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontFamily: fontFamily.displayBold,
   },
   cabeceraMeta: {
@@ -247,115 +288,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
-  grandes: {
+  tabla: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: spacing.lg,
   },
-  grande: {
-    alignItems: 'center',
-  },
-  grandeValor: {
-    color: colors.text,
-    fontSize: fontSize.xxxl,
-    fontFamily: fontFamily.displayBold,
-  },
-  grandeEtiqueta: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.displayBold,
-    letterSpacing: 0.5,
-  },
-  seccion: {
-    color: colors.textMuted,
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.displayBold,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
-  cuartos: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  cuarto: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  cuartoValor: {
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontFamily: fontFamily.displayBold,
-  },
-  cuartoCarril: {
-    width: '100%',
-    height: 64,
-    justifyContent: 'flex-end',
-    backgroundColor: colors.surfaceLight,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  cuartoBarra: {
-    width: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: radius.sm,
-  },
-  cuartoBarraVacia: {
-    height: 2,
-    backgroundColor: colors.border,
-  },
-  cuartoEtiqueta: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontFamily: fontFamily.displaySemibold,
-  },
-  tiros: {
-    marginBottom: spacing.lg,
-  },
-  filaTiro: {
+  fila: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    height: ALTO_FILA,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  filaTiroEtiqueta: {
-    flex: 1,
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontFamily: fontFamily.semibold,
+  filaCabecera: {
+    borderBottomColor: colors.textMuted,
   },
-  filaTiroIntentos: {
-    width: 64,
-    textAlign: 'right',
+  etiqueta: {
+    width: ANCHO_ETIQUETA,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
+  },
+  cabeceraCelda: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  celda: {
+    width: ANCHO_CUARTO,
+    textAlign: 'center',
+  },
+  celdaTotal: {
+    width: ANCHO_TOTAL,
+    textAlign: 'center',
+  },
+  valor: {
     color: colors.text,
     fontSize: fontSize.sm,
     fontFamily: fontFamily.displaySemibold,
   },
-  filaTiroPct: {
-    width: 64,
-    textAlign: 'right',
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontFamily: fontFamily.displaySemibold,
+  valorTotal: {
+    fontFamily: fontFamily.displayBold,
   },
-  rejilla: {
+  pie: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    marginTop: spacing.lg,
   },
-  pequeno: {
+  suelto: {
     alignItems: 'center',
-    minWidth: 48,
   },
-  pequenoValor: {
+  sueltoValor: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontFamily: fontFamily.displayBold,
   },
-  pequenoEtiqueta: {
+  sueltoEtiqueta: {
     color: colors.textMuted,
     fontSize: 10,
     fontFamily: fontFamily.displayBold,
@@ -365,6 +354,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: fontSize.xs,
     lineHeight: 16,
-    marginBottom: spacing.lg,
+    marginTop: spacing.md,
   },
 });
