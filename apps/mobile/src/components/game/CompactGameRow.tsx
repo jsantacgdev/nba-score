@@ -45,32 +45,32 @@ export function CompactGameRow({ game }: { game: Game }) {
       </View>
 
       <View style={styles.teams}>
-        {/* Visitante primero: es como se lee un marcador, "Magic en Hawks" */}
         <View style={styles.side}>
           <TeamLogo
-            logoUrl={game.awayTeam.logoUrl}
-            abbreviation={game.awayTeam.abbreviation}
+            logoUrl={game.homeTeam.logoUrl}
+            abbreviation={game.homeTeam.abbreviation}
             size={22}
           />
           <Text
-            style={[styles.name, jugado && ganaVisitante && styles.winner]}
+            style={[styles.name, jugado && ganaLocal && styles.winner]}
             numberOfLines={1}
           >
-            {game.awayTeam.name}
+            {game.homeTeam.name}
           </Text>
-          {campeonEsVisitante && (
+          <Text style={styles.rol}>LOCAL</Text>
+          {campeonEsLocal && (
             <Trophy award="champion" season="" size={18} interactive={false} />
           )}
         </View>
 
         {jugado ? (
           <View style={styles.score}>
-            <Text style={[styles.scoreText, ganaVisitante && styles.winner]}>
-              {game.scoreAway}
-            </Text>
-            <Text style={styles.dash}>-</Text>
             <Text style={[styles.scoreText, ganaLocal && styles.winner]}>
               {game.scoreHome}
+            </Text>
+            <Text style={styles.dash}>-</Text>
+            <Text style={[styles.scoreText, ganaVisitante && styles.winner]}>
+              {game.scoreAway}
             </Text>
           </View>
         ) : (
@@ -78,18 +78,19 @@ export function CompactGameRow({ game }: { game: Game }) {
         )}
 
         <View style={[styles.side, styles.sideRight]}>
-          {campeonEsLocal && (
+          {campeonEsVisitante && (
             <Trophy award="champion" season="" size={18} interactive={false} />
           )}
+          <Text style={styles.rol}>VIS.</Text>
           <Text
-            style={[styles.name, styles.nameRight, jugado && ganaLocal && styles.winner]}
+            style={[styles.name, styles.nameRight, jugado && ganaVisitante && styles.winner]}
             numberOfLines={1}
           >
-            {game.homeTeam.name}
+            {game.awayTeam.name}
           </Text>
           <TeamLogo
-            logoUrl={game.homeTeam.logoUrl}
-            abbreviation={game.homeTeam.abbreviation}
+            logoUrl={game.awayTeam.logoUrl}
+            abbreviation={game.awayTeam.abbreviation}
             size={22}
           />
         </View>
@@ -99,8 +100,7 @@ export function CompactGameRow({ game }: { game: Game }) {
         <View style={styles.seriesLine}>
           <Text style={styles.series}>
             {ronda}
-            {/* Mismo orden que el marcador de arriba, visitante-local */}
-            {serie ? `  ·  ${serie.away}-${serie.home}` : ''}
+            {serie ? `  ·  ${serie.home}-${serie.away}` : ''}
           </Text>
         </View>
       )}
@@ -156,6 +156,12 @@ const styles = StyleSheet.create({
   },
   nameRight: {
     textAlign: 'right',
+  },
+  rol: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
   },
   winner: {
     color: colors.text,

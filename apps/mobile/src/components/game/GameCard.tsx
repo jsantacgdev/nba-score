@@ -90,22 +90,24 @@ export function GameCard({ game, index = 0, showDate = false, probHome }: Props)
 
         <View style={styles.teamsContainer}>
           <TeamRow
-            team={game.awayTeam}
-            score={game.scoreAway}
-            isWinning={awayWinning}
-            showScore={!isScheduled}
-            enVivo={isLive}
-            prob={isScheduled && probHome !== undefined ? 1 - probHome : undefined}
-            probFavorita={probHome !== undefined && probHome < 0.5}
-          />
-          <TeamRow
             team={game.homeTeam}
+            rol="LOCAL"
             score={game.scoreHome}
             isWinning={homeWinning}
             showScore={!isScheduled}
             enVivo={isLive}
             prob={isScheduled && probHome !== undefined ? probHome : undefined}
             probFavorita={probHome !== undefined && probHome >= 0.5}
+          />
+          <TeamRow
+            team={game.awayTeam}
+            rol="VISITANTE"
+            score={game.scoreAway}
+            isWinning={awayWinning}
+            showScore={!isScheduled}
+            enVivo={isLive}
+            prob={isScheduled && probHome !== undefined ? 1 - probHome : undefined}
+            probFavorita={probHome !== undefined && probHome < 0.5}
           />
         </View>
       </Pressable>
@@ -115,6 +117,7 @@ export function GameCard({ game, index = 0, showDate = false, probHome }: Props)
 
 function TeamRow({
   team,
+  rol,
   score,
   isWinning,
   showScore,
@@ -123,6 +126,7 @@ function TeamRow({
   enVivo = false,
 }: {
   team: Game['homeTeam'];
+  rol: 'LOCAL' | 'VISITANTE';
   score: number;
   isWinning: boolean;
   showScore: boolean;
@@ -145,8 +149,13 @@ function TeamRow({
             <Text style={styles.teamLogoText}>{team.abbreviation}</Text>
           </View>
         )}
-        <View>
-          <Text style={styles.teamCity}>{team.city}</Text>
+        <View style={styles.teamTextBlock}>
+          <View style={styles.teamCityRow}>
+            <Text style={styles.teamCity} numberOfLines={1}>
+              {team.city}
+            </Text>
+            <Text style={styles.rolTag}>{rol}</Text>
+          </View>
           <Text style={styles.teamName}>{team.name}</Text>
         </View>
       </View>
@@ -250,10 +259,26 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontFamily: fontFamily.displayBold,
   },
+  teamTextBlock: {
+    flex: 1,
+  },
+  teamCityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   teamCity: {
     color: colors.textMuted,
     fontSize: 10,
     lineHeight: 13,
+    flexShrink: 1,
+  },
+  rolTag: {
+    color: colors.textMuted,
+    fontSize: 9,
+    lineHeight: 13,
+    fontFamily: fontFamily.displayBold,
+    letterSpacing: 0.5,
   },
   teamName: {
     color: colors.text,
