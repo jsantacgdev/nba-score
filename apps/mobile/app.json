@@ -16,7 +16,10 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0A0E1A"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "runtimeVersion": {
+        "policy": "fingerprint"
+      }
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -42,6 +45,12 @@
       "router": {},
       "eas": {
         "projectId": "b2dbb37c-7919-4631-b0ca-1b0536a1ded6"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b2dbb37c-7919-4631-b0ca-1b0536a1ded6",
+      "requestHeaders": {
+        "expo-channel-name": "production"
       }
     }
   }
