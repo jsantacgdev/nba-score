@@ -8,12 +8,14 @@ name: Sync ESPN Feeds
 # siguiente, y las lesiones se reportan a lo largo del día, muchas veces
 # horas antes del partido.
 #
-# Cada seis horas: el feed de ESPN devuelve los 50 titulares más
-# recientes y no publican tantos, así que con esa frecuencia no se escapa
-# ninguno. Son dos peticiones HTTP por ejecución.
+# Cada dos horas: el parte de lesiones se consolida en la hora previa a
+# cada partido, y algunos empiezan a las 19:30 o las 21:00, así que una
+# ventana fija no sirve. El feed de titulares devuelve los 50 más
+# recientes y no publican tantos, así que tampoco se escapa ninguno. Son
+# dos peticiones HTTP por ejecución.
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
 # Si una ejecución se solapa con la anterior, se descarta: las dos harían
