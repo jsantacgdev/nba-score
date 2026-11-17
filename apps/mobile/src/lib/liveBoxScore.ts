@@ -66,6 +66,26 @@ export function boxScoreDesdeEspn(
     .sort((a, b) => b.minutes - a.minutes);
 }
 
+type ConFoto = { playerId: string; firstName: string; lastName: string; photoUrl?: string };
+
+export function buscadorDeFotos(...fuentes: ConFoto[][]) {
+  const porId = new Map<string, string>();
+  const porNombre = new Map<string, string>();
+  for (const lista of fuentes) {
+    for (const p of lista) {
+      if (!p.photoUrl) continue;
+      porId.set(p.playerId, p.photoUrl);
+      porNombre.set(normalizar(`${p.firstName} ${p.lastName}`), p.photoUrl);
+    }
+  }
+  return (playerId: string, nombre: string): string | undefined =>
+    porId.get(playerId) ??
+    porNombre.get(normalizar(nombre)) ??
+    (/^\d+$/.test(playerId)
+      ? `https://cdn.nba.com/headshots/nba/latest/1040x760/${playerId}.png`
+      : undefined);
+}
+
 export type LineaCuarto = {
   periodo: number;
   points: number;

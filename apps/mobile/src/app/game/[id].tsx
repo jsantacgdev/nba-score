@@ -19,7 +19,7 @@ import { HeadToHead } from '@/components/game/HeadToHead';
 import { ComoLlegan } from '@/components/game/ComoLlegan';
 import { Probabilidad } from '@/components/game/Probabilidad';
 import { boxScoreDesdeDirecto } from '@/lib/api/live';
-import { boxScoreDesdeEspn, lineasPorCuarto } from '@/lib/liveBoxScore';
+import { boxScoreDesdeEspn, buscadorDeFotos, lineasPorCuarto } from '@/lib/liveBoxScore';
 import { PlayerGameStats } from '@/components/game/PlayerGameStats';
 import {
   fusionarDirecto,
@@ -137,6 +137,11 @@ export default function GameDetailScreen() {
 
   const homeLineup = data.homeLineup ?? [];
   const awayLineup = data.awayLineup ?? [];
+  const fotoDe = buscadorDeFotos(homeLineup, awayLineup, data.homeRoster, data.awayRoster);
+  const conFoto = (lista: GameBoxScoreEntry[]): GameBoxScoreEntry[] =>
+    lista.map((p) =>
+      p.photoUrl ? p : { ...p, photoUrl: fotoDe(p.playerId, `${p.firstName} ${p.lastName}`) },
+    );
 
   /**
    * De donde salen las estadisticas, por orden de preferencia:
@@ -164,8 +169,8 @@ export default function GameDetailScreen() {
     return undefined;
   };
 
-  const homeRoster = (usarDirecto ? rosterEnVivo('home') : undefined) ?? data.homeRoster;
-  const awayRoster = (usarDirecto ? rosterEnVivo('away') : undefined) ?? data.awayRoster;
+  const homeRoster = conFoto((usarDirecto ? rosterEnVivo('home') : undefined) ?? data.homeRoster);
+  const awayRoster = conFoto((usarDirecto ? rosterEnVivo('away') : undefined) ?? data.awayRoster);
   const jugado = game.status === 'final' || game.status === 'live';
   const homeWinning = jugado && game.scoreHome > game.scoreAway;
   const awayWinning = jugado && game.scoreAway > game.scoreHome;
@@ -183,9 +188,11 @@ export default function GameDetailScreen() {
       : lado === 'home'
         ? homeLineup
         : awayLineup;
-    return boxScoreDesdeEspn(jugadas, plantilla, equipo.abbreviation, equipo.id)
-      .filter((p) => p.points > 0 || p.rebounds > 0 || p.assists > 0)
-      .sort((a, b) => b.points - a.points || b.rebounds - a.rebounds);
+    return conFoto(
+      boxScoreDesdeEspn(jugadas, plantilla, equipo.abbreviation, equipo.id)
+        .filter((p) => p.points > 0 || p.rebounds > 0 || p.assists > 0)
+        .sort((a, b) => b.points - a.points || b.rebounds - a.rebounds),
+    );
   };
 
   const rosterLocal = rosterDeCuarto('home') ?? homeRoster;
@@ -239,6 +246,7 @@ export default function GameDetailScreen() {
           playerId: p.playerId,
           name: p.name,
           jerseyNumber: p.jerseyNumber,
+          photoUrl: fotoDe(p.playerId, p.name),
           points: p.points,
         }));
       }
@@ -259,7 +267,7 @@ export default function GameDetailScreen() {
           return {
             playerId: nuestro?.playerId ?? p.espnId,
             name: p.nombre,
-            photoUrl: nuestro?.photoUrl,
+            photoUrl: nuestro?.photoUrl ?? fotoDe('', p.nombre),
             points: p.points,
           };
         });
