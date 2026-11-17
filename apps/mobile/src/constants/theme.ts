@@ -9,13 +9,13 @@ export const colors = {
   border: '#363B45', // subido de '#2A2F38'
   borderStrong: '#454C58', // subido de '#3A4049'
 
-  // Primary (verde)
-  primary: '#4FAE6B',
-  primaryDark: '#3A8A52',
-  primaryLight: '#74C78C',
+  // Primary (ámbar quemado)
+  primary: '#E89154',
+  primaryDark: '#C77439',
+  primaryLight: '#F0A876',
 
-  // Secondary (verde azulado)
-  secondary: '#5AB894',
+  // Secondary (azul acero)
+  secondary: '#5A8FB8',
 
   // Texto
   text: '#E8E6E1',
