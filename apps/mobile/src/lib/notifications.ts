@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { colors } from '@/constants/theme';
 import { fetchGamesByTeams } from '@/lib/api/games';
 import { formatTime } from '@/lib/format';
 import type { Game } from '@/types/domain';
@@ -42,7 +43,7 @@ export async function prepararCanal(): Promise<void> {
     name: 'Partidos',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#E89154',
+    lightColor: colors.primary,
   });
 }
 
